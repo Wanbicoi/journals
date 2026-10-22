@@ -1,0 +1,18 @@
+export const ANSI = {
+  reset: "\x1b[0m",
+  bold: "\x1b[1m",
+  dim: "\x1b[2m",
+  inverse: "\x1b[7m",
+  cyan: "\x1b[36m",
+  blue: "\x1b[34m",
+  green: "\x1b[32m",
+  yellow: "\x1b[33m",
+  magenta: "\x1b[35m",
+  gray: "\x1b[90m",
+  bgCyan: "\x1b[46m\x1b[30m",
+  bgBlue: "\x1b[44m\x1b[37m",
+  enterAltScreen: "\x1b[?1049h\x1b[H",
+  exitAltScreen: "\x1b[?1049l",
+  cursorHome: "\x1b[H",
+  clearScreen: "\x1b[2J\x1b[H",
+};
