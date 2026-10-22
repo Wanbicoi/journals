@@ -42,6 +42,7 @@ export const ConfigSchema = z.object({
     new_project: z.string().default("N"),
     edit_project: z.string().default("p"),
     edit_tags: z.string().default("t"),
+    delete_entry: z.string().default("d"),
     edit_project_content: z.string().default("e"),
     search_filter: z.string().default("/"),
     help: z.string().default("?"),

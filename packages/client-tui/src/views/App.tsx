@@ -226,7 +226,7 @@ export function App() {
       setInputMode("CAPTURE");
       setInputBuffer("");
       setStatusMessage("Quick Capture: @project #tags note content");
-    } else if (keyName === "N" || str === "N") {
+    } else if (keyName === config.keymaps.new_project || str === config.keymaps.new_project) {
       setInputMode("NEW_PROJECT");
       setInputBuffer("");
       setStatusMessage("Enter new project name");
@@ -242,7 +242,7 @@ export function App() {
         setInputBuffer(filteredEntries[selectedEntryIdx].tags.join(", "));
         setStatusMessage("Edit note tags (comma-separated)");
       }
-    } else if (keyName === "d" || str === "d") {
+    } else if (keyName === config.keymaps.delete_entry || str === config.keymaps.delete_entry) {
       if (currentTab === "TIMELINE" && filteredEntries[selectedEntryIdx]) {
         setInputMode("DELETE_CONFIRM");
         setStatusMessage("Confirm delete (y/n)");
@@ -443,7 +443,9 @@ export function App() {
         <FilterModal width={width} height={height} inputBuffer={inputBuffer} theme={theme} />
       )}
 
-      {inputMode === "HELP" && <HelpModal width={width} height={height} theme={theme} />}
+      {inputMode === "HELP" && (
+        <HelpModal width={width} height={height} keymaps={config.keymaps} theme={theme} />
+      )}
 
       {/* Anchored Bottom Status Line */}
       <StatusBar
