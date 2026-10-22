@@ -39,6 +39,7 @@ export const ConfigSchema = z.object({
     up: z.string().default("k"),
     down: z.string().default("j"),
     quick_capture: z.string().default("n"),
+    new_project: z.string().default("N"),
     edit_project: z.string().default("p"),
     edit_tags: z.string().default("t"),
     edit_project_content: z.string().default("e"),

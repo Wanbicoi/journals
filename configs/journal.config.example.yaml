@@ -42,6 +42,7 @@ keymaps:
   
   # Actions
   quick_capture: "n"               # Open 1-line quick capture input
+  new_project: "N"                 # Create a new project (in Projects view or globally)
   edit_project: "p"                # Reassign/edit project for selected note
   edit_tags: "t"                   # Edit tags for selected note
   edit_project_content: "e"        # Edit/append markdown content in projects view

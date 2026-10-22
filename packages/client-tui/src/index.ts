@@ -27,7 +27,7 @@ const client = hc<AppType>(serverUrl);
 
 // State
 let currentTab: "TIMELINE" | "PROJECTS" = "TIMELINE";
-let inputMode: "NONE" | "CAPTURE" | "EDIT_PROJECT" | "EDIT_TAGS" = "NONE";
+let inputMode: "NONE" | "CAPTURE" | "NEW_PROJECT" | "EDIT_PROJECT" | "EDIT_TAGS" = "NONE";
 
 let entries: Array<{
   id: string;
@@ -52,7 +52,7 @@ let selectedEntryIdx = 0;
 let selectedProjectIdx = 0;
 let inputBuffer = "";
 let activeSuggestionIdx = 0;
-let statusMessage = `[${config.keymaps.view_timeline}] Timeline | [${config.keymaps.view_projects}] Projects | [${config.keymaps.quick_capture}] Capture | [${config.keymaps.quit}] Quit`;
+let statusMessage = `[${config.keymaps.view_timeline}] Timeline | [${config.keymaps.view_projects}] Projects | [${config.keymaps.quick_capture}] Note | [${config.keymaps.new_project}] Project | [${config.keymaps.quit}] Quit`;
 
 const ANSI = {
   reset: "\x1b[0m",
@@ -67,6 +67,9 @@ const ANSI = {
   gray: "\x1b[90m",
   bgCyan: "\x1b[46m\x1b[30m",
   bgBlue: "\x1b[44m\x1b[37m",
+  enterAltScreen: "\x1b[?1049h\x1b[H",
+  exitAltScreen: "\x1b[?1049l",
+  cursorHome: "\x1b[H",
   clearScreen: "\x1b[2J\x1b[H",
 };
 
@@ -115,6 +118,8 @@ function render() {
   // Active Modals & Suggestions
   if (inputMode === "CAPTURE") {
     renderCaptureModal(width);
+  } else if (inputMode === "NEW_PROJECT") {
+    renderNewProjectModal(width);
   } else if (inputMode === "EDIT_PROJECT") {
     renderEditProjectPrompt(width);
   } else if (inputMode === "EDIT_TAGS") {
@@ -243,6 +248,13 @@ function getSuggestions() {
   }
 }
 
+function renderNewProjectModal(width: number) {
+  console.log(`${ANSI.cyan}┌─ ${icons.project} CREATE NEW PROJECT ──────────────────────────────────────────┐${ANSI.reset}`);
+  console.log(`${ANSI.cyan}│${ANSI.reset} Project Name: ${ANSI.bold}${inputBuffer}█${ANSI.reset}`);
+  console.log(`${ANSI.cyan}│${ANSI.reset} ${ANSI.dim}Press Enter to create, Esc to cancel${ANSI.reset}`);
+  console.log(`${ANSI.cyan}└──────────────────────────────────────────────────────────────┘${ANSI.reset}`);
+}
+
 function renderCaptureModal(width: number) {
   console.log(
     `${ANSI.cyan}┌─ ${icons.quick} QUICK CAPTURE ──────────────────────────────────────────────┐${ANSI.reset}`,
@@ -368,6 +380,11 @@ process.stdin.on("keypress", async (str, key) => {
     inputBuffer = "";
     statusMessage = "Type note (@project #tags) and press Enter";
     render();
+  } else if (str === config.keymaps.new_project || key.name === config.keymaps.new_project) {
+    inputMode = "NEW_PROJECT";
+    inputBuffer = "";
+    statusMessage = "Type project name and press Enter";
+    render();
   } else if (key.name === config.keymaps.edit_project || str === config.keymaps.edit_project) {
     if (currentTab === "TIMELINE" && entries[selectedEntryIdx]) {
       inputMode = "EDIT_PROJECT";
@@ -424,7 +441,20 @@ function applySuggestion() {
 }
 
 async function commitModalInput() {
-  if (inputMode === "CAPTURE" && inputBuffer.trim()) {
+  if (inputMode === "NEW_PROJECT" && inputBuffer.trim()) {
+    const res = await client.projects.$post({
+      json: {
+        name: inputBuffer.trim(),
+        content: `# ${inputBuffer.trim()}\n`,
+      },
+    });
+    await reloadData();
+    // Switch to projects view and highlight newly created project
+    currentTab = "PROJECTS";
+    const foundIdx = projects.findIndex((p) => p.name.toLowerCase() === inputBuffer.trim().toLowerCase());
+    if (foundIdx !== -1) selectedProjectIdx = foundIdx;
+    statusMessage = `Created project: @${inputBuffer.trim()}`;
+  } else if (inputMode === "CAPTURE" && inputBuffer.trim()) {
     await client.capture.$post({
       json: {
         raw: inputBuffer.trim(),
@@ -466,12 +496,23 @@ async function commitModalInput() {
   render();
 }
 
+// Initialize Full Screen Alternate Screen Buffer
+if (process.stdout.isTTY) {
+  process.stdout.write(ANSI.enterAltScreen);
+}
+
 function cleanupAndExit() {
+  if (process.stdout.isTTY) {
+    process.stdout.write(ANSI.exitAltScreen);
+  }
   process.stdout.write("\x1b[?25h\n");
   if (process.stdin.isTTY) {
     process.stdin.setRawMode(false);
   }
   process.exit(0);
 }
+
+process.on("SIGINT", cleanupAndExit);
+process.on("SIGTERM", cleanupAndExit);
 
 render();
