@@ -8,7 +8,6 @@ interface ProjectsViewProps {
   entries: Entry[];
   width: number;
   icons: Record<string, string>;
-  editKey: string;
   theme: ThemePalette;
 }
 
@@ -18,7 +17,6 @@ export function ProjectsView({
   entries,
   width,
   icons,
-  editKey,
   theme,
 }: ProjectsViewProps) {
   const selProj = projects[selectedProjectIdx] || {
@@ -27,54 +25,117 @@ export function ProjectsView({
     entryCount: 0,
   };
 
+  const projectNotes = entries.filter(
+    (e) => e.projectName.toLowerCase() === selProj.name.toLowerCase(),
+  );
+
   return (
-    <box flexDirection="row" flexGrow={1}>
+    <box flexDirection="row" flexGrow={1} paddingLeft={1} paddingRight={1}>
       {/* Projects List (Left Column) */}
-      <box width={28} flexDirection="column">
-        <text fg={theme.primary}>{`${icons.project} PROJECTS`}</text>
-        <text fg={theme.border}>{"─".repeat(26)}</text>
+      <box
+        width={30}
+        flexDirection="column"
+        borderStyle="single"
+        borderColor={theme.border}
+        paddingLeft={1}
+        paddingRight={1}
+        marginRight={1}
+      >
+        <box flexDirection="row" marginBottom={1}>
+          <text fg={theme.primary}>{`${icons.project} PROJECTS (${projects.length})`}</text>
+        </box>
         <scrollbox flexGrow={1}>
           {projects.map((p, idx) => {
             const isSel = idx === selectedProjectIdx;
             return (
-              <box key={p.id}>
-                {isSel ? (
-                  <text
-                    fg={theme.primary}
-                    bg={theme.border}
-                  >{`❯ ${p.name} (${p.entryCount})`}</text>
-                ) : (
-                  <text fg={theme.fg}>{`  ${p.name} (${p.entryCount})`}</text>
-                )}
+              <box
+                key={p.id}
+                flexDirection="row"
+                justifyContent="space-between"
+                backgroundColor={isSel ? theme.border : undefined}
+                paddingLeft={1}
+                paddingRight={1}
+              >
+                <text fg={isSel ? theme.primary : theme.fg}>
+                  {`${isSel ? "❯ " : "  "}${p.name}`}
+                </text>
+                <text fg={theme.muted}>{`(${p.entryCount})`}</text>
               </box>
             );
           })}
         </scrollbox>
       </box>
 
-      <text fg={theme.border}>{"│ "}</text>
-
       {/* Project Details & Preview (Right Column) */}
       <box flexGrow={1} flexDirection="column">
-        <text fg={theme.accent}>{`Preview: ${selProj.name} `}</text>
-        <text fg={theme.muted}>{`[Press '${editKey}' to edit in $EDITOR]`}</text>
-        <text fg={theme.border}>{"─".repeat(Math.max(10, width - 32))}</text>
+        {/* Right Header: Project details banner */}
+        <box flexDirection="row" justifyContent="space-between" marginBottom={1}>
+          <box flexDirection="row">
+            <text fg={theme.secondary}>{`${icons.project} @${selProj.name}`}</text>
+            <text
+              fg={theme.muted}
+            >{` • ${projectNotes.length} associated note${projectNotes.length === 1 ? "" : "s"}`}</text>
+          </box>
+        </box>
+
         <scrollbox flexGrow={1}>
-          {selProj.content.split("\n").map((line, lIdx) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: line-by-line render of markdown text
-            <text key={lIdx} fg={line.startsWith("#") ? theme.primary : theme.fg}>
-              {line}
-            </text>
-          ))}
-          <text fg={theme.border}>{"─".repeat(Math.max(10, width - 32))}</text>
-          <text fg={theme.muted}>{`Associated Notes in @${selProj.name}:`}</text>
-          {entries
-            .filter((e) => e.projectName.toLowerCase() === selProj.name.toLowerCase())
-            .map((e) => (
-              <text key={e.id} fg={theme.fg}>
-                {`• ${new Date(e.createdAt).toISOString().slice(0, 10)} ${e.content.split("\n")[0]}`}
-              </text>
-            ))}
+          {/* Project Markdown / Description */}
+          <box
+            flexDirection="column"
+            borderStyle="single"
+            borderColor={theme.border}
+            paddingLeft={1}
+            paddingRight={1}
+            paddingTop={0}
+            paddingBottom={0}
+            marginBottom={1}
+          >
+            {selProj.content ? (
+              selProj.content.split("\n").map((line, lIdx) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: line-by-line render of markdown text
+                <text key={lIdx} fg={line.startsWith("#") ? theme.primary : theme.fg} selectable>
+                  {line || " "}
+                </text>
+              ))
+            ) : (
+              <text fg={theme.muted}>{"No project overview notes."}</text>
+            )}
+          </box>
+
+          {/* Associated Notes Section */}
+          <box flexDirection="row" marginTop={1} marginBottom={1}>
+            <text fg={theme.accent}>{`${icons.journal || "📝"} Associated Notes`}</text>
+          </box>
+
+          {projectNotes.length === 0 ? (
+            <text fg={theme.muted}>{"  No notes logged under this project yet."}</text>
+          ) : (
+            projectNotes.map((e) => (
+              <box
+                key={e.id}
+                flexDirection="column"
+                borderStyle="single"
+                borderColor={theme.border}
+                paddingLeft={1}
+                paddingRight={1}
+                marginBottom={1}
+              >
+                <box flexDirection="row" justifyContent="space-between">
+                  <box flexDirection="row">
+                    <text
+                      fg={theme.muted}
+                    >{`${new Date(e.createdAt).toISOString().slice(0, 10)} ${new Date(e.createdAt).toTimeString().slice(0, 5)} `}</text>
+                    {e.tags.map((t) => (
+                      <text key={t} fg={theme.tag}>{`#${t} `}</text>
+                    ))}
+                  </box>
+                </box>
+                <text fg={theme.fg} selectable>
+                  {e.content}
+                </text>
+              </box>
+            ))
+          )}
         </scrollbox>
       </box>
     </box>

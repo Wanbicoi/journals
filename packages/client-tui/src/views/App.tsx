@@ -348,7 +348,6 @@ export function App() {
             entries={entries}
             width={width}
             icons={icons}
-            editKey={config.keymaps.edit_project_content}
             theme={theme}
           />
         )}
