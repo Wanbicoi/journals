@@ -9,26 +9,21 @@ interface StatusBarProps {
 }
 
 export function StatusBar({ width, filterQuery, statusMessage, theme }: StatusBarProps) {
+  // Truncate or fit status info cleanly
+  const leftMsg = filterQuery ? `[Filter: "${filterQuery}"] ${statusMessage}` : statusMessage;
+
+  // Shortcuts hint for quick reference
+  const hints = "[1]Stream [2]Proj [n]Note [e]Edit [d]Del [?]Help";
+
   return (
     <box height={2} flexDirection="column">
       <text fg={theme.border}>{"─".repeat(width)}</text>
-      <box flexDirection="row">
-        {filterQuery && <text fg={theme.accent}>{`[Filter: "${filterQuery}"] `}</text>}
-        <text fg={theme.primary}>{"[1]"}</text>
-        <text fg={theme.fg}>{"Stream "}</text>
-        <text fg={theme.primary}>{"[2]"}</text>
-        <text fg={theme.fg}>{"Projects "}</text>
-        <text fg={theme.primary}>{"[n]"}</text>
-        <text fg={theme.fg}>{"Note "}</text>
-        <text fg={theme.primary}>{"[N]"}</text>
-        <text fg={theme.fg}>{"Project "}</text>
-        <text fg={theme.primary}>{"[/]"}</text>
-        <text fg={theme.fg}>{"Filter "}</text>
-        <text fg={theme.primary}>{"[?]"}</text>
-        <text fg={theme.fg}>{"Help "}</text>
-        <text fg={theme.primary}>{"[q]"}</text>
-        <text fg={theme.fg}>{"Quit "}</text>
-        <text fg={theme.muted}>{statusMessage}</text>
+      <box flexDirection="row" justifyContent="space-between">
+        <box flexDirection="row">
+          <text fg={theme.primary}>{"❯ "}</text>
+          <text fg={theme.fg}>{leftMsg}</text>
+        </box>
+        <text fg={theme.muted}>{hints}</text>
       </box>
     </box>
   );

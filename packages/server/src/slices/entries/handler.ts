@@ -63,3 +63,16 @@ export function updateEntryTags(sqlite: SQLiteDatabase, entryId: string, newTags
     return { success: true, tags: newTags };
   })();
 }
+
+export function updateEntryContent(db: DatabaseInstance, entryId: string, content: string) {
+  db.update(entries).set({ content, updatedAt: Date.now() }).where(eq(entries.id, entryId)).run();
+  return { success: true, id: entryId, content };
+}
+
+export function deleteEntry(db: DatabaseInstance, sqlite: SQLiteDatabase, entryId: string) {
+  return sqlite.transaction(() => {
+    sqlite.prepare("DELETE FROM entry_tags WHERE entry_id = ?").run(entryId);
+    db.delete(entries).where(eq(entries.id, entryId)).run();
+    return { success: true, id: entryId };
+  })();
+}

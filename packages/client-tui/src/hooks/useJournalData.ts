@@ -94,6 +94,22 @@ export function useJournalData() {
     await reloadData();
   }
 
+  async function updateEntryContent(entryId: string, content: string) {
+    // biome-ignore lint/suspicious/noExplicitAny: dynamically registered RPC route
+    await (client.entries[":id"] as any).content.$patch({
+      param: { id: entryId },
+      json: { content },
+    });
+    await reloadData();
+  }
+
+  async function deleteEntry(entryId: string) {
+    await client.entries[":id"].$delete({
+      param: { id: entryId },
+    });
+    await reloadData();
+  }
+
   return {
     entries,
     projects,
@@ -105,5 +121,7 @@ export function useJournalData() {
     updateProjectContent,
     updateEntryProject,
     updateEntryTags,
+    updateEntryContent,
+    deleteEntry,
   };
 }

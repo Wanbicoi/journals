@@ -1,12 +1,15 @@
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { config } from "../api/client.js";
 import { Header } from "../components/Header.js";
 import { StatusBar } from "../components/StatusBar.js";
 import { openExternalEditor } from "../editor.js";
 import { useJournalData } from "../hooks/useJournalData.js";
+import { useMouseClick } from "../hooks/useMouseClick.js";
 import { useSuggestions } from "../hooks/useSuggestions.js";
 import { getTheme } from "../theme.js";
+import { DeleteConfirmModal } from "./modals/DeleteConfirmModal.js";
+import { EditContentModal } from "./modals/EditContentModal.js";
 import { EditProjectModal } from "./modals/EditProjectModal.js";
 import { EditTagsModal } from "./modals/EditTagsModal.js";
 import { FilterModal } from "./modals/FilterModal.js";
@@ -25,25 +28,34 @@ export function App() {
     entries,
     projects,
     tags,
+    loading,
     quickCapture,
     createProject,
     updateProjectContent,
     updateEntryProject,
     updateEntryTags,
+    updateEntryContent,
+    deleteEntry,
   } = useJournalData();
 
   const [currentTab, setCurrentTab] = useState<"TIMELINE" | "PROJECTS">("TIMELINE");
   const [inputMode, setInputMode] = useState<
-    "NONE" | "CAPTURE" | "NEW_PROJECT" | "EDIT_PROJECT" | "EDIT_TAGS" | "FILTER" | "HELP"
+    | "NONE"
+    | "CAPTURE"
+    | "NEW_PROJECT"
+    | "EDIT_PROJECT"
+    | "EDIT_TAGS"
+    | "EDIT_CONTENT"
+    | "DELETE_CONFIRM"
+    | "FILTER"
+    | "HELP"
   >("NONE");
   const [filterQuery, setFilterQuery] = useState("");
   const [inputBuffer, setInputBuffer] = useState("");
 
   const [selectedEntryIdx, setSelectedEntryIdx] = useState(0);
   const [selectedProjectIdx, setSelectedProjectIdx] = useState(0);
-  const [statusMessage, setStatusMessage] = useState(
-    `[${config.keymaps.view_timeline}] Timeline | [${config.keymaps.view_projects}] Projects | [${config.keymaps.quick_capture}] Note | [${config.keymaps.new_project}] Project | [${config.keymaps.quit}] Quit`,
-  );
+  const [statusMessage, setStatusMessage] = useState("Ready");
 
   const { activeSuggestionIdx, getSuggestions, applySuggestion } = useSuggestions(projects, tags);
 
@@ -71,6 +83,36 @@ export function App() {
       ? getSuggestions(inputBuffer)
       : null;
 
+  // Handle Mouse Click anywhere in terminal (e.g. Header tabs)
+  const handleMouse = useCallback(
+    ({ x, y, type }: { x: number; y: number; button: number; type: string }) => {
+      if (type !== "down") return;
+
+      // Header is at row 0 (or row 1 depending on 0/1 indexing)
+      if (y === 0 || y === 1) {
+        // [1] Timeline tab is roughly x: 12 to 34
+        if (x >= 10 && x <= 34) {
+          setCurrentTab("TIMELINE");
+          setStatusMessage("Timeline View (mouse)");
+          return;
+        }
+        // [2] Projects tab is roughly x: 35 to 60
+        if (x >= 35 && x <= 62) {
+          setCurrentTab("PROJECTS");
+          setStatusMessage("Projects View (mouse)");
+          return;
+        }
+      }
+
+      if (inputMode === "HELP") {
+        setInputMode("NONE");
+      }
+    },
+    [inputMode],
+  );
+
+  useMouseClick(handleMouse);
+
   useKeyboard(async (key) => {
     const keyName = key.name;
     const str = key.sequence || key.name;
@@ -81,6 +123,22 @@ export function App() {
 
     if (inputMode === "HELP") {
       setInputMode("NONE");
+      return;
+    }
+
+    if (inputMode === "DELETE_CONFIRM") {
+      if (keyName === "y" || str === "y") {
+        const entry = filteredEntries[selectedEntryIdx];
+        if (entry) {
+          await deleteEntry(entry.id);
+          setSelectedEntryIdx((prev) => Math.max(0, prev - 1));
+          setStatusMessage("Deleted entry!");
+        }
+        setInputMode("NONE");
+      } else if (keyName === "n" || str === "n" || keyName === "escape") {
+        setInputMode("NONE");
+        setStatusMessage("Delete cancelled");
+      }
       return;
     }
 
@@ -147,7 +205,7 @@ export function App() {
       setInputMode("CAPTURE");
       setInputBuffer("");
       setStatusMessage("Quick Capture: @project #tags note content");
-    } else if (keyName === config.keymaps.new_project || str === config.keymaps.new_project) {
+    } else if (keyName === "N" || str === "N") {
       setInputMode("NEW_PROJECT");
       setInputBuffer("");
       setStatusMessage("Enter new project name");
@@ -162,6 +220,11 @@ export function App() {
         setInputMode("EDIT_TAGS");
         setInputBuffer(filteredEntries[selectedEntryIdx].tags.join(", "));
         setStatusMessage("Edit note tags (comma-separated)");
+      }
+    } else if (keyName === "d" || str === "d") {
+      if (currentTab === "TIMELINE" && filteredEntries[selectedEntryIdx]) {
+        setInputMode("DELETE_CONFIRM");
+        setStatusMessage("Confirm delete (y/n)");
       }
     } else if (keyName === config.keymaps.search_filter || str === config.keymaps.search_filter) {
       setInputMode("FILTER");
@@ -185,6 +248,12 @@ export function App() {
           await updateProjectContent(targetProj.id, updated);
           setStatusMessage(`Updated content for @${targetProj.name}`);
         }
+      } else if (currentTab === "TIMELINE" && filteredEntries[selectedEntryIdx]) {
+        // Edit entry content
+        const entry = filteredEntries[selectedEntryIdx];
+        setInputMode("EDIT_CONTENT");
+        setInputBuffer(entry.content);
+        setStatusMessage("Edit note content");
       }
     } else if (keyName === config.keymaps.quit || str === config.keymaps.quit) {
       process.exit(0);
@@ -223,11 +292,19 @@ export function App() {
         await updateEntryTags(entry.id, newTags);
         setStatusMessage("Updated note tags!");
       }
+    } else if (inputMode === "EDIT_CONTENT") {
+      const entry = filteredEntries[selectedEntryIdx];
+      if (entry && inputBuffer.trim()) {
+        await updateEntryContent(entry.id, inputBuffer.trim());
+        setStatusMessage("Updated note content!");
+      }
     }
 
     setInputMode("NONE");
     setInputBuffer("");
   }
+
+  const selectedEntry = filteredEntries[selectedEntryIdx];
 
   return (
     <box flexDirection="column" width={width} height={height}>
@@ -242,6 +319,7 @@ export function App() {
             selectedEntryIdx={selectedEntryIdx}
             filterQuery={filterQuery}
             quickCaptureKey={config.keymaps.quick_capture}
+            loading={loading}
             icons={icons}
             theme={theme}
           />
@@ -267,6 +345,19 @@ export function App() {
           suggestions={suggestions}
           activeSuggestionIdx={activeSuggestionIdx}
           quickIcon={icons.quick}
+          theme={theme}
+        />
+      )}
+
+      {inputMode === "EDIT_CONTENT" && (
+        <EditContentModal width={width} height={height} inputBuffer={inputBuffer} theme={theme} />
+      )}
+
+      {inputMode === "DELETE_CONFIRM" && selectedEntry && (
+        <DeleteConfirmModal
+          width={width}
+          height={height}
+          entrySummary={selectedEntry.content}
           theme={theme}
         />
       )}

@@ -7,6 +7,7 @@ interface TimelineViewProps {
   selectedEntryIdx: number;
   filterQuery: string;
   quickCaptureKey: string;
+  loading?: boolean;
   icons: Record<string, string>;
   theme: ThemePalette;
 }
@@ -21,9 +22,18 @@ export function TimelineView({
   selectedEntryIdx,
   filterQuery,
   quickCaptureKey,
+  loading = false,
   icons,
   theme,
 }: TimelineViewProps) {
+  if (loading) {
+    return (
+      <box padding={1}>
+        <text fg={theme.primary}>{"Loading journal entries..."}</text>
+      </box>
+    );
+  }
+
   if (entries.length === 0) {
     return (
       <box padding={1}>
@@ -52,7 +62,7 @@ export function TimelineView({
   });
 
   return (
-    <scrollbox flexGrow={1}>
+    <scrollbox flexGrow={1} paddingLeft={1} paddingRight={1}>
       {groups.map((group) => (
         <box key={group.dateStr} flexDirection="column" marginBottom={1}>
           {/* Daily Group Date Header */}
@@ -64,33 +74,44 @@ export function TimelineView({
           {group.items.map(({ entry, globalIdx }) => {
             const isSel = globalIdx === selectedEntryIdx;
             const time = new Date(entry.createdAt).toTimeString().slice(0, 5);
+            const borderColor = isSel ? theme.primary : theme.border;
 
             return (
-              <box key={entry.id} flexDirection="column" marginBottom={1}>
-                <box flexDirection="row">
-                  <text fg={isSel ? theme.primary : theme.border}>{"┌── "}</text>
-                  {isSel && (
-                    <text bg={theme.selectedBg} fg={theme.selectedFg}>
-                      {" SELECTED "}
-                    </text>
-                  )}
-                  <text fg={theme.muted}>{` ${time} `}</text>
-                  <text fg={theme.secondary}>{`${icons.project} @${entry.projectName}`}</text>
-                  <text> </text>
-                  {entry.tags.map((t) => (
-                    <text key={t} fg={theme.tag}>{`${icons.tag} #${t} `}</text>
-                  ))}
+              <box
+                key={entry.id}
+                flexDirection="column"
+                borderStyle="single"
+                borderColor={borderColor}
+                backgroundColor={isSel ? theme.border : undefined}
+                paddingLeft={1}
+                paddingRight={1}
+                marginBottom={1}
+              >
+                {/* Header row inside clean border box */}
+                <box flexDirection="row" justifyContent="space-between">
+                  <box flexDirection="row">
+                    {isSel && (
+                      <text bg={theme.primary} fg={theme.selectedFg}>
+                        {" SELECTED "}
+                      </text>
+                    )}
+                    <text fg={theme.muted}>{` ${time} `}</text>
+                    <text fg={theme.secondary}>{`${icons.project} @${entry.projectName} `}</text>
+                    {entry.tags.map((t) => (
+                      <text key={t} fg={theme.tag}>{`${icons.tag} #${t} `}</text>
+                    ))}
+                  </box>
                 </box>
 
-                {entry.content.split("\n").map((line, lIdx) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: line-by-line render of entry content
-                  <box key={lIdx} flexDirection="row">
-                    <text fg={isSel ? theme.primary : theme.border}>{"│ "}</text>
-                    <text fg={theme.fg}>{line}</text>
-                  </box>
-                ))}
-
-                <text fg={isSel ? theme.primary : theme.border}>{"└───"}</text>
+                {/* Content lines */}
+                <box flexDirection="column" marginTop={0}>
+                  {entry.content.split("\n").map((line, lIdx) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: line-by-line render of entry content
+                    <text key={lIdx} fg={theme.fg}>
+                      {line}
+                    </text>
+                  ))}
+                </box>
               </box>
             );
           })}

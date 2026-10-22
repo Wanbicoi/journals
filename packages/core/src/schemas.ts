@@ -50,6 +50,10 @@ export const UpdateEntryTagsSchema = z.object({
   tags: z.array(z.string()),
 });
 
+export const UpdateEntryContentSchema = z.object({
+  content: z.string().min(1),
+});
+
 export type Project = z.infer<typeof ProjectSchema>;
 export type Entry = z.infer<typeof EntrySchema>;
 export type QuickCaptureInput = z.infer<typeof QuickCaptureInputSchema>;

@@ -2,13 +2,20 @@ import { zValidator } from "@hono/zod-validator";
 import {
   CreateProjectInputSchema,
   QuickCaptureInputSchema,
+  UpdateEntryContentSchema,
   UpdateEntryProjectSchema,
   UpdateEntryTagsSchema,
   UpdateProjectContentInputSchema,
 } from "@journals/core";
 import { Hono } from "hono";
 import type { DatabaseInstance, SQLiteDatabase } from "./db/client.js";
-import { listEntries, updateEntryProject, updateEntryTags } from "./slices/entries/handler.js";
+import {
+  deleteEntry,
+  listEntries,
+  updateEntryContent,
+  updateEntryProject,
+  updateEntryTags,
+} from "./slices/entries/handler.js";
 import { createProject, listProjects, updateProjectContent } from "./slices/projects/handler.js";
 import { handleQuickCapture } from "./slices/quick-capture/handler.js";
 import { listTags } from "./slices/tags/handler.js";
@@ -45,6 +52,17 @@ export function createApp(db: DatabaseInstance, sqlite: SQLiteDatabase) {
       const id = c.req.param("id");
       const { tags } = c.req.valid("json");
       const res = updateEntryTags(sqlite, id, tags);
+      return c.json(res);
+    })
+    .patch("/entries/:id/content", zValidator("json", UpdateEntryContentSchema), (c) => {
+      const id = c.req.param("id");
+      const { content } = c.req.valid("json");
+      const res = updateEntryContent(db, id, content);
+      return c.json(res);
+    })
+    .delete("/entries/:id", (c) => {
+      const id = c.req.param("id");
+      const res = deleteEntry(db, sqlite, id);
       return c.json(res);
     })
 
