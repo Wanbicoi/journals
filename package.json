@@ -5,6 +5,7 @@
   "scripts": {
     "dev:server": "bun run --cwd packages/server dev",
     "dev:tui": "bun run --cwd packages/client-tui dev",
+    "seed": "bun run --cwd packages/server scripts/seed.ts",
     "build": "bun --filter '*' build",
     "format": "bunx biome format --write .",
     "lint": "bunx biome check .",
