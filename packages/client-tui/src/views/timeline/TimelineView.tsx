@@ -76,9 +76,9 @@ export function TimelineView({
   return (
     <scrollbox ref={scrollBoxRef} flexGrow={1} paddingLeft={1} paddingRight={1}>
       {groups.map((group) => (
-        <box key={group.dateStr} flexDirection="column" marginBottom={1}>
+        <box key={group.dateStr} flexDirection="column">
           {/* Daily Group Date Header */}
-          <box flexDirection="row" marginBottom={1} marginTop={1}>
+          <box flexDirection="row" marginTop={1}>
             <text fg={theme.accent}>{`${icons.calendar || "📅"} ─── ${group.dateStr} ───`}</text>
           </box>
 
@@ -98,7 +98,6 @@ export function TimelineView({
                 backgroundColor={isSel ? theme.border : undefined}
                 paddingLeft={1}
                 paddingRight={1}
-                marginBottom={1}
                 onMouseDown={() => {
                   onSelectEntry?.(globalIdx);
                 }}

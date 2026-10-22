@@ -136,7 +136,7 @@ export function ProjectsView({
           </box>
 
           {/* Associated Notes Section */}
-          <box flexDirection="row" marginTop={1} marginBottom={1}>
+          <box flexDirection="row" marginTop={1}>
             <text fg={theme.accent}>{`${icons.journal || "📝"} Associated Notes`}</text>
           </box>
 
@@ -151,7 +151,6 @@ export function ProjectsView({
                 borderColor={theme.border}
                 paddingLeft={1}
                 paddingRight={1}
-                marginBottom={1}
               >
                 <box flexDirection="row" justifyContent="space-between">
                   <box flexDirection="row">
