@@ -1,5 +1,9 @@
-import type { TextareaRenderable } from "@opentui/core";
-import React, { useEffect, useRef } from "react";
+import {
+  type KeyBinding,
+  type TextareaRenderable,
+  defaultTextareaKeyBindings,
+} from "@opentui/core";
+import React, { useEffect, useMemo, useRef } from "react";
 import { Modal } from "../../components/Modal.js";
 import type { ThemePalette } from "../../theme.js";
 
@@ -28,12 +32,27 @@ export function EditContentModal({
     }
   }, []);
 
+  const keyBindings: KeyBinding[] = useMemo(
+    () => [
+      ...defaultTextareaKeyBindings.filter((b) => b.action !== "newline" && b.action !== "submit"),
+      { name: "return", shift: true, action: "newline" },
+      { name: "return", meta: true, action: "newline" },
+      { name: "return", action: "submit" },
+      { name: "kpenter", shift: true, action: "newline" },
+      { name: "kpenter", meta: true, action: "newline" },
+      { name: "kpenter", action: "submit" },
+    ],
+    [],
+  );
+
   return (
     <Modal width={width} height={height} theme={theme} borderColor={theme.primary}>
       <text bg={theme.primary} fg={theme.selectedFg}>
         {" EDIT NOTE CONTENT "}
       </text>
-      <text fg={theme.muted}>{"Modify note text. Enter to save, Esc to cancel:"}</text>
+      <text fg={theme.muted}>
+        {"Modify note text. Enter to save, Shift+Enter or Alt+Enter for newline:"}
+      </text>
 
       <box
         marginTop={1}
@@ -50,12 +69,14 @@ export function EditContentModal({
           wrapMode="word"
           textColor={theme.fg}
           focusedTextColor={theme.fg}
+          keyBindings={keyBindings}
+          onSubmit={() => {
+            const text = textareaRef.current?.plainText ?? "";
+            onSave(text);
+          }}
           onKeyDown={(key) => {
             if (key.name === "escape") {
               onCancel();
-            } else if (key.name === "return" && !key.shift) {
-              const text = textareaRef.current?.plainText ?? "";
-              onSave(text);
             }
           }}
         />
@@ -63,6 +84,8 @@ export function EditContentModal({
 
       <box marginTop={1} flexDirection="row">
         <text fg={theme.accent}>{"[Enter: Save]"}</text>
+        <text> </text>
+        <text fg={theme.muted}>{"[Shift+Enter / Alt+Enter: Newline]"}</text>
         <text> </text>
         <text fg={theme.muted}>{"[Esc: Cancel]"}</text>
       </box>
