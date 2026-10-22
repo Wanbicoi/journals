@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "ignore": ["node_modules", "dist", ".git"]
+    "ignore": ["node_modules", "dist", ".git", "*.md", "**/*.md", ".agents/**"]
   },
   "formatter": {
     "enabled": true,
