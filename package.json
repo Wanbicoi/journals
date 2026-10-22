@@ -14,7 +14,7 @@
     "prepare": "bunx simple-git-hooks"
   },
   "simple-git-hooks": {
-    "pre-commit": "bunx biome check --write --staged . && bun run typecheck"
+    "pre-commit": "bunx biome check --write --staged --no-errors-on-unmatched && bun run typecheck"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
