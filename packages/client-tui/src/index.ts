@@ -122,7 +122,7 @@ function render() {
   const width = process.stdout.columns || 100;
   const height = process.stdout.rows || 30;
 
-  process.stdout.write(ANSI.clearScreen);
+  const contentLines: string[] = [];
 
   // Top Navigation Tabs
   const brand = `${ANSI.bold}${ANSI.cyan}${icons.journal} JOURNALS${ANSI.reset}`;
@@ -134,46 +134,63 @@ function render() {
       ? `${ANSI.bgCyan} [2] Projects & Preview ${ANSI.reset}`
       : ` ${ANSI.dim}[2] Projects${ANSI.reset} `,
   ].join(" ");
-  console.log(`${brand}   ${tabs}\n${ANSI.gray}${"─".repeat(width)}${ANSI.reset}`);
+  contentLines.push(`${brand}   ${tabs}`);
+  contentLines.push(`${ANSI.gray}${"─".repeat(width)}${ANSI.reset}`);
 
   if (currentTab === "TIMELINE") {
-    renderTimelineView(width);
+    contentLines.push(...renderTimelineViewLines(width));
   } else {
-    renderProjectsView(width, height);
+    contentLines.push(...renderProjectsViewLines(width, height));
   }
 
   // Active Modals & Suggestions
   if (inputMode === "CAPTURE") {
-    renderCaptureModal(width, height);
+    contentLines.push(...renderCaptureModalLines(width));
   } else if (inputMode === "NEW_PROJECT") {
-    renderNewProjectModal(width);
+    contentLines.push(...renderNewProjectModalLines(width));
   } else if (inputMode === "EDIT_PROJECT") {
-    renderEditProjectPrompt(width);
+    contentLines.push(...renderEditProjectPromptLines(width));
   } else if (inputMode === "EDIT_TAGS") {
-    renderEditTagsPrompt(width);
+    contentLines.push(...renderEditTagsPromptLines(width));
   } else if (inputMode === "FILTER") {
-    renderFilterModal(width);
+    contentLines.push(...renderFilterModalLines(width));
   } else if (inputMode === "HELP") {
-    renderHelpModal(width);
+    contentLines.push(...renderHelpModalLines(width));
   }
 
-  // Footer / Status line
-  console.log(`${ANSI.gray}${"─".repeat(width)}${ANSI.reset}`);
+  // Calculate padding so footer anchors to the very bottom row of the terminal
+  const reservedBottomRows = 2; // separator + keymap status line
+  const maxContentRows = Math.max(0, height - reservedBottomRows);
+  const truncatedContent = contentLines.slice(0, maxContentRows);
+  const fillerCount = Math.max(0, maxContentRows - truncatedContent.length);
+
+  process.stdout.write(ANSI.clearScreen);
+  for (const line of truncatedContent) {
+    console.log(line);
+  }
+  for (let i = 0; i < fillerCount; i++) {
+    console.log("");
+  }
+
+  // Footer / Status line anchored at the very bottom
   const filterIndicator = filterQuery
     ? `${ANSI.yellow}[Filter: "${filterQuery}"]${ANSI.reset} `
     : "";
   const keyHints = `${ANSI.cyan}[1]${ANSI.reset}Stream ${ANSI.cyan}[2]${ANSI.reset}Projects ${ANSI.cyan}[n]${ANSI.reset}Note ${ANSI.cyan}[N]${ANSI.reset}Project ${ANSI.cyan}[/]${ANSI.reset}Filter ${ANSI.cyan}[?]${ANSI.reset}Help ${ANSI.cyan}[q]${ANSI.reset}Quit`;
-  console.log(`${filterIndicator}${keyHints}  ${ANSI.dim}${statusMessage}${ANSI.reset}`);
+  process.stdout.write(
+    `${ANSI.gray}${"─".repeat(width)}${ANSI.reset}\n${filterIndicator}${keyHints}  ${ANSI.dim}${statusMessage}${ANSI.reset}`,
+  );
 }
 
-function renderTimelineView(width: number) {
+function renderTimelineViewLines(width: number): string[] {
+  const lines: string[] = [];
   const filtered = getFilteredEntries();
   if (filtered.length === 0) {
     const msg = filterQuery
       ? `No notes matching filter "${filterQuery}". Press '/' or Esc to clear.`
       : `No journal notes yet. Press '${config.keymaps.quick_capture}' to create one!`;
-    console.log(`\n  ${ANSI.dim}${msg}${ANSI.reset}\n`);
-    return;
+    lines.push("", `  ${ANSI.dim}${msg}${ANSI.reset}`, "");
+    return lines;
   }
 
   // Group by day
@@ -186,7 +203,7 @@ function renderTimelineView(width: number) {
 
   let globalIdx = 0;
   for (const [day, dayEntries] of grouped.entries()) {
-    console.log(`${ANSI.bold}${ANSI.yellow}${icons.calendar} ${day}${ANSI.reset}`);
+    lines.push(`${ANSI.bold}${ANSI.yellow}${icons.calendar} ${day}${ANSI.reset}`);
 
     for (const item of dayEntries) {
       const isSel = globalIdx === selectedEntryIdx;
@@ -194,14 +211,14 @@ function renderTimelineView(width: number) {
       const badge = isSel ? `${ANSI.bgCyan} SELECTED ${ANSI.reset}` : "";
       const time = new Date(item.createdAt).toTimeString().slice(0, 5);
 
-      console.log(
+      lines.push(
         `${border}┌──${ANSI.reset} ${badge} ${ANSI.dim}${time}${ANSI.reset} ` +
           `${ANSI.blue}${icons.project} @${item.projectName}${ANSI.reset} ` +
           item.tags.map((t) => `${ANSI.magenta}${icons.tag} #${t}${ANSI.reset}`).join(" "),
       );
 
-      const lines = item.content.split("\n");
-      for (const line of lines) {
+      const contentLines = item.content.split("\n");
+      for (const line of contentLines) {
         let formatted = line;
         if (line.startsWith("- [x]"))
           formatted = `${ANSI.green}${icons.checked}${ANSI.reset} ${line.slice(5)}`;
@@ -209,17 +226,19 @@ function renderTimelineView(width: number) {
           formatted = `${ANSI.gray}${icons.unchecked}${ANSI.reset} ${line.slice(5)}`;
         else if (line.startsWith("-"))
           formatted = `${ANSI.cyan}${icons.bullet}${ANSI.reset} ${line.slice(1)}`;
-        console.log(`${border}│${ANSI.reset}  ${formatted}`);
+        lines.push(`${border}│${ANSI.reset}  ${formatted}`);
       }
 
-      console.log(`${border}└───${ANSI.reset}`);
+      lines.push(`${border}└───${ANSI.reset}`);
       globalIdx++;
     }
-    console.log("");
+    lines.push("");
   }
+  return lines;
 }
 
-function renderProjectsView(width: number, height: number) {
+function renderProjectsViewLines(width: number, height: number): string[] {
+  const lines: string[] = [];
   const leftW = 28;
   const rightW = width - leftW - 3;
   const filtered = getFilteredProjects();
@@ -265,8 +284,9 @@ function renderProjectsView(width: number, height: number) {
   for (let i = 0; i < maxRows; i++) {
     const left = (leftLines[i] || "").padEnd(leftW);
     const right = rightLines[i] || "";
-    console.log(`${left} ${ANSI.gray}│${ANSI.reset} ${right}`);
+    lines.push(`${left} ${ANSI.gray}│${ANSI.reset} ${right}`);
   }
+  return lines;
 }
 
 function getSuggestions() {
@@ -286,85 +306,47 @@ function getSuggestions() {
   }
 }
 
-function renderNewProjectModal(width: number) {
-  console.log(
+function renderNewProjectModalLines(width: number): string[] {
+  return [
     `${ANSI.cyan}┌─ ${icons.project} CREATE NEW PROJECT ──────────────────────────────────────────┐${ANSI.reset}`,
-  );
-  console.log(`${ANSI.cyan}│${ANSI.reset} Project Name: ${ANSI.bold}${inputBuffer}█${ANSI.reset}`);
-  console.log(
+    `${ANSI.cyan}│${ANSI.reset} Project Name: ${ANSI.bold}${inputBuffer}█${ANSI.reset}`,
     `${ANSI.cyan}│${ANSI.reset} ${ANSI.dim}Press Enter to create, Esc to cancel${ANSI.reset}`,
-  );
-  console.log(
     `${ANSI.cyan}└──────────────────────────────────────────────────────────────┘${ANSI.reset}`,
-  );
+  ];
 }
 
-function renderFilterModal(width: number) {
-  console.log(
+function renderFilterModalLines(width: number): string[] {
+  return [
     `${ANSI.yellow}┌─ / FILTER & SEARCH ──────────────────────────────────────────┐${ANSI.reset}`,
-  );
-  console.log(`${ANSI.yellow}│${ANSI.reset} Query: ${ANSI.bold}${inputBuffer}█${ANSI.reset}`);
-  console.log(
+    `${ANSI.yellow}│${ANSI.reset} Query: ${ANSI.bold}${inputBuffer}█${ANSI.reset}`,
     `${ANSI.yellow}│${ANSI.reset} ${ANSI.dim}Matches notes, project names, or tags. Enter to apply, Esc to clear${ANSI.reset}`,
-  );
-  console.log(
     `${ANSI.yellow}└──────────────────────────────────────────────────────────────┘${ANSI.reset}`,
-  );
+  ];
 }
 
-function renderHelpModal(width: number) {
-  console.log(
+function renderHelpModalLines(width: number): string[] {
+  return [
     `${ANSI.cyan}┌─ ? KEYBOARD SHORTCUTS & HELP ─────────────────────────────────┐${ANSI.reset}`,
-  );
-  console.log(
     `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[1]${ANSI.reset}           Switch to Daily Timeline Stream View         ${ANSI.cyan}│${ANSI.reset}`,
-  );
-  console.log(
     `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[2]${ANSI.reset}           Switch to Projects & Markdown Preview View   ${ANSI.cyan}│${ANSI.reset}`,
-  );
-  console.log(
     `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[j / k]${ANSI.reset}       Navigate entries / projects up and down      ${ANSI.cyan}│${ANSI.reset}`,
-  );
-  console.log(
     `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[n]${ANSI.reset}           1-Line Quick Capture (Syntax: @proj #tag)    ${ANSI.cyan}│${ANSI.reset}`,
-  );
-  console.log(
     `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[N]${ANSI.reset}           Create new project                           ${ANSI.cyan}│${ANSI.reset}`,
-  );
-  console.log(
     `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[p]${ANSI.reset}           Reassign project for selected note           ${ANSI.cyan}│${ANSI.reset}`,
-  );
-  console.log(
     `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[t]${ANSI.reset}           Edit tags for selected note                  ${ANSI.cyan}│${ANSI.reset}`,
-  );
-  console.log(
     `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[e]${ANSI.reset}           Edit project markdown content in $EDITOR     ${ANSI.cyan}│${ANSI.reset}`,
-  );
-  console.log(
     `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[/]${ANSI.reset}           Search / filter stream or projects           ${ANSI.cyan}│${ANSI.reset}`,
-  );
-  console.log(
     `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[Tab]${ANSI.reset}         Accept auto-suggestions when typing          ${ANSI.cyan}│${ANSI.reset}`,
-  );
-  console.log(
     `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[Ctrl+W]${ANSI.reset}      Delete previous word in input fields         ${ANSI.cyan}│${ANSI.reset}`,
-  );
-  console.log(
     `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[Ctrl+U]${ANSI.reset}      Clear entire input line                      ${ANSI.cyan}│${ANSI.reset}`,
-  );
-  console.log(
     `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[Esc]${ANSI.reset}         Cancel prompt / Clear active filter          ${ANSI.cyan}│${ANSI.reset}`,
-  );
-  console.log(
     `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[q]${ANSI.reset}           Quit application                             ${ANSI.cyan}│${ANSI.reset}`,
-  );
-  console.log(`${ANSI.cyan}│${ANSI.reset} ${ANSI.dim}Press any key or Esc to dismiss${ANSI.reset}`);
-  console.log(
+    `${ANSI.cyan}│${ANSI.reset} ${ANSI.dim}Press any key or Esc to dismiss${ANSI.reset}`,
     `${ANSI.cyan}└──────────────────────────────────────────────────────────────┘${ANSI.reset}`,
-  );
+  ];
 }
 
-function renderCaptureModal(width: number, height: number) {
+function renderCaptureModalLines(width: number): string[] {
   const modalW = Math.min(Math.max(68, Math.floor(width * 0.7)), width - 4);
   const leftPad = " ".repeat(Math.max(2, Math.floor((width - modalW) / 2)));
   const innerW = modalW - 4;
@@ -375,15 +357,16 @@ function renderCaptureModal(width: number, height: number) {
       modalW + 15,
     );
 
-  // Format input line inside box
   const inputDisplay = `> ${inputBuffer}█`;
   const inputPad = Math.max(0, innerW - inputBuffer.length - 2);
   const inputLine = `${leftPad}${ANSI.cyan}│${ANSI.reset} ${ANSI.bold}${inputDisplay}${ANSI.reset}${" ".repeat(inputPad)} ${ANSI.cyan}│${ANSI.reset}`;
 
-  console.log(`${leftPad}${ANSI.cyan}┌${"─".repeat(modalW - 2)}┐${ANSI.reset}`);
-  console.log(topBorder);
-  console.log(syntaxLine);
-  console.log(inputLine);
+  const res = [
+    `${leftPad}${ANSI.cyan}┌${"─".repeat(modalW - 2)}┐${ANSI.reset}`,
+    topBorder,
+    syntaxLine,
+    inputLine,
+  ];
 
   const suggestions = getSuggestions();
   if (suggestions && suggestions.matches.length > 0) {
@@ -397,47 +380,39 @@ function renderCaptureModal(width: number, height: number) {
           : `${ANSI.dim}${prefix}${m}${ANSI.reset}`;
       })
       .join(" ");
-    console.log(
-      `${leftPad}${ANSI.cyan}│${ANSI.reset} ${ANSI.yellow}Suggestions:${ANSI.reset} ${pills}`,
-    );
+    res.push(`${leftPad}${ANSI.cyan}│${ANSI.reset} ${ANSI.yellow}Suggestions:${ANSI.reset} ${pills}`);
   }
 
-  console.log(
+  res.push(
     `${leftPad}${ANSI.cyan}│${ANSI.reset} ${ANSI.dim}[Enter: Save note]  [Esc: Cancel]${ANSI.reset}`,
+    `${leftPad}${ANSI.cyan}└${"─".repeat(modalW - 2)}┘${ANSI.reset}`,
   );
-  console.log(`${leftPad}${ANSI.cyan}└${"─".repeat(modalW - 2)}┘${ANSI.reset}`);
+  return res;
 }
 
-function renderEditProjectPrompt(width: number) {
+function renderEditProjectPromptLines(width: number): string[] {
   const current = entries[selectedEntryIdx]?.projectName || "";
-  console.log(
+  const res = [
     `${ANSI.blue}┌─ Reassign Project [Current: @${current}] ────────────────────────┐${ANSI.reset}`,
-  );
-  console.log(
     `${ANSI.blue}│${ANSI.reset} Project: @${ANSI.bold}${inputBuffer}█${ANSI.reset}   [Tab for suggestion]`,
-  );
+  ];
   const suggestions = projects
     .filter((p) => p.name.toLowerCase().startsWith(inputBuffer.toLowerCase()))
     .map((p) => p.name);
   if (suggestions.length > 0) {
-    console.log(`${ANSI.blue}│${ANSI.reset} Suggestions: ${suggestions.slice(0, 5).join(", ")}`);
+    res.push(`${ANSI.blue}│${ANSI.reset} Suggestions: ${suggestions.slice(0, 5).join(", ")}`);
   }
-  console.log(
-    `${ANSI.blue}└──────────────────────────────────────────────────────────────┘${ANSI.reset}`,
-  );
+  res.push(`${ANSI.blue}└──────────────────────────────────────────────────────────────┘${ANSI.reset}`);
+  return res;
 }
 
-function renderEditTagsPrompt(width: number) {
+function renderEditTagsPromptLines(width: number): string[] {
   const current = entries[selectedEntryIdx]?.tags.join(", ") || "";
-  console.log(
+  return [
     `${ANSI.magenta}┌─ Edit Tags [Current: ${current}] ───────────────────────────────┐${ANSI.reset}`,
-  );
-  console.log(
     `${ANSI.magenta}│${ANSI.reset} Tags: ${ANSI.bold}${inputBuffer}█${ANSI.reset}   [Comma-separated, Tab for suggestion]`,
-  );
-  console.log(
     `${ANSI.magenta}└──────────────────────────────────────────────────────────────┘${ANSI.reset}`,
-  );
+  ];
 }
 
 // Keyboard input

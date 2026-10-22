@@ -50,21 +50,16 @@ export function updateEntryProject(
   })();
 }
 
-export function updateEntryTags(
-  sqlite: BetterSqliteDatabase,
-  entryId: string,
-  newTags: string[],
-) {
+export function updateEntryTags(sqlite: BetterSqliteDatabase, entryId: string, newTags: string[]) {
   return sqlite.transaction(() => {
     sqlite.prepare("DELETE FROM entry_tags WHERE entry_id = ?").run(entryId);
     for (const tag of newTags) {
       const cleanTag = tag.trim().toLowerCase();
       if (!cleanTag) continue;
       sqlite.prepare("INSERT OR IGNORE INTO tags (name) VALUES (?)").run(cleanTag);
-      sqlite.prepare("INSERT INTO entry_tags (entry_id, tag_name) VALUES (?, ?)").run(
-        entryId,
-        cleanTag,
-      );
+      sqlite
+        .prepare("INSERT INTO entry_tags (entry_id, tag_name) VALUES (?, ?)")
+        .run(entryId, cleanTag);
     }
     return { success: true, tags: newTags };
   })();
