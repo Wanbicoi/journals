@@ -7,14 +7,14 @@ import {
   UpdateProjectContentInputSchema,
 } from "@journals/core";
 import { Hono } from "hono";
-import { z } from "zod";
+import type { Database as BetterSqliteDatabase } from "better-sqlite3";
 import type { DatabaseInstance } from "./db/client.js";
 import { listEntries, updateEntryProject, updateEntryTags } from "./slices/entries/handler.js";
 import { createProject, listProjects, updateProjectContent } from "./slices/projects/handler.js";
 import { handleQuickCapture } from "./slices/quick-capture/handler.js";
 import { listTags } from "./slices/tags/handler.js";
 
-export function createApp(db: DatabaseInstance, sqlite: any) {
+export function createApp(db: DatabaseInstance, sqlite: BetterSqliteDatabase) {
   const app = new Hono()
     .get("/health", (c) => c.json({ status: "ok" }))
 
@@ -36,18 +36,26 @@ export function createApp(db: DatabaseInstance, sqlite: any) {
       const entries = listEntries(db, sqlite);
       return c.json({ entries });
     })
-    .patch("/entries/:id/project", zValidator("json", UpdateEntryProjectSchema), (c) => {
-      const id = c.req.param("id");
-      const { projectName } = c.req.valid("json");
-      const res = updateEntryProject(db, sqlite, id, projectName);
-      return c.json(res);
-    })
-    .patch("/entries/:id/tags", zValidator("json", UpdateEntryTagsSchema), (c) => {
-      const id = c.req.param("id");
-      const { tags } = c.req.valid("json");
-      const res = updateEntryTags(sqlite, id, tags);
-      return c.json(res);
-    })
+    .patch(
+      "/entries/:id/project",
+      zValidator("json", UpdateEntryProjectSchema),
+      (c) => {
+        const id = c.req.param("id");
+        const { projectName } = c.req.valid("json");
+        const res = updateEntryProject(db, sqlite, id, projectName);
+        return c.json(res);
+      },
+    )
+    .patch(
+      "/entries/:id/tags",
+      zValidator("json", UpdateEntryTagsSchema),
+      (c) => {
+        const id = c.req.param("id");
+        const { tags } = c.req.valid("json");
+        const res = updateEntryTags(sqlite, id, tags);
+        return c.json(res);
+      },
+    )
 
     // Projects
     .get("/projects", (c) => {
@@ -59,12 +67,16 @@ export function createApp(db: DatabaseInstance, sqlite: any) {
       const res = createProject(db, name, content);
       return c.json(res);
     })
-    .put("/projects/:id/content", zValidator("json", UpdateProjectContentInputSchema), (c) => {
-      const id = c.req.param("id");
-      const { content } = c.req.valid("json");
-      const res = updateProjectContent(db, id, content);
-      return c.json(res);
-    })
+    .put(
+      "/projects/:id/content",
+      zValidator("json", UpdateProjectContentInputSchema),
+      (c) => {
+        const id = c.req.param("id");
+        const { content } = c.req.valid("json");
+        const res = updateProjectContent(db, id, content);
+        return c.json(res);
+      },
+    )
 
     // Tags & Suggestions
     .get("/tags", (c) => {

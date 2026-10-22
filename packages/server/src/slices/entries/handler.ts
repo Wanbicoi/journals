@@ -1,9 +1,10 @@
-import crypto from "node:crypto";
 import { desc, eq } from "drizzle-orm";
+import type { Database as BetterSqliteDatabase } from "better-sqlite3";
 import type { DatabaseInstance } from "../../db/client.js";
-import { entries, entryTags, projects, tags } from "../../db/schema.js";
+import { entries, projects } from "../../db/schema.js";
+import { findOrCreateProject } from "../projects/handler.js";
 
-export function listEntries(db: DatabaseInstance, sqlite: any) {
+export function listEntries(db: DatabaseInstance, sqlite: BetterSqliteDatabase) {
   const allEntries = db
     .select({
       id: entries.id,
@@ -33,32 +34,12 @@ export function listEntries(db: DatabaseInstance, sqlite: any) {
 
 export function updateEntryProject(
   db: DatabaseInstance,
-  sqlite: any,
+  sqlite: BetterSqliteDatabase,
   entryId: string,
   projectName: string,
 ) {
   return sqlite.transaction(() => {
-    let [project] = db.select().from(projects).where(eq(projects.name, projectName)).all();
-    if (!project) {
-      const newProjectId = crypto.randomUUID();
-      const now = Date.now();
-      db.insert(projects)
-        .values({
-          id: newProjectId,
-          name: projectName,
-          content: `# ${projectName}\n`,
-          createdAt: now,
-          updatedAt: now,
-        })
-        .run();
-      project = {
-        id: newProjectId,
-        name: projectName,
-        content: "",
-        createdAt: now,
-        updatedAt: now,
-      };
-    }
+    const project = findOrCreateProject(db, projectName);
 
     db.update(entries)
       .set({ projectId: project.id, updatedAt: Date.now() })
@@ -69,16 +50,21 @@ export function updateEntryProject(
   })();
 }
 
-export function updateEntryTags(sqlite: any, entryId: string, newTags: string[]) {
+export function updateEntryTags(
+  sqlite: BetterSqliteDatabase,
+  entryId: string,
+  newTags: string[],
+) {
   return sqlite.transaction(() => {
     sqlite.prepare("DELETE FROM entry_tags WHERE entry_id = ?").run(entryId);
     for (const tag of newTags) {
       const cleanTag = tag.trim().toLowerCase();
       if (!cleanTag) continue;
       sqlite.prepare("INSERT OR IGNORE INTO tags (name) VALUES (?)").run(cleanTag);
-      sqlite
-        .prepare("INSERT INTO entry_tags (entry_id, tag_name) VALUES (?, ?)")
-        .run(entryId, cleanTag);
+      sqlite.prepare("INSERT INTO entry_tags (entry_id, tag_name) VALUES (?, ?)").run(
+        entryId,
+        cleanTag,
+      );
     }
     return { success: true, tags: newTags };
   })();

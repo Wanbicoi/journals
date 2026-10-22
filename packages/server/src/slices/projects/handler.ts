@@ -22,6 +22,26 @@ export function listProjects(db: DatabaseInstance) {
   return projs;
 }
 
+export function findOrCreateProject(db: DatabaseInstance, name: string) {
+  const cleanName = name.trim();
+  let [project] = db.select().from(projects).where(eq(projects.name, cleanName)).all();
+  if (!project) {
+    const id = crypto.randomUUID();
+    const now = Date.now();
+    db.insert(projects)
+      .values({
+        id,
+        name: cleanName,
+        content: `# ${cleanName}\n`,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .run();
+    project = { id, name: cleanName, content: `# ${cleanName}\n`, createdAt: now, updatedAt: now };
+  }
+  return project;
+}
+
 export function createProject(db: DatabaseInstance, name: string, content = "") {
   const id = crypto.randomUUID();
   const now = Date.now();

@@ -4,7 +4,8 @@ import os from "node:os";
 import path from "node:path";
 
 export function openExternalEditor(initialContent: string): string {
-  const editor = process.env.EDITOR || process.env.VISUAL || "nano";
+  // Respect user preference: $EDITOR -> $VISUAL -> nvim -> nano
+  const editor = process.env.EDITOR || process.env.VISUAL || "nvim" || "nano";
   const tmpFile = path.join(os.tmpdir(), `journal-project-${Date.now()}.md`);
 
   try {

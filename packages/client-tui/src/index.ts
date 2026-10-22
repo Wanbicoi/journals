@@ -529,10 +529,12 @@ process.stdin.on("keypress", async (str, key) => {
     statusMessage = `Projects View: j/k select, '${config.keymaps.edit_project_content}' edit in $EDITOR`;
     render();
   } else if (key.name === config.keymaps.down) {
-    if (currentTab === "TIMELINE" && selectedEntryIdx < entries.length - 1) {
+    const filteredEntries = getFilteredEntries();
+    const filteredProjects = getFilteredProjects();
+    if (currentTab === "TIMELINE" && selectedEntryIdx < filteredEntries.length - 1) {
       selectedEntryIdx++;
       render();
-    } else if (currentTab === "PROJECTS" && selectedProjectIdx < projects.length - 1) {
+    } else if (currentTab === "PROJECTS" && selectedProjectIdx < filteredProjects.length - 1) {
       selectedProjectIdx++;
       render();
     }
@@ -555,16 +557,18 @@ process.stdin.on("keypress", async (str, key) => {
     statusMessage = "Type project name and press Enter";
     render();
   } else if (key.name === config.keymaps.edit_project || str === config.keymaps.edit_project) {
-    if (currentTab === "TIMELINE" && entries[selectedEntryIdx]) {
+    const filteredEntries = getFilteredEntries();
+    if (currentTab === "TIMELINE" && filteredEntries[selectedEntryIdx]) {
       inputMode = "EDIT_PROJECT";
-      inputBuffer = entries[selectedEntryIdx].projectName;
+      inputBuffer = filteredEntries[selectedEntryIdx].projectName;
       statusMessage = "Edit project and hit Enter";
       render();
     }
   } else if (key.name === config.keymaps.edit_tags || str === config.keymaps.edit_tags) {
-    if (currentTab === "TIMELINE" && entries[selectedEntryIdx]) {
+    const filteredEntries = getFilteredEntries();
+    if (currentTab === "TIMELINE" && filteredEntries[selectedEntryIdx]) {
       inputMode = "EDIT_TAGS";
-      inputBuffer = entries[selectedEntryIdx].tags.join(", ");
+      inputBuffer = filteredEntries[selectedEntryIdx].tags.join(", ");
       statusMessage = "Edit tags and hit Enter";
       render();
     }
@@ -572,8 +576,9 @@ process.stdin.on("keypress", async (str, key) => {
     key.name === config.keymaps.edit_project_content ||
     str === config.keymaps.edit_project_content
   ) {
-    if (currentTab === "PROJECTS" && projects[selectedProjectIdx]) {
-      const targetProj = projects[selectedProjectIdx];
+    const filteredProjects = getFilteredProjects();
+    if (currentTab === "PROJECTS" && filteredProjects[selectedProjectIdx]) {
+      const targetProj = filteredProjects[selectedProjectIdx];
       const updated = openExternalEditor(targetProj.content);
       if (updated !== targetProj.content) {
         await client.projects[":id"].content.$put({
@@ -604,6 +609,16 @@ function applySuggestion() {
     const match = projects.find((p) => p.name.toLowerCase().startsWith(inputBuffer.toLowerCase()));
     if (match) {
       inputBuffer = match.name;
+      render();
+    }
+  } else if (inputMode === "EDIT_TAGS") {
+    // Complete current tag after comma
+    const parts = inputBuffer.split(",");
+    const currentTag = parts[parts.length - 1].trim().toLowerCase();
+    const match = availableTags.find((t) => t.name.toLowerCase().startsWith(currentTag));
+    if (match) {
+      parts[parts.length - 1] = ` ${match.name}`;
+      inputBuffer = parts.join(",");
       render();
     }
   }
@@ -658,8 +673,8 @@ async function commitModalInput() {
     if (entry) {
       const newTags = inputBuffer
         .split(",")
-        .map((t) => t.trim().replace(/^#/, ""))
-        .filter(Boolean);
+        .map((t) => t.trim().toLowerCase().replace(/^#/, ""))
+        .filter((t) => /^[a-z0-9-_]+$/.test(t));
       await client.entries[":id"].tags.$patch({
         param: { id: entry.id },
         json: { tags: newTags },

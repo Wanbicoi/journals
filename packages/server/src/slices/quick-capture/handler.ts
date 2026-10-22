@@ -1,12 +1,13 @@
 import crypto from "node:crypto";
 import { parseCaptureLine } from "@journals/core";
-import { eq } from "drizzle-orm";
+import type { Database as BetterSqliteDatabase } from "better-sqlite3";
 import type { DatabaseInstance } from "../../db/client.js";
-import { entries, entryTags, projects, tags } from "../../db/schema.js";
+import { entries } from "../../db/schema.js";
+import { findOrCreateProject } from "../projects/handler.js";
 
 export function handleQuickCapture(
   db: DatabaseInstance,
-  sqlite: any,
+  sqlite: BetterSqliteDatabase,
   raw: string,
   defaultProject = "Inbox",
   defaultTags: string[] = ["quick"],
@@ -15,27 +16,8 @@ export function handleQuickCapture(
   const now = Date.now();
 
   const runTx = sqlite.transaction(() => {
-    // 1. Get or create project
-    let [project] = db.select().from(projects).where(eq(projects.name, parsed.projectName)).all();
-    if (!project) {
-      const newProjectId = crypto.randomUUID();
-      db.insert(projects)
-        .values({
-          id: newProjectId,
-          name: parsed.projectName,
-          content: `# ${parsed.projectName}\n`,
-          createdAt: now,
-          updatedAt: now,
-        })
-        .run();
-      project = {
-        id: newProjectId,
-        name: parsed.projectName,
-        content: `# ${parsed.projectName}\n`,
-        createdAt: now,
-        updatedAt: now,
-      };
-    }
+    // 1. Get or create project via shared slice helper
+    const project = findOrCreateProject(db, parsed.projectName);
 
     // 2. Insert Entry
     const entryId = crypto.randomUUID();
