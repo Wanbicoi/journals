@@ -335,6 +335,9 @@ export function App() {
           <TimelineView
             entries={filteredEntries}
             selectedEntryIdx={selectedEntryIdx}
+            onSelectEntry={(idx) => {
+              setSelectedEntryIdx(idx);
+            }}
             filterQuery={filterQuery}
             quickCaptureKey={config.keymaps.quick_capture}
             loading={loading}
@@ -345,6 +348,9 @@ export function App() {
           <ProjectsView
             projects={filteredProjects}
             selectedProjectIdx={selectedProjectIdx}
+            onSelectProject={(idx) => {
+              setSelectedProjectIdx(idx);
+            }}
             entries={entries}
             width={width}
             icons={icons}

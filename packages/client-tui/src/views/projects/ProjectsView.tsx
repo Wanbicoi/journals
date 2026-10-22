@@ -1,10 +1,12 @@
-import React from "react";
+import type { ScrollBoxRenderable } from "@opentui/core";
+import React, { useEffect, useRef } from "react";
 import type { Entry, Project } from "../../hooks/useJournalData.js";
 import type { ThemePalette } from "../../theme.js";
 
 interface ProjectsViewProps {
   projects: Project[];
   selectedProjectIdx: number;
+  onSelectProject?: (idx: number) => void;
   entries: Entry[];
   width: number;
   icons: Record<string, string>;
@@ -14,11 +16,21 @@ interface ProjectsViewProps {
 export function ProjectsView({
   projects,
   selectedProjectIdx,
+  onSelectProject,
   entries,
   width,
   icons,
   theme,
 }: ProjectsViewProps) {
+  const scrollBoxRef = useRef<ScrollBoxRenderable | null>(null);
+
+  useEffect(() => {
+    if (scrollBoxRef.current && projects[selectedProjectIdx]) {
+      const selectedId = `project-${projects[selectedProjectIdx].id}`;
+      scrollBoxRef.current.scrollChildIntoView(selectedId);
+    }
+  }, [selectedProjectIdx, projects]);
+
   const selProj = projects[selectedProjectIdx] || {
     name: "None",
     content: "",
@@ -44,17 +56,21 @@ export function ProjectsView({
         <box flexDirection="row" marginBottom={1}>
           <text fg={theme.primary}>{`${icons.project} PROJECTS (${projects.length})`}</text>
         </box>
-        <scrollbox flexGrow={1}>
+        <scrollbox ref={scrollBoxRef} flexGrow={1}>
           {projects.map((p, idx) => {
             const isSel = idx === selectedProjectIdx;
             return (
               <box
                 key={p.id}
+                id={`project-${p.id}`}
                 flexDirection="row"
                 justifyContent="space-between"
                 backgroundColor={isSel ? theme.border : undefined}
                 paddingLeft={1}
                 paddingRight={1}
+                onMouseDown={() => {
+                  onSelectProject?.(idx);
+                }}
               >
                 <text fg={isSel ? theme.primary : theme.fg}>
                   {`${isSel ? "❯ " : "  "}${p.name}`}

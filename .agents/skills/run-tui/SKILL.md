@@ -39,7 +39,7 @@ bun run dev:tui
 
 | Input | Action |
 | :--- | :--- |
-| **Mouse Click** | Click on top tabs (`[1] Timeline Stream`, `[2] Projects`) to switch tabs directly |
+| **Mouse Click** | • Click top tabs (`[1] Timeline Stream`, `[2] Projects`) to switch tabs<br/>• Click any journal entry card in Timeline view to select/focus it<br/>• Click any project item in Projects view to select/focus it |
 | `1` | Switch to **Timeline Stream** view (grouped chronologically) |
 | `2` | Switch to **Projects & Preview** view |
 | `j` / `k` or `Down` / `Up` | Navigate entries / project list |

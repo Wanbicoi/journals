@@ -1,10 +1,12 @@
-import React from "react";
+import type { ScrollBoxRenderable } from "@opentui/core";
+import React, { useEffect, useRef } from "react";
 import type { Entry } from "../../hooks/useJournalData.js";
 import type { ThemePalette } from "../../theme.js";
 
 interface TimelineViewProps {
   entries: Entry[];
   selectedEntryIdx: number;
+  onSelectEntry?: (idx: number) => void;
   filterQuery: string;
   quickCaptureKey: string;
   loading?: boolean;
@@ -20,12 +22,22 @@ interface DateGroup {
 export function TimelineView({
   entries,
   selectedEntryIdx,
+  onSelectEntry,
   filterQuery,
   quickCaptureKey,
   loading = false,
   icons,
   theme,
 }: TimelineViewProps) {
+  const scrollBoxRef = useRef<ScrollBoxRenderable | null>(null);
+
+  useEffect(() => {
+    if (scrollBoxRef.current && entries[selectedEntryIdx]) {
+      const selectedId = `entry-${entries[selectedEntryIdx].id}`;
+      scrollBoxRef.current.scrollChildIntoView(selectedId);
+    }
+  }, [selectedEntryIdx, entries]);
+
   if (loading) {
     return (
       <box padding={1}>
@@ -62,7 +74,7 @@ export function TimelineView({
   });
 
   return (
-    <scrollbox flexGrow={1} paddingLeft={1} paddingRight={1}>
+    <scrollbox ref={scrollBoxRef} flexGrow={1} paddingLeft={1} paddingRight={1}>
       {groups.map((group) => (
         <box key={group.dateStr} flexDirection="column" marginBottom={1}>
           {/* Daily Group Date Header */}
@@ -79,6 +91,7 @@ export function TimelineView({
             return (
               <box
                 key={entry.id}
+                id={`entry-${entry.id}`}
                 flexDirection="column"
                 borderStyle="single"
                 borderColor={borderColor}
@@ -86,6 +99,9 @@ export function TimelineView({
                 paddingLeft={1}
                 paddingRight={1}
                 marginBottom={1}
+                onMouseDown={() => {
+                  onSelectEntry?.(globalIdx);
+                }}
               >
                 {/* Header row inside clean border box */}
                 <box flexDirection="row" justifyContent="space-between">
