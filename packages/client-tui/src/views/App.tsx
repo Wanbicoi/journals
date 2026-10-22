@@ -160,8 +160,11 @@ export function App() {
       return;
     }
 
-    // Modal Input Handling
+    // Modal Input Handling (Note: EDIT_CONTENT uses native <textarea> handlers)
     if (inputMode !== "NONE") {
+      if (inputMode === "EDIT_CONTENT") {
+        return;
+      }
       if (key.ctrl && keyName === "w") {
         setInputBuffer((prev) => prev.replace(/(?:[^\s]+|\s+)\s*$/, ""));
         return;
@@ -372,8 +375,25 @@ export function App() {
         />
       )}
 
-      {inputMode === "EDIT_CONTENT" && (
-        <EditContentModal width={width} height={height} inputBuffer={inputBuffer} theme={theme} />
+      {inputMode === "EDIT_CONTENT" && selectedEntry && (
+        <EditContentModal
+          width={width}
+          height={height}
+          initialValue={selectedEntry.content}
+          theme={theme}
+          onSave={async (newContent) => {
+            const trimmed = newContent.trim();
+            if (trimmed && selectedEntry) {
+              await updateEntryContent(selectedEntry.id, trimmed);
+              setStatusMessage("Updated note content!");
+            }
+            setInputMode("NONE");
+          }}
+          onCancel={() => {
+            setInputMode("NONE");
+            setStatusMessage("Edit cancelled");
+          }}
+        />
       )}
 
       {inputMode === "DELETE_CONFIRM" && selectedEntry && (
