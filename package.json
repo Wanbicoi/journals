@@ -9,10 +9,12 @@
     "format": "bunx biome format --write .",
     "lint": "bunx biome check .",
     "lint:fix": "bunx biome check --write .",
+    "typecheck": "bunx tsc -b --noEmit",
+    "check": "bun run format && bun run lint && bun run typecheck",
     "prepare": "bunx simple-git-hooks"
   },
   "simple-git-hooks": {
-    "pre-commit": "bunx biome format --write --staged ."
+    "pre-commit": "bunx biome check --write --staged . && bun run typecheck"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
