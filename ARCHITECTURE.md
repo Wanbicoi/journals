@@ -3,11 +3,11 @@
 ## 1. Overview & System Design
 
 A monorepo-based Journal system structured around a **Client-Server** architecture:
-- **Server:** Node.js / TypeScript backend using SQLite (`better-sqlite3` + `drizzle-orm`), Hono lightweight HTTP router (`@hono/node-server`), schema validation with `zod` (`z`), and YAML configuration support. Designed following **Vertical Slice Architecture** (feature-oriented slices: `quick-capture`, `entries`, `projects`, `tags`).
-- **Client:** Terminal User Interface (TUI) with a daily grouped continuous stream and project preview pane, communicating with the server over local HTTP using Hono's zero-codegen type-safe RPC client (`hono/client`).
+- **Server:** Bun / TypeScript backend using SQLite (`bun:sqlite` + `drizzle-orm/bun-sqlite`), Hono lightweight HTTP router (`Bun.serve`), schema validation with `zod` (`z`), and YAML configuration support. Designed following **Vertical Slice Architecture** (feature-oriented slices: `quick-capture`, `entries`, `projects`, `tags`).
+- **Client:** Terminal User Interface (TUI) with a daily grouped continuous stream and project preview pane built on **OpenTUI React**, communicating with the server over local HTTP using Hono's zero-codegen type-safe RPC client (`hono/client`).
 - **External Editor:** Editing project markdown content or extensive notes spawns `$EDITOR` (fallback to `$VISUAL` or `nano`/`nvim`) using temporary files, restoring the TUI immediately on save/exit.
 - **Auto-Suggestions:** Real-time inline/dropdown suggestions when typing `@` (projects) and `#` (tags) during quick capture, project editing (`p`), and tag editing (`t`).
-- **Tooling & Package Management:** `pnpm` workspace monorepo, Biome for ultra-fast linting and formatting, `simple-git-hooks` for pre-commit formatting, and TypeScript strict mode throughout.
+- **Tooling & Package Management:** Bun workspace monorepo, Biome for ultra-fast linting and formatting, `simple-git-hooks` for pre-commit formatting, and TypeScript strict mode throughout.
 
 ```mermaid
 graph TD
@@ -145,7 +145,7 @@ server:
 
 ---
 
-## 4. Monorepo Structure (`pnpm` workspaces)
+## 4. Monorepo Structure (Bun workspaces)
 
 ```
 journals/
@@ -158,7 +158,7 @@ journals/
 │   │       ├── schemas.ts
 │   │       └── index.ts
 │   │
-│   ├── server/                   # Hono HTTP server + Drizzle ORM SQLite
+│   ├── server/                   # Hono HTTP server + Drizzle ORM SQLite (bun:sqlite)
 │   │   ├── package.json
 │   │   ├── tsconfig.json
 │   │   └── src/
@@ -173,21 +173,28 @@ journals/
 │   │       ├── app.ts            # Hono app and RPC type export
 │   │       └── index.ts
 │   │
-│   └── client-tui/               # Terminal User Interface
+│   └── client-tui/               # Terminal User Interface (OpenTUI React)
 │       ├── package.json
 │       ├── tsconfig.json
 │       └── src/
 │           ├── api/              # Hono typed RPC client
+│           ├── components/       # Header, StatusBar, Modal
+│           ├── hooks/            # useJournalData, useSuggestions
+│           ├── views/            # Timeline Stream, Projects Preview, Modals
+│           │   ├── timeline/
+│           │   ├── projects/
+│           │   ├── modals/
+│           │   └── App.tsx
 │           ├── editor.ts         # $EDITOR spawner for markdown editing
 │           ├── suggest.ts        # Tag & project completion engine
-│           ├── views/            # Timeline Stream & Projects Preview
-│           └── index.ts
+│           ├── theme.ts          # Color theme palettes (Rosé Pine Dawn, Nord, etc.)
+│           └── index.tsx         # OpenTUI React entrypoint
 │
 ├── configs/
 │   └── journal.config.example.yaml
 ├── biome.json
 ├── package.json
-├── pnpm-workspace.yaml
+├── bun.lock
 ├── tsconfig.base.json
 ├── CONVENTIONS.md
 └── ARCHITECTURE.md
