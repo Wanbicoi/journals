@@ -1,0 +1,69 @@
+# ==========================================
+# APPEARANCE & NERD FONT SETTINGS
+# ==========================================
+appearance:
+  use_nerd_font: true              # When true, uses Nerd Font glyphs; fallback to ASCII/unicode when false
+  theme: "nord"                    # Color theme (nord, gruvbox, dracula, catppuccin)
+  date_format: "YYYY-MM-DD"        # Daily stream grouping format
+  time_format: "HH:mm"
+
+# Customizable icons (renders nerd font or fallback plain text)
+icons:
+  nerd:
+    journal: ""
+    project: ""
+    tag: ""
+    calendar: ""
+    quick: ""
+    checked: ""
+    unchecked: ""
+    bullet: ""
+  plain:
+    journal: "◆"
+    project: "◫"
+    tag: "#"
+    calendar: "📅"
+    quick: "⚡"
+    checked: "[x]"
+    unchecked: "[ ]"
+    bullet: "•"
+
+# ==========================================
+# KEYMAP CONFIGURATION (Fully customizable)
+# ==========================================
+keymaps:
+  # Views / Tabs
+  view_timeline: "1"               # Switch to daily timeline stream
+  view_projects: "2"               # Switch to projects view & preview
+  
+  # Navigation
+  up: "k"
+  down: "j"
+  
+  # Actions
+  quick_capture: "n"               # Open 1-line quick capture input
+  edit_project: "p"                # Reassign/edit project for selected note
+  edit_tags: "t"                   # Edit tags for selected note
+  edit_project_content: "e"        # Edit/append markdown content in projects view
+  
+  # Global Actions
+  cancel: "escape"
+  quit: "q"
+
+# ==========================================
+# QUICK CAPTURE & GENERAL DEFAULTS
+# ==========================================
+defaults:
+  project: "Inbox"                 # Default project if @project is omitted in 1-line capture
+  tags:                            # Default tags if #tag is omitted in 1-line capture
+    - "quick"
+
+# ==========================================
+# SERVER & STORAGE OPTIONS
+# ==========================================
+server:
+  host: "127.0.0.1"
+  port: 4321
+  db_path: "~/.local/share/journals/data.sqlite"
+  wal_mode: true                   # Enable SQLite Write-Ahead Logging for high concurrency
+  auto_start: true                 # Automatically start backend server if not running
