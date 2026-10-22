@@ -347,6 +347,12 @@ function renderHelpModal(width: number) {
     `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[Tab]${ANSI.reset}         Accept auto-suggestions when typing          ${ANSI.cyan}│${ANSI.reset}`,
   );
   console.log(
+    `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[Ctrl+W]${ANSI.reset}      Delete previous word in input fields         ${ANSI.cyan}│${ANSI.reset}`,
+  );
+  console.log(
+    `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[Ctrl+U]${ANSI.reset}      Clear entire input line                      ${ANSI.cyan}│${ANSI.reset}`,
+  );
+  console.log(
     `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[Esc]${ANSI.reset}         Cancel prompt / Clear active filter          ${ANSI.cyan}│${ANSI.reset}`,
   );
   console.log(
@@ -364,8 +370,11 @@ function renderCaptureModal(width: number, height: number) {
   const innerW = modalW - 4;
 
   const topBorder = `${leftPad}${ANSI.bgCyan}\x1b[30m ${icons.quick} QUICK CAPTURE ${" ".repeat(modalW - 17)}${ANSI.reset}`;
-  const syntaxLine = `${leftPad}${ANSI.cyan}│${ANSI.reset} ${ANSI.dim}Syntax: Text ${ANSI.blue}@project${ANSI.reset} ${ANSI.magenta}#tags${ANSI.reset}${ANSI.dim}   [Tab: accept suggestions]${ANSI.reset}`.padEnd(modalW + 15);
-  
+  const syntaxLine =
+    `${leftPad}${ANSI.cyan}│${ANSI.reset} ${ANSI.dim}Syntax: Text ${ANSI.blue}@project${ANSI.reset} ${ANSI.magenta}#tags${ANSI.reset}${ANSI.dim}   [Tab: accept suggestions]${ANSI.reset}`.padEnd(
+      modalW + 15,
+    );
+
   // Format input line inside box
   const inputDisplay = `> ${inputBuffer}█`;
   const inputPad = Math.max(0, innerW - inputBuffer.length - 2);
@@ -383,13 +392,19 @@ function renderCaptureModal(width: number, height: number) {
       .map((m, idx) => {
         const isSel = idx === activeSuggestionIdx;
         const prefix = suggestions.type === "project" ? "@" : "#";
-        return isSel ? `${ANSI.inverse}[${prefix}${m}]${ANSI.reset}` : `${ANSI.dim}${prefix}${m}${ANSI.reset}`;
+        return isSel
+          ? `${ANSI.inverse}[${prefix}${m}]${ANSI.reset}`
+          : `${ANSI.dim}${prefix}${m}${ANSI.reset}`;
       })
       .join(" ");
-    console.log(`${leftPad}${ANSI.cyan}│${ANSI.reset} ${ANSI.yellow}Suggestions:${ANSI.reset} ${pills}`);
+    console.log(
+      `${leftPad}${ANSI.cyan}│${ANSI.reset} ${ANSI.yellow}Suggestions:${ANSI.reset} ${pills}`,
+    );
   }
 
-  console.log(`${leftPad}${ANSI.cyan}│${ANSI.reset} ${ANSI.dim}[Enter: Save note]  [Esc: Cancel]${ANSI.reset}`);
+  console.log(
+    `${leftPad}${ANSI.cyan}│${ANSI.reset} ${ANSI.dim}[Enter: Save note]  [Esc: Cancel]${ANSI.reset}`,
+  );
   console.log(`${leftPad}${ANSI.cyan}└${"─".repeat(modalW - 2)}┘${ANSI.reset}`);
 }
 
@@ -444,6 +459,20 @@ process.stdin.on("keypress", async (str, key) => {
   }
 
   if (inputMode !== "NONE") {
+    if (key.ctrl && key.name === "w") {
+      // Delete backward word (Ctrl+W)
+      inputBuffer = inputBuffer.replace(/(?:[^\s]+|\s+)\s*$/, "");
+      activeSuggestionIdx = 0;
+      render();
+      return;
+    }
+    if (key.ctrl && key.name === "u") {
+      // Delete whole line (Ctrl+U)
+      inputBuffer = "";
+      activeSuggestionIdx = 0;
+      render();
+      return;
+    }
     if (key.name === "return") {
       await commitModalInput();
     } else if (key.name === "escape") {
