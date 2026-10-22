@@ -1,5 +1,5 @@
 import type { ScrollBoxRenderable } from "@opentui/core";
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import type { Entry } from "../../hooks/useJournalData.js";
 import type { ThemePalette } from "../../theme.js";
 

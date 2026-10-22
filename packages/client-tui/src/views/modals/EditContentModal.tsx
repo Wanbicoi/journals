@@ -3,7 +3,7 @@ import {
   type TextareaRenderable,
   defaultTextareaKeyBindings,
 } from "@opentui/core";
-import React, { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Modal } from "../../components/Modal.js";
 import type { ThemePalette } from "../../theme.js";
 

@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import { createCliRenderer } from "@opentui/core";
 import { createRoot } from "@opentui/react";
-import React from "react";
 import { App } from "./views/App.js";
 
 async function main() {

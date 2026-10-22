@@ -4,7 +4,7 @@ import {
   useSelectionHandler,
   useTerminalDimensions,
 } from "@opentui/react";
-import React, { useCallback, useState } from "react";
+import { useCallback, useState } from "react";
 import { config } from "../api/client.js";
 import { copyToClipboard } from "../clipboard.js";
 import { Header } from "../components/Header.js";

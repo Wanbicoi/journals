@@ -1,4 +1,3 @@
-import React from "react";
 import type { ThemePalette } from "../theme.js";
 
 interface HeaderProps {

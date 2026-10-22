@@ -1,5 +1,5 @@
 import type { ScrollBoxRenderable } from "@opentui/core";
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import type { Entry, Project } from "../../hooks/useJournalData.js";
 import type { ThemePalette } from "../../theme.js";
 
@@ -35,7 +35,7 @@ export function ProjectsView({
   selectedProjectIdx,
   onSelectProject,
   entries,
-  width,
+  width: _width,
   icons,
   theme,
 }: ProjectsViewProps) {
