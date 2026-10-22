@@ -5,6 +5,15 @@ import React from "react";
 import { App } from "./views/App.js";
 
 async function main() {
+  if (!process.stdin.isTTY) {
+    console.error(
+      "Error: Journals TUI requires an interactive TTY terminal.\n" +
+        "To test or interact headlessly, use the automated interaction script:\n" +
+        '  python3 .agents/skills/run-tui/scripts/interact_tui.py --keys "1" "q"\n',
+    );
+    process.exit(1);
+  }
+
   const renderer = await createCliRenderer({
     exitOnCtrlC: true,
   });
