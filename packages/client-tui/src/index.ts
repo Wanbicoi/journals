@@ -27,7 +27,14 @@ const client = hc<AppType>(serverUrl);
 
 // State
 let currentTab: "TIMELINE" | "PROJECTS" = "TIMELINE";
-let inputMode: "NONE" | "CAPTURE" | "NEW_PROJECT" | "EDIT_PROJECT" | "EDIT_TAGS" | "FILTER" | "HELP" = "NONE";
+let inputMode:
+  | "NONE"
+  | "CAPTURE"
+  | "NEW_PROJECT"
+  | "EDIT_PROJECT"
+  | "EDIT_TAGS"
+  | "FILTER"
+  | "HELP" = "NONE";
 let filterQuery = "";
 
 let entries: Array<{
@@ -81,7 +88,7 @@ function getFilteredEntries() {
     (e) =>
       e.content.toLowerCase().includes(q) ||
       e.projectName.toLowerCase().includes(q) ||
-      e.tags.some((t) => t.toLowerCase().includes(q))
+      e.tags.some((t) => t.toLowerCase().includes(q)),
   );
 }
 
@@ -89,7 +96,7 @@ function getFilteredProjects() {
   if (!filterQuery.trim()) return projects;
   const q = filterQuery.toLowerCase();
   return projects.filter(
-    (p) => p.name.toLowerCase().includes(q) || p.content.toLowerCase().includes(q)
+    (p) => p.name.toLowerCase().includes(q) || p.content.toLowerCase().includes(q),
   );
 }
 
@@ -137,7 +144,7 @@ function render() {
 
   // Active Modals & Suggestions
   if (inputMode === "CAPTURE") {
-    renderCaptureModal(width);
+    renderCaptureModal(width, height);
   } else if (inputMode === "NEW_PROJECT") {
     renderNewProjectModal(width);
   } else if (inputMode === "EDIT_PROJECT") {
@@ -152,7 +159,9 @@ function render() {
 
   // Footer / Status line
   console.log(`${ANSI.gray}${"─".repeat(width)}${ANSI.reset}`);
-  const filterIndicator = filterQuery ? `${ANSI.yellow}[Filter: "${filterQuery}"]${ANSI.reset} ` : "";
+  const filterIndicator = filterQuery
+    ? `${ANSI.yellow}[Filter: "${filterQuery}"]${ANSI.reset} `
+    : "";
   const keyHints = `${ANSI.cyan}[1]${ANSI.reset}Stream ${ANSI.cyan}[2]${ANSI.reset}Projects ${ANSI.cyan}[n]${ANSI.reset}Note ${ANSI.cyan}[N]${ANSI.reset}Project ${ANSI.cyan}[/]${ANSI.reset}Filter ${ANSI.cyan}[?]${ANSI.reset}Help ${ANSI.cyan}[q]${ANSI.reset}Quit`;
   console.log(`${filterIndicator}${keyHints}  ${ANSI.dim}${statusMessage}${ANSI.reset}`);
 }
@@ -291,57 +300,97 @@ function renderNewProjectModal(width: number) {
 }
 
 function renderFilterModal(width: number) {
-  console.log(`${ANSI.yellow}┌─ / FILTER & SEARCH ──────────────────────────────────────────┐${ANSI.reset}`);
+  console.log(
+    `${ANSI.yellow}┌─ / FILTER & SEARCH ──────────────────────────────────────────┐${ANSI.reset}`,
+  );
   console.log(`${ANSI.yellow}│${ANSI.reset} Query: ${ANSI.bold}${inputBuffer}█${ANSI.reset}`);
-  console.log(`${ANSI.yellow}│${ANSI.reset} ${ANSI.dim}Matches notes, project names, or tags. Enter to apply, Esc to clear${ANSI.reset}`);
-  console.log(`${ANSI.yellow}└──────────────────────────────────────────────────────────────┘${ANSI.reset}`);
+  console.log(
+    `${ANSI.yellow}│${ANSI.reset} ${ANSI.dim}Matches notes, project names, or tags. Enter to apply, Esc to clear${ANSI.reset}`,
+  );
+  console.log(
+    `${ANSI.yellow}└──────────────────────────────────────────────────────────────┘${ANSI.reset}`,
+  );
 }
 
 function renderHelpModal(width: number) {
-  console.log(`${ANSI.cyan}┌─ ? KEYBOARD SHORTCUTS & HELP ─────────────────────────────────┐${ANSI.reset}`);
-  console.log(`${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[1]${ANSI.reset}           Switch to Daily Timeline Stream View         ${ANSI.cyan}│${ANSI.reset}`);
-  console.log(`${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[2]${ANSI.reset}           Switch to Projects & Markdown Preview View   ${ANSI.cyan}│${ANSI.reset}`);
-  console.log(`${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[j / k]${ANSI.reset}       Navigate entries / projects up and down      ${ANSI.cyan}│${ANSI.reset}`);
-  console.log(`${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[n]${ANSI.reset}           1-Line Quick Capture (Syntax: @proj #tag)    ${ANSI.cyan}│${ANSI.reset}`);
-  console.log(`${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[N]${ANSI.reset}           Create new project                           ${ANSI.cyan}│${ANSI.reset}`);
-  console.log(`${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[p]${ANSI.reset}           Reassign project for selected note           ${ANSI.cyan}│${ANSI.reset}`);
-  console.log(`${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[t]${ANSI.reset}           Edit tags for selected note                  ${ANSI.cyan}│${ANSI.reset}`);
-  console.log(`${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[e]${ANSI.reset}           Edit project markdown content in $EDITOR     ${ANSI.cyan}│${ANSI.reset}`);
-  console.log(`${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[/]${ANSI.reset}           Search / filter stream or projects           ${ANSI.cyan}│${ANSI.reset}`);
-  console.log(`${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[Tab]${ANSI.reset}         Accept auto-suggestions when typing          ${ANSI.cyan}│${ANSI.reset}`);
-  console.log(`${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[Esc]${ANSI.reset}         Cancel prompt / Clear active filter          ${ANSI.cyan}│${ANSI.reset}`);
-  console.log(`${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[q]${ANSI.reset}           Quit application                             ${ANSI.cyan}│${ANSI.reset}`);
+  console.log(
+    `${ANSI.cyan}┌─ ? KEYBOARD SHORTCUTS & HELP ─────────────────────────────────┐${ANSI.reset}`,
+  );
+  console.log(
+    `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[1]${ANSI.reset}           Switch to Daily Timeline Stream View         ${ANSI.cyan}│${ANSI.reset}`,
+  );
+  console.log(
+    `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[2]${ANSI.reset}           Switch to Projects & Markdown Preview View   ${ANSI.cyan}│${ANSI.reset}`,
+  );
+  console.log(
+    `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[j / k]${ANSI.reset}       Navigate entries / projects up and down      ${ANSI.cyan}│${ANSI.reset}`,
+  );
+  console.log(
+    `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[n]${ANSI.reset}           1-Line Quick Capture (Syntax: @proj #tag)    ${ANSI.cyan}│${ANSI.reset}`,
+  );
+  console.log(
+    `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[N]${ANSI.reset}           Create new project                           ${ANSI.cyan}│${ANSI.reset}`,
+  );
+  console.log(
+    `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[p]${ANSI.reset}           Reassign project for selected note           ${ANSI.cyan}│${ANSI.reset}`,
+  );
+  console.log(
+    `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[t]${ANSI.reset}           Edit tags for selected note                  ${ANSI.cyan}│${ANSI.reset}`,
+  );
+  console.log(
+    `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[e]${ANSI.reset}           Edit project markdown content in $EDITOR     ${ANSI.cyan}│${ANSI.reset}`,
+  );
+  console.log(
+    `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[/]${ANSI.reset}           Search / filter stream or projects           ${ANSI.cyan}│${ANSI.reset}`,
+  );
+  console.log(
+    `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[Tab]${ANSI.reset}         Accept auto-suggestions when typing          ${ANSI.cyan}│${ANSI.reset}`,
+  );
+  console.log(
+    `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[Esc]${ANSI.reset}         Cancel prompt / Clear active filter          ${ANSI.cyan}│${ANSI.reset}`,
+  );
+  console.log(
+    `${ANSI.cyan}│${ANSI.reset}  ${ANSI.bold}[q]${ANSI.reset}           Quit application                             ${ANSI.cyan}│${ANSI.reset}`,
+  );
   console.log(`${ANSI.cyan}│${ANSI.reset} ${ANSI.dim}Press any key or Esc to dismiss${ANSI.reset}`);
-  console.log(`${ANSI.cyan}└──────────────────────────────────────────────────────────────┘${ANSI.reset}`);
+  console.log(
+    `${ANSI.cyan}└──────────────────────────────────────────────────────────────┘${ANSI.reset}`,
+  );
 }
 
-function renderCaptureModal(width: number) {
-  console.log(
-    `${ANSI.cyan}┌─ ${icons.quick} QUICK CAPTURE ──────────────────────────────────────────────┐${ANSI.reset}`,
-  );
-  console.log(
-    `${ANSI.cyan}│${ANSI.reset} Syntax: Note text ${ANSI.blue}@project${ANSI.reset} ${ANSI.magenta}#tag1 #tag2${ANSI.reset}   [Tab to accept suggestions]`,
-  );
-  console.log(`${ANSI.cyan}│${ANSI.reset} > ${ANSI.bold}${inputBuffer}█${ANSI.reset}`);
+function renderCaptureModal(width: number, height: number) {
+  const modalW = Math.min(Math.max(68, Math.floor(width * 0.7)), width - 4);
+  const leftPad = " ".repeat(Math.max(2, Math.floor((width - modalW) / 2)));
+  const innerW = modalW - 4;
+
+  const topBorder = `${leftPad}${ANSI.bgCyan}\x1b[30m ${icons.quick} QUICK CAPTURE ${" ".repeat(modalW - 17)}${ANSI.reset}`;
+  const syntaxLine = `${leftPad}${ANSI.cyan}│${ANSI.reset} ${ANSI.dim}Syntax: Text ${ANSI.blue}@project${ANSI.reset} ${ANSI.magenta}#tags${ANSI.reset}${ANSI.dim}   [Tab: accept suggestions]${ANSI.reset}`.padEnd(modalW + 15);
+  
+  // Format input line inside box
+  const inputDisplay = `> ${inputBuffer}█`;
+  const inputPad = Math.max(0, innerW - inputBuffer.length - 2);
+  const inputLine = `${leftPad}${ANSI.cyan}│${ANSI.reset} ${ANSI.bold}${inputDisplay}${ANSI.reset}${" ".repeat(inputPad)} ${ANSI.cyan}│${ANSI.reset}`;
+
+  console.log(`${leftPad}${ANSI.cyan}┌${"─".repeat(modalW - 2)}┐${ANSI.reset}`);
+  console.log(topBorder);
+  console.log(syntaxLine);
+  console.log(inputLine);
 
   const suggestions = getSuggestions();
   if (suggestions && suggestions.matches.length > 0) {
     const pills = suggestions.matches
-      .slice(0, 5)
+      .slice(0, 4)
       .map((m, idx) => {
         const isSel = idx === activeSuggestionIdx;
         const prefix = suggestions.type === "project" ? "@" : "#";
-        return isSel
-          ? `${ANSI.inverse}[${prefix}${m}]${ANSI.reset}`
-          : `${ANSI.dim}${prefix}${m}${ANSI.reset}`;
+        return isSel ? `${ANSI.inverse}[${prefix}${m}]${ANSI.reset}` : `${ANSI.dim}${prefix}${m}${ANSI.reset}`;
       })
       .join(" ");
-    console.log(`${ANSI.cyan}│${ANSI.reset} Suggestions: ${pills}`);
+    console.log(`${leftPad}${ANSI.cyan}│${ANSI.reset} ${ANSI.yellow}Suggestions:${ANSI.reset} ${pills}`);
   }
 
-  console.log(
-    `${ANSI.cyan}└──────────────────────────────────────────────────────────────┘${ANSI.reset}`,
-  );
+  console.log(`${leftPad}${ANSI.cyan}│${ANSI.reset} ${ANSI.dim}[Enter: Save note]  [Esc: Cancel]${ANSI.reset}`);
+  console.log(`${leftPad}${ANSI.cyan}└${"─".repeat(modalW - 2)}┘${ANSI.reset}`);
 }
 
 function renderEditProjectPrompt(width: number) {
@@ -536,7 +585,9 @@ async function commitModalInput() {
     filterQuery = inputBuffer.trim();
     selectedEntryIdx = 0;
     selectedProjectIdx = 0;
-    statusMessage = filterQuery ? `Filtering by: "${filterQuery}" (Esc to clear)` : "Filter cleared";
+    statusMessage = filterQuery
+      ? `Filtering by: "${filterQuery}" (Esc to clear)`
+      : "Filter cleared";
   } else if (inputMode === "NEW_PROJECT" && inputBuffer.trim()) {
     const res = await client.projects.$post({
       json: {
