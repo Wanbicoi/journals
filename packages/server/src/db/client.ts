@@ -1,15 +1,16 @@
+import { Database } from "bun:sqlite";
 import fs from "node:fs";
 import path from "node:path";
-import Database, { type Database as BetterSqliteDatabase } from "better-sqlite3";
-import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
+import { type BunSQLiteDatabase, drizzle } from "drizzle-orm/bun-sqlite";
 import * as schema from "./schema.js";
 
-export type DatabaseInstance = BetterSQLite3Database<typeof schema>;
+export type DatabaseInstance = BunSQLiteDatabase<typeof schema>;
+export type SQLiteDatabase = Database;
 
 export function initDb(
   dbPath: string,
   walMode = true,
-): { db: DatabaseInstance; sqlite: BetterSqliteDatabase } {
+): { db: DatabaseInstance; sqlite: SQLiteDatabase } {
   const dir = path.dirname(dbPath);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
@@ -18,12 +19,12 @@ export function initDb(
   const sqlite = new Database(dbPath);
 
   if (walMode) {
-    sqlite.pragma("journal_mode = WAL");
+    sqlite.run("PRAGMA journal_mode = WAL;");
   }
-  sqlite.pragma("foreign_keys = ON");
+  sqlite.run("PRAGMA foreign_keys = ON;");
 
   // Create tables if not exist (minimal self-contained initialization)
-  sqlite.exec(`
+  sqlite.run(`
     CREATE TABLE IF NOT EXISTS projects (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL UNIQUE,

@@ -1,13 +1,12 @@
 import crypto from "node:crypto";
 import { parseCaptureLine } from "@journals/core";
-import type { Database as BetterSqliteDatabase } from "better-sqlite3";
-import type { DatabaseInstance } from "../../db/client.js";
+import type { DatabaseInstance, SQLiteDatabase } from "../../db/client.js";
 import { entries } from "../../db/schema.js";
 import { findOrCreateProject } from "../projects/handler.js";
 
 export function handleQuickCapture(
   db: DatabaseInstance,
-  sqlite: BetterSqliteDatabase,
+  sqlite: SQLiteDatabase,
   raw: string,
   defaultProject = "Inbox",
   defaultTags: string[] = ["quick"],

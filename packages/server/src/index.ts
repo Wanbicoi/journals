@@ -1,18 +1,16 @@
-import type { ServerType } from "@hono/node-server";
-import { serve } from "@hono/node-server";
 import { loadConfig, resolveDbPath } from "@journals/core";
-import type { Database as BetterSqliteDatabase } from "better-sqlite3";
-import { createApp, type AppType } from "./app.js";
-import { initDb, type DatabaseInstance } from "./db/client.js";
+import type { Server } from "bun";
+import { type AppType, createApp } from "./app.js";
+import { type DatabaseInstance, type SQLiteDatabase, initDb } from "./db/client.js";
 
 export * from "./app.js";
 export * from "./db/client.js";
 
 export interface StartedServer {
-  server: ServerType;
+  server: Server<unknown>;
   app: AppType;
   db: DatabaseInstance;
-  sqlite: BetterSqliteDatabase;
+  sqlite: SQLiteDatabase;
 }
 
 export function startServer(customConfigPath?: string): StartedServer {
@@ -22,7 +20,7 @@ export function startServer(customConfigPath?: string): StartedServer {
   const { db, sqlite } = initDb(dbPath, config.server.wal_mode);
   const app = createApp(db, sqlite);
 
-  const server = serve({
+  const server = Bun.serve({
     fetch: app.fetch,
     port: config.server.port,
     hostname: config.server.host,
@@ -35,6 +33,6 @@ export function startServer(customConfigPath?: string): StartedServer {
 }
 
 // Auto-run if executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.main) {
   startServer();
 }

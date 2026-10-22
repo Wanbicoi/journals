@@ -7,14 +7,13 @@ import {
   UpdateProjectContentInputSchema,
 } from "@journals/core";
 import { Hono } from "hono";
-import type { Database as BetterSqliteDatabase } from "better-sqlite3";
-import type { DatabaseInstance } from "./db/client.js";
+import type { DatabaseInstance, SQLiteDatabase } from "./db/client.js";
 import { listEntries, updateEntryProject, updateEntryTags } from "./slices/entries/handler.js";
 import { createProject, listProjects, updateProjectContent } from "./slices/projects/handler.js";
 import { handleQuickCapture } from "./slices/quick-capture/handler.js";
 import { listTags } from "./slices/tags/handler.js";
 
-export function createApp(db: DatabaseInstance, sqlite: BetterSqliteDatabase) {
+export function createApp(db: DatabaseInstance, sqlite: SQLiteDatabase) {
   const app = new Hono()
     .get("/health", (c) => c.json({ status: "ok" }))
 
@@ -59,17 +58,16 @@ export function createApp(db: DatabaseInstance, sqlite: BetterSqliteDatabase) {
       const res = createProject(db, name, content);
       return c.json(res);
     })
-    .put("/projects/:id/content", zValidator("json", UpdateProjectContentInputSchema), (c) => {
+    .patch("/projects/:id/content", zValidator("json", UpdateProjectContentInputSchema), (c) => {
       const id = c.req.param("id");
       const { content } = c.req.valid("json");
       const res = updateProjectContent(db, id, content);
       return c.json(res);
     })
 
-    // Tags & Suggestions
+    // Tags
     .get("/tags", (c) => {
-      const prefix = c.req.query("prefix");
-      const tags = listTags(db, prefix);
+      const tags = listTags(db);
       return c.json({ tags });
     });
 

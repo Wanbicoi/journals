@@ -1,10 +1,9 @@
 import { desc, eq } from "drizzle-orm";
-import type { Database as BetterSqliteDatabase } from "better-sqlite3";
-import type { DatabaseInstance } from "../../db/client.js";
+import type { DatabaseInstance, SQLiteDatabase } from "../../db/client.js";
 import { entries, projects } from "../../db/schema.js";
 import { findOrCreateProject } from "../projects/handler.js";
 
-export function listEntries(db: DatabaseInstance, sqlite: BetterSqliteDatabase) {
+export function listEntries(db: DatabaseInstance, sqlite: SQLiteDatabase) {
   const allEntries = db
     .select({
       id: entries.id,
@@ -34,7 +33,7 @@ export function listEntries(db: DatabaseInstance, sqlite: BetterSqliteDatabase) 
 
 export function updateEntryProject(
   db: DatabaseInstance,
-  sqlite: BetterSqliteDatabase,
+  sqlite: SQLiteDatabase,
   entryId: string,
   projectName: string,
 ) {
@@ -50,7 +49,7 @@ export function updateEntryProject(
   })();
 }
 
-export function updateEntryTags(sqlite: BetterSqliteDatabase, entryId: string, newTags: string[]) {
+export function updateEntryTags(sqlite: SQLiteDatabase, entryId: string, newTags: string[]) {
   return sqlite.transaction(() => {
     sqlite.prepare("DELETE FROM entry_tags WHERE entry_id = ?").run(entryId);
     for (const tag of newTags) {

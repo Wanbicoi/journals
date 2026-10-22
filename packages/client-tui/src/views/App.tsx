@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
+import React, { useEffect, useState } from "react";
 import { client, config, fetchEntries, fetchProjects, fetchTags } from "../api/client.js";
 import { openExternalEditor } from "../editor.js";
 import { detectSuggestionQuery } from "../suggest.js";
+import { getTheme } from "../theme.js";
 
 interface Entry {
   id: string;
@@ -24,6 +25,7 @@ interface Project {
 export function App() {
   const { width = 100, height = 30 } = useTerminalDimensions();
   const icons = config.appearance.use_nerd_font ? config.icons.nerd : config.icons.plain;
+  const theme = getTheme(config.appearance.theme);
 
   const [currentTab, setCurrentTab] = useState<"TIMELINE" | "PROJECTS">("TIMELINE");
   const [inputMode, setInputMode] = useState<
@@ -48,33 +50,35 @@ export function App() {
       fetchProjects(),
       fetchTags(),
     ]);
-    setEntries(entriesData);
-    setProjects(projectsData);
-    setAvailableTags(tagsData);
+    setEntries(entriesData || []);
+    setProjects(projectsData || []);
+    setAvailableTags(tagsData || []);
   }
 
   useEffect(() => {
     reloadData();
   }, []);
 
-  const filteredEntries = filterQuery.trim()
-    ? entries.filter(
-        (e) =>
-          e.content.toLowerCase().includes(filterQuery.toLowerCase()) ||
-          e.projectName.toLowerCase().includes(filterQuery.toLowerCase()) ||
-          e.tags.some((t) => t.toLowerCase().includes(filterQuery.toLowerCase())),
-      )
-    : entries;
+  // Filter entries
+  const filteredEntries = entries.filter((e) => {
+    if (!filterQuery) return true;
+    const q = filterQuery.toLowerCase();
+    return (
+      e.content.toLowerCase().includes(q) ||
+      e.projectName.toLowerCase().includes(q) ||
+      e.tags.some((t) => t.toLowerCase().includes(q))
+    );
+  });
 
-  const filteredProjects = filterQuery.trim()
-    ? projects.filter(
-        (p) =>
-          p.name.toLowerCase().includes(filterQuery.toLowerCase()) ||
-          p.content.toLowerCase().includes(filterQuery.toLowerCase()),
-      )
-    : projects;
+  // Filter projects
+  const filteredProjects = projects.filter((p) => {
+    if (!filterQuery) return true;
+    const q = filterQuery.toLowerCase();
+    return p.name.toLowerCase().includes(q) || p.content.toLowerCase().includes(q);
+  });
 
   function getSuggestions() {
+    if (inputMode !== "CAPTURE" && inputMode !== "EDIT_TAGS") return null;
     const queryInfo = detectSuggestionQuery(inputBuffer);
     if (!queryInfo) return null;
 
@@ -83,12 +87,11 @@ export function App() {
         .filter((p) => p.name.toLowerCase().startsWith(queryInfo.query.toLowerCase()))
         .map((p) => p.name);
       return { ...queryInfo, matches };
-    } else {
-      const matches = availableTags
-        .filter((t) => t.name.toLowerCase().startsWith(queryInfo.query.toLowerCase()))
-        .map((t) => t.name);
-      return { ...queryInfo, matches };
     }
+    const matches = availableTags
+      .filter((t) => t.name.toLowerCase().startsWith(queryInfo.query.toLowerCase()))
+      .map((t) => t.name);
+    return { ...queryInfo, matches };
   }
 
   // Keyboard navigation and modal shortcuts
@@ -142,66 +145,57 @@ export function App() {
       return;
     }
 
-    // Normal navigation
-    if (str === config.keymaps.help || keyName === "help") {
-      setInputMode("HELP");
-      return;
-    }
-
-    if (str === config.keymaps.search_filter) {
-      setInputMode("FILTER");
-      setInputBuffer(filterQuery);
-      setStatusMessage("Type search query and press Enter");
-      return;
-    }
-
-    if (keyName === "escape") {
-      if (filterQuery) {
-        setFilterQuery("");
-        setStatusMessage("Cleared filter");
-        return;
-      }
-    }
-
+    // Normal Mode Keybindings
     if (keyName === config.keymaps.view_timeline || str === config.keymaps.view_timeline) {
       setCurrentTab("TIMELINE");
-      setStatusMessage("Timeline Stream View");
+      setStatusMessage("Timeline View");
     } else if (keyName === config.keymaps.view_projects || str === config.keymaps.view_projects) {
       setCurrentTab("PROJECTS");
-      setStatusMessage(
-        `Projects View: j/k select, '${config.keymaps.edit_project_content}' edit in $EDITOR`,
-      );
-    } else if (keyName === config.keymaps.down) {
-      if (currentTab === "TIMELINE" && selectedEntryIdx < filteredEntries.length - 1) {
-        setSelectedEntryIdx((i) => i + 1);
-      } else if (currentTab === "PROJECTS" && selectedProjectIdx < filteredProjects.length - 1) {
-        setSelectedProjectIdx((i) => i + 1);
+      setStatusMessage("Projects View");
+    } else if (keyName === config.keymaps.down || str === config.keymaps.down) {
+      if (currentTab === "TIMELINE") {
+        setSelectedEntryIdx((prev) => Math.min(prev + 1, Math.max(0, filteredEntries.length - 1)));
+      } else {
+        setSelectedProjectIdx((prev) =>
+          Math.min(prev + 1, Math.max(0, filteredProjects.length - 1)),
+        );
       }
-    } else if (keyName === config.keymaps.up) {
-      if (currentTab === "TIMELINE" && selectedEntryIdx > 0) {
-        setSelectedEntryIdx((i) => i - 1);
-      } else if (currentTab === "PROJECTS" && selectedProjectIdx > 0) {
-        setSelectedProjectIdx((i) => i - 1);
+    } else if (keyName === config.keymaps.up || str === config.keymaps.up) {
+      if (currentTab === "TIMELINE") {
+        setSelectedEntryIdx((prev) => Math.max(0, prev - 1));
+      } else {
+        setSelectedProjectIdx((prev) => Math.max(0, prev - 1));
       }
     } else if (keyName === config.keymaps.quick_capture || str === config.keymaps.quick_capture) {
       setInputMode("CAPTURE");
       setInputBuffer("");
-      setStatusMessage("Type note (@project #tags) and press Enter");
-    } else if (str === config.keymaps.new_project || keyName === config.keymaps.new_project) {
+      setStatusMessage("Quick Capture: @project #tags note content");
+    } else if (keyName === config.keymaps.new_project || str === config.keymaps.new_project) {
       setInputMode("NEW_PROJECT");
       setInputBuffer("");
-      setStatusMessage("Type project name and press Enter");
+      setStatusMessage("Enter new project name");
     } else if (keyName === config.keymaps.edit_project || str === config.keymaps.edit_project) {
       if (currentTab === "TIMELINE" && filteredEntries[selectedEntryIdx]) {
         setInputMode("EDIT_PROJECT");
         setInputBuffer(filteredEntries[selectedEntryIdx].projectName);
-        setStatusMessage("Edit project and hit Enter");
+        setStatusMessage("Reassign note project (@name)");
       }
     } else if (keyName === config.keymaps.edit_tags || str === config.keymaps.edit_tags) {
       if (currentTab === "TIMELINE" && filteredEntries[selectedEntryIdx]) {
         setInputMode("EDIT_TAGS");
         setInputBuffer(filteredEntries[selectedEntryIdx].tags.join(", "));
-        setStatusMessage("Edit tags and hit Enter");
+        setStatusMessage("Edit note tags (comma-separated)");
+      }
+    } else if (keyName === config.keymaps.search_filter || str === config.keymaps.search_filter) {
+      setInputMode("FILTER");
+      setInputBuffer(filterQuery);
+      setStatusMessage("Filter stream (type text, @project, #tag)");
+    } else if (keyName === config.keymaps.help || str === config.keymaps.help) {
+      setInputMode("HELP");
+    } else if (keyName === config.keymaps.cancel || str === config.keymaps.cancel) {
+      if (filterQuery) {
+        setFilterQuery("");
+        setStatusMessage("Filter cleared");
       }
     } else if (
       keyName === config.keymaps.edit_project_content ||
@@ -211,7 +205,7 @@ export function App() {
         const targetProj = filteredProjects[selectedProjectIdx];
         const updated = openExternalEditor(targetProj.content);
         if (updated !== targetProj.content) {
-          await client.projects[":id"].content.$put({
+          await client.projects[":id"].content.$patch({
             param: { id: targetProj.id },
             json: { content: updated },
           });
@@ -225,76 +219,50 @@ export function App() {
   });
 
   function applySuggestion() {
-    if (inputMode === "CAPTURE") {
-      const suggestions = getSuggestions();
-      if (suggestions && suggestions.matches.length > 0) {
-        const choice = suggestions.matches[activeSuggestionIdx] || suggestions.matches[0];
-        const prefix = suggestions.type === "project" ? "@" : "#";
-        const before = inputBuffer.slice(0, suggestions.triggerIndex);
-        setInputBuffer(`${before}${prefix}${choice} `);
-      }
-    } else if (inputMode === "EDIT_PROJECT") {
-      const match = projects.find((p) =>
-        p.name.toLowerCase().startsWith(inputBuffer.toLowerCase()),
-      );
-      if (match) {
-        setInputBuffer(match.name);
-      }
-    } else if (inputMode === "EDIT_TAGS") {
-      const parts = inputBuffer.split(",");
-      const currentTag = parts[parts.length - 1].trim().toLowerCase();
-      const match = availableTags.find((t) => t.name.toLowerCase().startsWith(currentTag));
-      if (match) {
-        parts[parts.length - 1] = ` ${match.name}`;
-        setInputBuffer(parts.join(","));
-      }
-    }
+    const sug = getSuggestions();
+    if (!sug || sug.matches.length === 0) return;
+    const match = sug.matches[activeSuggestionIdx % sug.matches.length];
+    const prefix = sug.type === "project" ? "@" : "#";
+    const before = inputBuffer.slice(0, sug.triggerIndex);
+    setInputBuffer(`${before}${prefix}${match} `);
+    setActiveSuggestionIdx(0);
   }
 
   async function commitModalInput() {
-    if (inputMode === "FILTER") {
-      setFilterQuery(inputBuffer.trim());
-      setSelectedEntryIdx(0);
-      setSelectedProjectIdx(0);
-      setStatusMessage(
-        inputBuffer.trim()
-          ? `Filtering by: "${inputBuffer.trim()}" (Esc to clear)`
-          : "Filter cleared",
-      );
-    } else if (inputMode === "NEW_PROJECT" && inputBuffer.trim()) {
-      await client.projects.$post({
-        json: {
-          name: inputBuffer.trim(),
-          content: `# ${inputBuffer.trim()}\n`,
-        },
-      });
-      await reloadData();
-      setCurrentTab("PROJECTS");
-      const foundIdx = projects.findIndex(
-        (p) => p.name.toLowerCase() === inputBuffer.trim().toLowerCase(),
-      );
-      if (foundIdx !== -1) setSelectedProjectIdx(foundIdx);
-      setStatusMessage(`Created project: @${inputBuffer.trim()}`);
-    } else if (inputMode === "CAPTURE" && inputBuffer.trim()) {
-      await client.capture.$post({
-        json: {
-          raw: inputBuffer.trim(),
-          defaultProject: config.defaults.project,
-          defaultTags: config.defaults.tags,
-        },
-      });
-      await reloadData();
-      setSelectedEntryIdx(0);
-      setStatusMessage("Captured note successfully!");
-    } else if (inputMode === "EDIT_PROJECT" && inputBuffer.trim()) {
-      const entry = filteredEntries[selectedEntryIdx];
-      if (entry) {
-        await client.entries[":id"].project.$patch({
-          param: { id: entry.id },
-          json: { projectName: inputBuffer.trim() },
+    if (inputMode === "CAPTURE") {
+      if (inputBuffer.trim()) {
+        await client.capture.$post({
+          json: {
+            raw: inputBuffer.trim(),
+            defaultProject: config.defaults.project,
+            defaultTags: config.defaults.tags,
+          },
         });
         await reloadData();
-        setStatusMessage("Updated note project!");
+        setStatusMessage("Captured new journal entry!");
+      }
+    } else if (inputMode === "NEW_PROJECT") {
+      const name = inputBuffer.trim();
+      if (name) {
+        await client.projects.$post({
+          json: { name, content: `# Project: ${name}\n\nCreated: ${new Date().toISOString()}` },
+        });
+        await reloadData();
+        setStatusMessage(`Created project @${name}`);
+      }
+    } else if (inputMode === "FILTER") {
+      setFilterQuery(inputBuffer.trim());
+      setStatusMessage(inputBuffer.trim() ? `Filter: "${inputBuffer.trim()}"` : "Filter cleared");
+    } else if (inputMode === "EDIT_PROJECT") {
+      const entry = filteredEntries[selectedEntryIdx];
+      const targetProj = inputBuffer.trim().replace(/^@/, "");
+      if (entry && targetProj) {
+        await client.entries[":id"].project.$patch({
+          param: { id: entry.id },
+          json: { projectName: targetProj },
+        });
+        await reloadData();
+        setStatusMessage(`Note reassigned to @${targetProj}`);
       }
     } else if (inputMode === "EDIT_TAGS") {
       const entry = filteredEntries[selectedEntryIdx];
@@ -327,25 +295,25 @@ export function App() {
       {/* Top Header / Tabs */}
       <box height={2} flexDirection="column">
         <box flexDirection="row">
-          <text fg="cyan">{`${icons.journal} JOURNALS`}</text>
+          <text fg={theme.primary}>{`${icons.journal} JOURNALS`}</text>
           <text> </text>
           {currentTab === "TIMELINE" ? (
-            <text bg="blue" fg="white">
+            <text bg={theme.secondary} fg={theme.selectedFg}>
               {" [1] Timeline Stream "}
             </text>
           ) : (
-            <text fg="gray">{" [1] Timeline "}</text>
+            <text fg={theme.muted}>{" [1] Timeline "}</text>
           )}
           <text> </text>
           {currentTab === "PROJECTS" ? (
-            <text bg="cyan" fg="black">
+            <text bg={theme.primary} fg={theme.selectedFg}>
               {" [2] Projects & Preview "}
             </text>
           ) : (
-            <text fg="gray">{" [2] Projects "}</text>
+            <text fg={theme.muted}>{" [2] Projects "}</text>
           )}
         </box>
-        <text fg="gray">{"─".repeat(width)}</text>
+        <text fg={theme.border}>{"─".repeat(width)}</text>
       </box>
 
       {/* Main Content Area */}
@@ -353,7 +321,7 @@ export function App() {
         {currentTab === "TIMELINE" ? (
           filteredEntries.length === 0 ? (
             <box padding={1}>
-              <text fg="gray">
+              <text fg={theme.muted}>
                 {filterQuery
                   ? `No notes matching filter "${filterQuery}". Press '/' or Esc to clear.`
                   : `No journal notes yet. Press '${config.keymaps.quick_capture}' to create one!`}
@@ -367,26 +335,26 @@ export function App() {
                 return (
                   <box key={item.id} flexDirection="column" marginBottom={1}>
                     <box flexDirection="row">
-                      <text fg={isSel ? "cyan" : "gray"}>{"┌── "}</text>
+                      <text fg={isSel ? theme.primary : theme.border}>{"┌── "}</text>
                       {isSel && (
-                        <text bg="cyan" fg="black">
+                        <text bg={theme.selectedBg} fg={theme.selectedFg}>
                           {" SELECTED "}
                         </text>
                       )}
-                      <text fg="gray">{` ${time} `}</text>
-                      <text fg="blue">{`${icons.project} @${item.projectName}`}</text>
+                      <text fg={theme.muted}>{` ${time} `}</text>
+                      <text fg={theme.secondary}>{`${icons.project} @${item.projectName}`}</text>
                       <text> </text>
                       {item.tags.map((t) => (
-                        <text key={t} fg="magenta">{`${icons.tag} #${t} `}</text>
+                        <text key={t} fg={theme.tag}>{`${icons.tag} #${t} `}</text>
                       ))}
                     </box>
                     {item.content.split("\n").map((line, lIdx) => (
                       <box key={lIdx} flexDirection="row">
-                        <text fg={isSel ? "cyan" : "gray"}>{"│ "}</text>
-                        <text>{line}</text>
+                        <text fg={isSel ? theme.primary : theme.border}>{"│ "}</text>
+                        <text fg={theme.fg}>{line}</text>
                       </box>
                     ))}
-                    <text fg={isSel ? "cyan" : "gray"}>{"└───"}</text>
+                    <text fg={isSel ? theme.primary : theme.border}>{"└───"}</text>
                   </box>
                 );
               })}
@@ -396,17 +364,20 @@ export function App() {
           <box flexDirection="row" flexGrow={1}>
             {/* Projects List (Left Column) */}
             <box width={28} flexDirection="column">
-              <text fg="cyan">{`${icons.project} PROJECTS`}</text>
-              <text fg="gray">{"─".repeat(26)}</text>
+              <text fg={theme.primary}>{`${icons.project} PROJECTS`}</text>
+              <text fg={theme.border}>{"─".repeat(26)}</text>
               <scrollbox flexGrow={1}>
                 {filteredProjects.map((p, idx) => {
                   const isSel = idx === selectedProjectIdx;
                   return (
                     <box key={p.id}>
                       {isSel ? (
-                        <text fg="cyan" bg="gray">{`❯ ${p.name} (${p.entryCount})`}</text>
+                        <text
+                          fg={theme.primary}
+                          bg={theme.border}
+                        >{`❯ ${p.name} (${p.entryCount})`}</text>
                       ) : (
-                        <text>{`  ${p.name} (${p.entryCount})`}</text>
+                        <text fg={theme.fg}>{`  ${p.name} (${p.entryCount})`}</text>
                       )}
                     </box>
                   );
@@ -414,25 +385,27 @@ export function App() {
               </scrollbox>
             </box>
 
-            <text fg="gray">{"│ "}</text>
+            <text fg={theme.border}>{"│ "}</text>
 
             {/* Project Details & Preview (Right Column) */}
             <box flexGrow={1} flexDirection="column">
-              <text fg="yellow">{`Preview: ${selProj.name} `}</text>
-              <text fg="gray">{`[Press '${config.keymaps.edit_project_content}' to edit in $EDITOR]`}</text>
-              <text fg="gray">{"─".repeat(Math.max(10, width - 32))}</text>
+              <text fg={theme.accent}>{`Preview: ${selProj.name} `}</text>
+              <text
+                fg={theme.muted}
+              >{`[Press '${config.keymaps.edit_project_content}' to edit in $EDITOR]`}</text>
+              <text fg={theme.border}>{"─".repeat(Math.max(10, width - 32))}</text>
               <scrollbox flexGrow={1}>
                 {selProj.content.split("\n").map((line, lIdx) => (
-                  <text key={lIdx} fg={line.startsWith("#") ? "cyan" : undefined}>
+                  <text key={lIdx} fg={line.startsWith("#") ? theme.primary : theme.fg}>
                     {line}
                   </text>
                 ))}
-                <text fg="gray">{"─".repeat(Math.max(10, width - 32))}</text>
-                <text fg="gray">{`Associated Notes in @${selProj.name}:`}</text>
+                <text fg={theme.border}>{"─".repeat(Math.max(10, width - 32))}</text>
+                <text fg={theme.muted}>{`Associated Notes in @${selProj.name}:`}</text>
                 {entries
                   .filter((e) => e.projectName.toLowerCase() === selProj.name.toLowerCase())
                   .map((e) => (
-                    <text key={e.id}>
+                    <text key={e.id} fg={theme.fg}>
                       {`• ${new Date(e.createdAt).toISOString().slice(0, 10)} ${e.content.split("\n")[0]}`}
                     </text>
                   ))}
@@ -451,30 +424,30 @@ export function App() {
           width={Math.min(70, width - 8)}
           flexDirection="column"
           borderStyle="single"
-          borderColor="cyan"
-          backgroundColor="black"
+          borderColor={theme.primary}
+          backgroundColor={theme.bg}
           padding={1}
         >
-          <text bg="cyan" fg="black">{` ${icons.quick} QUICK CAPTURE `}</text>
-          <text fg="gray">{"Syntax: Note text @project #tags [Tab for suggestion]"}</text>
-          <text fg="white">{`> ${inputBuffer}█`}</text>
+          <text bg={theme.primary} fg={theme.selectedFg}>{` ${icons.quick} QUICK CAPTURE `}</text>
+          <text fg={theme.muted}>{"Syntax: Note text @project #tags [Tab for suggestion]"}</text>
+          <text fg={theme.fg}>{`> ${inputBuffer}█`}</text>
           {getSuggestions() && getSuggestions()!.matches.length > 0 && (
             <box flexDirection="row" marginTop={1}>
-              <text fg="yellow">{"Suggestions: "}</text>
+              <text fg={theme.accent}>{"Suggestions: "}</text>
               {getSuggestions()!
                 .matches.slice(0, 4)
                 .map((m, idx) => (
                   <text
                     key={m}
-                    fg={idx === activeSuggestionIdx ? "black" : "gray"}
-                    bg={idx === activeSuggestionIdx ? "cyan" : undefined}
+                    fg={idx === activeSuggestionIdx ? theme.selectedFg : theme.muted}
+                    bg={idx === activeSuggestionIdx ? theme.primary : undefined}
                   >
                     {`[${getSuggestions()!.type === "project" ? "@" : "#"}${m}] `}
                   </text>
                 ))}
             </box>
           )}
-          <text fg="gray" marginTop={1}>
+          <text fg={theme.muted} marginTop={1}>
             {"[Enter: Save] [Esc: Cancel]"}
           </text>
         </box>
@@ -488,13 +461,13 @@ export function App() {
           width={Math.min(70, width - 8)}
           flexDirection="column"
           borderStyle="single"
-          borderColor="cyan"
-          backgroundColor="black"
+          borderColor={theme.primary}
+          backgroundColor={theme.bg}
           padding={1}
         >
-          <text fg="cyan">{`${icons.project} CREATE NEW PROJECT`}</text>
-          <text>{`Project Name: ${inputBuffer}█`}</text>
-          <text fg="gray">{"[Enter: Create] [Esc: Cancel]"}</text>
+          <text fg={theme.primary}>{`${icons.project} CREATE NEW PROJECT`}</text>
+          <text fg={theme.fg}>{`Project Name: ${inputBuffer}█`}</text>
+          <text fg={theme.muted}>{"[Enter: Create] [Esc: Cancel]"}</text>
         </box>
       )}
 
@@ -506,13 +479,13 @@ export function App() {
           width={Math.min(70, width - 8)}
           flexDirection="column"
           borderStyle="single"
-          borderColor="yellow"
-          backgroundColor="black"
+          borderColor={theme.accent}
+          backgroundColor={theme.bg}
           padding={1}
         >
-          <text fg="yellow">{"/ FILTER & SEARCH"}</text>
-          <text>{`Query: ${inputBuffer}█`}</text>
-          <text fg="gray">{"[Enter: Apply] [Esc: Clear]"}</text>
+          <text fg={theme.accent}>{"/ FILTER & SEARCH"}</text>
+          <text fg={theme.fg}>{`Query: ${inputBuffer}█`}</text>
+          <text fg={theme.muted}>{"[Enter: Apply] [Esc: Clear]"}</text>
         </box>
       )}
 
@@ -524,25 +497,25 @@ export function App() {
           width={Math.min(74, width - 4)}
           flexDirection="column"
           borderStyle="single"
-          borderColor="cyan"
-          backgroundColor="black"
+          borderColor={theme.primary}
+          backgroundColor={theme.bg}
           padding={1}
         >
-          <text fg="cyan">{"? KEYBOARD SHORTCUTS & HELP"}</text>
-          <text>{"[1] Switch to Daily Timeline Stream View"}</text>
-          <text>{"[2] Switch to Projects & Markdown Preview View"}</text>
-          <text>{"[j / k] Navigate entries / projects"}</text>
-          <text>{"[n] 1-Line Quick Capture (Syntax: text @proj #tag)"}</text>
-          <text>{"[N] Create new project"}</text>
-          <text>{"[p] Reassign project for selected note"}</text>
-          <text>{"[t] Edit tags for selected note"}</text>
-          <text>{"[e] Edit project markdown content in $EDITOR"}</text>
-          <text>{"[/] Search / filter stream or projects"}</text>
-          <text>{"[Tab] Accept suggestions when typing"}</text>
-          <text>{"[Ctrl+W] Delete word | [Ctrl+U] Clear line"}</text>
-          <text>{"[Esc] Cancel prompt / Clear filter"}</text>
-          <text>{"[q] Quit application"}</text>
-          <text fg="gray" marginTop={1}>
+          <text fg={theme.primary}>{"? KEYBOARD SHORTCUTS & HELP"}</text>
+          <text fg={theme.fg}>{"[1] Switch to Daily Timeline Stream View"}</text>
+          <text fg={theme.fg}>{"[2] Switch to Projects & Markdown Preview View"}</text>
+          <text fg={theme.fg}>{"[j / k] Navigate entries / projects"}</text>
+          <text fg={theme.fg}>{"[n] 1-Line Quick Capture (Syntax: text @proj #tag)"}</text>
+          <text fg={theme.fg}>{"[N] Create new project"}</text>
+          <text fg={theme.fg}>{"[p] Reassign project for selected note"}</text>
+          <text fg={theme.fg}>{"[t] Edit tags for selected note"}</text>
+          <text fg={theme.fg}>{"[e] Edit project markdown content in $EDITOR"}</text>
+          <text fg={theme.fg}>{"[/] Search / filter stream or projects"}</text>
+          <text fg={theme.fg}>{"[Tab] Accept suggestions when typing"}</text>
+          <text fg={theme.fg}>{"[Ctrl+W] Delete word | [Ctrl+U] Clear line"}</text>
+          <text fg={theme.fg}>{"[Esc] Cancel prompt / Clear filter"}</text>
+          <text fg={theme.fg}>{"[q] Quit application"}</text>
+          <text fg={theme.muted} marginTop={1}>
             {"Press any key or Esc to dismiss"}
           </text>
         </box>
@@ -550,24 +523,24 @@ export function App() {
 
       {/* Anchored Bottom Status Line */}
       <box height={2} flexDirection="column">
-        <text fg="gray">{"─".repeat(width)}</text>
+        <text fg={theme.border}>{"─".repeat(width)}</text>
         <box flexDirection="row">
-          {filterQuery && <text fg="yellow">{`[Filter: "${filterQuery}"] `}</text>}
-          <text fg="cyan">{"[1]"}</text>
-          <text>{"Stream "}</text>
-          <text fg="cyan">{"[2]"}</text>
-          <text>{"Projects "}</text>
-          <text fg="cyan">{"[n]"}</text>
-          <text>{"Note "}</text>
-          <text fg="cyan">{"[N]"}</text>
-          <text>{"Project "}</text>
-          <text fg="cyan">{"[/]"}</text>
-          <text>{"Filter "}</text>
-          <text fg="cyan">{"[?]"}</text>
-          <text>{"Help "}</text>
-          <text fg="cyan">{"[q]"}</text>
-          <text>{"Quit "}</text>
-          <text fg="gray">{statusMessage}</text>
+          {filterQuery && <text fg={theme.accent}>{`[Filter: "${filterQuery}"] `}</text>}
+          <text fg={theme.primary}>{"[1]"}</text>
+          <text fg={theme.fg}>{"Stream "}</text>
+          <text fg={theme.primary}>{"[2]"}</text>
+          <text fg={theme.fg}>{"Projects "}</text>
+          <text fg={theme.primary}>{"[n]"}</text>
+          <text fg={theme.fg}>{"Note "}</text>
+          <text fg={theme.primary}>{"[N]"}</text>
+          <text fg={theme.fg}>{"Project "}</text>
+          <text fg={theme.primary}>{"[/]"}</text>
+          <text fg={theme.fg}>{"Filter "}</text>
+          <text fg={theme.primary}>{"[?]"}</text>
+          <text fg={theme.fg}>{"Help "}</text>
+          <text fg={theme.primary}>{"[q]"}</text>
+          <text fg={theme.fg}>{"Quit "}</text>
+          <text fg={theme.muted}>{statusMessage}</text>
         </box>
       </box>
     </box>
