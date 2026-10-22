@@ -39,7 +39,9 @@ export function renderCaptureModalLines(
           : `${ANSI.dim}${prefix}${m}${ANSI.reset}`;
       })
       .join(" ");
-    res.push(`${leftPad}${ANSI.cyan}│${ANSI.reset} ${ANSI.yellow}Suggestions:${ANSI.reset} ${pills}`);
+    res.push(
+      `${leftPad}${ANSI.cyan}│${ANSI.reset} ${ANSI.yellow}Suggestions:${ANSI.reset} ${pills}`,
+    );
   }
 
   res.push(
@@ -49,7 +51,10 @@ export function renderCaptureModalLines(
   return res;
 }
 
-export function renderNewProjectModalLines(inputBuffer: string, icons: Record<string, string>): string[] {
+export function renderNewProjectModalLines(
+  inputBuffer: string,
+  icons: Record<string, string>,
+): string[] {
   return [
     `${ANSI.cyan}┌─ ${icons.project} CREATE NEW PROJECT ──────────────────────────────────────────┐${ANSI.reset}`,
     `${ANSI.cyan}│${ANSI.reset} Project Name: ${ANSI.bold}${inputBuffer}█${ANSI.reset}`,
@@ -104,7 +109,9 @@ export function renderEditProjectPromptLines(
   if (suggestions.length > 0) {
     res.push(`${ANSI.blue}│${ANSI.reset} Suggestions: ${suggestions.slice(0, 5).join(", ")}`);
   }
-  res.push(`${ANSI.blue}└──────────────────────────────────────────────────────────────┘${ANSI.reset}`);
+  res.push(
+    `${ANSI.blue}└──────────────────────────────────────────────────────────────┘${ANSI.reset}`,
+  );
   return res;
 }
 
