@@ -107,7 +107,7 @@ export function TimelineView({
                 <box flexDirection="column" marginTop={0}>
                   {entry.content.split("\n").map((line, lIdx) => (
                     // biome-ignore lint/suspicious/noArrayIndexKey: line-by-line render of entry content
-                    <text key={lIdx} fg={theme.fg}>
+                    <text key={lIdx} fg={theme.fg} selectable>
                       {line}
                     </text>
                   ))}

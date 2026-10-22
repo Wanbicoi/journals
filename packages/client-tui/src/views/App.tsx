@@ -1,6 +1,12 @@
-import { useKeyboard, useTerminalDimensions } from "@opentui/react";
+import {
+  useKeyboard,
+  useRenderer,
+  useSelectionHandler,
+  useTerminalDimensions,
+} from "@opentui/react";
 import React, { useCallback, useState } from "react";
 import { config } from "../api/client.js";
+import { copyToClipboard } from "../clipboard.js";
 import { Header } from "../components/Header.js";
 import { StatusBar } from "../components/StatusBar.js";
 import { openExternalEditor } from "../editor.js";
@@ -112,6 +118,18 @@ export function App() {
   );
 
   useMouseClick(handleMouse);
+
+  const renderer = useRenderer();
+  useSelectionHandler((selection) => {
+    if (!selection) return;
+    const text = selection.getSelectedText();
+    if (text) {
+      copyToClipboard(text, renderer);
+      const preview = text.trim().replace(/\s+/g, " ");
+      const display = preview.length > 30 ? `${preview.slice(0, 30)}...` : preview;
+      setStatusMessage(`Copied to clipboard: "${display}"`);
+    }
+  });
 
   useKeyboard(async (key) => {
     const keyName = key.name;
