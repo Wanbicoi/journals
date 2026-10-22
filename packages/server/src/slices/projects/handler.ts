@@ -3,7 +3,9 @@ import { count, desc, eq } from "drizzle-orm";
 import type { DatabaseInstance } from "../../db/client.js";
 import { entries, projects } from "../../db/schema.js";
 
-export function listProjects(db: DatabaseInstance) {
+type DbOrTx = DatabaseInstance | Parameters<Parameters<DatabaseInstance["transaction"]>[0]>[0];
+
+export function listProjects(db: DbOrTx) {
   const projs = db
     .select({
       id: projects.id,
@@ -22,7 +24,7 @@ export function listProjects(db: DatabaseInstance) {
   return projs;
 }
 
-export function findOrCreateProject(db: DatabaseInstance, name: string) {
+export function findOrCreateProject(db: DbOrTx, name: string) {
   const cleanName = name.trim();
   let [project] = db.select().from(projects).where(eq(projects.name, cleanName)).all();
   if (!project) {
@@ -42,7 +44,7 @@ export function findOrCreateProject(db: DatabaseInstance, name: string) {
   return project;
 }
 
-export function createProject(db: DatabaseInstance, name: string, content = "") {
+export function createProject(db: DbOrTx, name: string, content = "") {
   const id = crypto.randomUUID();
   const now = Date.now();
   db.insert(projects)
@@ -57,7 +59,7 @@ export function createProject(db: DatabaseInstance, name: string, content = "") 
   return { id, name, content, createdAt: now, updatedAt: now };
 }
 
-export function updateProjectContent(db: DatabaseInstance, id: string, content: string) {
+export function updateProjectContent(db: DbOrTx, id: string, content: string) {
   const now = Date.now();
   db.update(projects).set({ content, updatedAt: now }).where(eq(projects.id, id)).run();
   return { id, content, updatedAt: now };

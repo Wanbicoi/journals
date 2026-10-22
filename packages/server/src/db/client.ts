@@ -5,12 +5,8 @@ import { type BunSQLiteDatabase, drizzle } from "drizzle-orm/bun-sqlite";
 import * as schema from "./schema.js";
 
 export type DatabaseInstance = BunSQLiteDatabase<typeof schema>;
-export type SQLiteDatabase = Database;
 
-export function initDb(
-  dbPath: string,
-  walMode = true,
-): { db: DatabaseInstance; sqlite: SQLiteDatabase } {
+export function initDb(dbPath: string, walMode = true): DatabaseInstance {
   const dir = path.dirname(dbPath);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
@@ -53,6 +49,5 @@ export function initDb(
     );
   `);
 
-  const db = drizzle(sqlite, { schema });
-  return { db, sqlite };
+  return drizzle(sqlite, { schema });
 }

@@ -1,5 +1,4 @@
 import { loadConfig, resolveDbPath } from "@journals/core";
-import { v4 as uuidv4 } from "uuid";
 import { initDb } from "../src/db/client.js";
 import { entries, entryTags, projects, tags } from "../src/db/schema.js";
 
@@ -78,13 +77,13 @@ async function seed() {
   const dbPath = resolveDbPath(config.server.db_path);
   console.log(`Connecting to database at ${dbPath}...`);
 
-  const { db, sqlite } = initDb(dbPath, config.server.wal_mode);
+  const db = initDb(dbPath, config.server.wal_mode);
 
   // Clear existing data cleanly
-  sqlite.run("DELETE FROM entry_tags;");
-  sqlite.run("DELETE FROM entries;");
-  sqlite.run("DELETE FROM tags;");
-  sqlite.run("DELETE FROM projects;");
+  db.delete(entryTags).run();
+  db.delete(entries).run();
+  db.delete(tags).run();
+  db.delete(projects).run();
 
   console.log("Cleared existing data.");
 
@@ -100,10 +99,15 @@ async function seed() {
     const id = crypto.randomUUID();
     const createdAt = baseTime.getTime() - (10 - i) * 86400 * 1000;
 
-    sqlite.run(
-      "INSERT INTO projects (id, name, content, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-      [id, def.name, def.content, createdAt, createdAt],
-    );
+    db.insert(projects)
+      .values({
+        id,
+        name: def.name,
+        content: def.content,
+        createdAt,
+        updatedAt: createdAt,
+      })
+      .run();
     createdProjects.push({ id, name: def.name });
   }
   console.log(`Seeded ${createdProjects.length} projects.`);
@@ -136,18 +140,21 @@ async function seed() {
       const project = createdProjects[(dayOffset + eIdx) % createdProjects.length];
 
       const entryId = crypto.randomUUID();
-      sqlite.run(
-        "INSERT INTO entries (id, project_id, content, is_quick_capture, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-        [entryId, project.id, template.text, 1, entryTime.getTime(), entryTime.getTime()],
-      );
+      db.insert(entries)
+        .values({
+          id: entryId,
+          projectId: project.id,
+          content: template.text,
+          isQuickCapture: true,
+          createdAt: entryTime.getTime(),
+          updatedAt: entryTime.getTime(),
+        })
+        .run();
 
       for (const t of template.tags) {
         allTags.add(t);
-        sqlite.run("INSERT OR IGNORE INTO tags (name) VALUES (?)", [t]);
-        sqlite.run("INSERT OR IGNORE INTO entry_tags (entry_id, tag_name) VALUES (?, ?)", [
-          entryId,
-          t,
-        ]);
+        db.insert(tags).values({ name: t }).onConflictDoNothing().run();
+        db.insert(entryTags).values({ entryId, tagName: t }).onConflictDoNothing().run();
       }
 
       totalEntries++;

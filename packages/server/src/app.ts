@@ -8,7 +8,7 @@ import {
   UpdateProjectContentInputSchema,
 } from "@journals/core";
 import { Hono } from "hono";
-import type { DatabaseInstance, SQLiteDatabase } from "./db/client.js";
+import type { DatabaseInstance } from "./db/client.js";
 import {
   deleteEntry,
   listEntries,
@@ -20,38 +20,32 @@ import { createProject, listProjects, updateProjectContent } from "./slices/proj
 import { handleQuickCapture } from "./slices/quick-capture/handler.js";
 import { listTags } from "./slices/tags/handler.js";
 
-export function createApp(db: DatabaseInstance, sqlite: SQLiteDatabase) {
+export function createApp(db: DatabaseInstance) {
   const app = new Hono()
     .get("/health", (c) => c.json({ status: "ok" }))
 
     // Quick Capture
     .post("/capture", zValidator("json", QuickCaptureInputSchema), (c) => {
       const data = c.req.valid("json");
-      const result = handleQuickCapture(
-        db,
-        sqlite,
-        data.raw,
-        data.defaultProject,
-        data.defaultTags,
-      );
+      const result = handleQuickCapture(db, data.raw, data.defaultProject, data.defaultTags);
       return c.json(result);
     })
 
     // Entries
     .get("/entries", (c) => {
-      const entries = listEntries(db, sqlite);
+      const entries = listEntries(db);
       return c.json({ entries });
     })
     .patch("/entries/:id/project", zValidator("json", UpdateEntryProjectSchema), (c) => {
       const id = c.req.param("id");
       const { projectName } = c.req.valid("json");
-      const res = updateEntryProject(db, sqlite, id, projectName);
+      const res = updateEntryProject(db, id, projectName);
       return c.json(res);
     })
     .patch("/entries/:id/tags", zValidator("json", UpdateEntryTagsSchema), (c) => {
       const id = c.req.param("id");
       const { tags } = c.req.valid("json");
-      const res = updateEntryTags(sqlite, id, tags);
+      const res = updateEntryTags(db, id, tags);
       return c.json(res);
     })
     .patch("/entries/:id/content", zValidator("json", UpdateEntryContentSchema), (c) => {
@@ -62,7 +56,7 @@ export function createApp(db: DatabaseInstance, sqlite: SQLiteDatabase) {
     })
     .delete("/entries/:id", (c) => {
       const id = c.req.param("id");
-      const res = deleteEntry(db, sqlite, id);
+      const res = deleteEntry(db, id);
       return c.json(res);
     })
 
