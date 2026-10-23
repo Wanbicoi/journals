@@ -11,6 +11,9 @@ kanban-plugin: basic
 
 ## 📋 Next
 - [ ] Automated installer script (`install.sh`) with daemon setup detection
+- [ ] Decouple Client/CLI from Server Auto-Spawn in Dev Mode:
+  - Prevent `EADDRINUSE` port 4321 conflicts and DB migration race conditions when running multiple dev TUIs/CLIs.
+  - Disable in-process server `auto_start` in dev mode; prompt user to start `bun run dev:server` or use lockfile-based single-instance guard.
 - [x] Full-text search (SQLite FTS5) across timeline entries and markdown projects
 - [x] TUI search bar & filters (filter per tab: timeline & projects)
 - [ ] Multi-line entry editing via `$EDITOR` / temporary file
