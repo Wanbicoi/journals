@@ -80,12 +80,24 @@ SubmitNote(rawText) {
     body := '{"raw":"' . escaped . '"}'
 
     try {
-        http := ComObject("MSXML2.ServerXMLHTTP.6.0")
-        http.Open("POST", SERVER_URL, true) ; asynchronous
+        ; Use synchronous WinHttp.WinHttpRequest.5.1 for full status & response text
+        http := ComObject("WinHttp.WinHttpRequest.5.1")
+        http.Open("POST", SERVER_URL, false)
         http.SetRequestHeader("Content-Type", "application/json; charset=utf-8")
-        http.setTimeouts(1000, 1000, 2000, 2000)
+        http.SetTimeouts(2000, 2000, 3000, 3000)
         http.Send(body)
+
+        status := http.Status
+        response := http.ResponseText
+
+        if (status == 200) {
+            ; Show a non-blocking toast/tooltip confirmation for 1.5 seconds
+            ToolTip("✓ Captured: " . rawText)
+            SetTimer(() => ToolTip(), -1500)
+        } else {
+            MsgBox("Server returned error status " . status . ":`n" . response, "Capture Error", "Icon!")
+        }
     } catch as err {
-        MsgBox("Could not connect to Journals server at " . SERVER_URL . "`nMake sure the server is running in WSL.`n`nError: " . err.Message, "Journals Server Offline", "Icon!")
+        MsgBox("Failed to connect to Journals server at " . SERVER_URL . "`n`nError: " . err.Message, "Journals Offline", "Icon!")
     }
 }
