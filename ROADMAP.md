@@ -5,7 +5,7 @@ kanban-plugin: basic
 # Journals Roadmap
 
 ## 🚀 Now
-- [ ] Global shortcut quick capture script (popup via rofi/wofi/zenity/terminal fallback)
+- [x] Global shortcut quick capture script (AutoHotkey v2 resident popup + Python/PowerShell fallbacks)
 - [ ] Daemon runner & service setup (`systemd --user` unit + on-demand auto-spawn fallback)
 - [ ] CLI capture command / flags (e.g. `journals capture "quick note"`)
 
