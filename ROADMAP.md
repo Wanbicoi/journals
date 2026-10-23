@@ -16,6 +16,11 @@ kanban-plugin: basic
 - [ ] Multi-line entry editing via `$EDITOR` / temporary file
 
 ## 💡 Ideas / Backlog
+- [ ] Agent Search Ranking & Memory Recall:
+  - FTS5 multi-pattern retrieval with dynamic `hit_time` priority multiplier:
+    $$\text{Rank Score} = \text{MatchRelevance} \times (1 + \log(1 + \text{hit\_time}))$$
+  - High `hit_time` solutions automatically surface first for recurring agent tasks/errors.
+  - Contextual window multi-match snippet extraction across long entries.
 - [ ] Export & backup engine (export to Obsidian/Logseq daily markdown files, JSON dump)
 - [ ] WebSocket / SSE live event stream for syncing multiple running clients
 - [ ] Native zero-dependency desktop popup prompt

@@ -11,6 +11,7 @@ import {
 } from "@journals/core";
 import { Hono } from "hono";
 import type { DatabaseInstance } from "./db/client.js";
+import { createAgentEntriesRouter } from "./slices/agent-entries/router.js";
 import {
   deleteEntry,
   listEntries,
@@ -99,7 +100,10 @@ export function createApp(db: DatabaseInstance) {
     .get("/tags", (c) => {
       const tags = listTags(db);
       return c.json({ tags });
-    });
+    })
+
+    // Agent Entries Slice
+    .route("/agent-entries", createAgentEntriesRouter(db));
 
   return app;
 }

@@ -5,7 +5,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc && cp -r src/db/migrations dist/db/migrations",
+    "build": "tsc && rm -rf dist/db/migrations && cp -r src/db/migrations dist/db/",
     "test": "bun test",
     "start": "bun dist/index.js",
     "dev": "bun --watch src/index.ts",

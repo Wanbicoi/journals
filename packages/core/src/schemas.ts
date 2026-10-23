@@ -86,10 +86,54 @@ export const ProjectSearchResultSchema = z.object({
   rank: z.number().optional(),
 });
 
+export const AgentEntrySchema = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  projectName: z.string().optional(),
+  content: z.string(),
+  hitTime: z.number().int().nonnegative().default(0),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+});
+
+export const CreateAgentEntryInputSchema = z.object({
+  projectId: z.string().optional(),
+  projectName: z.string().optional(),
+  content: z.string().min(1),
+});
+
+export const SearchAgentEntriesQuerySchema = z.object({
+  q: z.string().min(1),
+  limit: z.coerce.number().int().positive().default(20),
+});
+
+export const AgentEntrySearchResultSchema = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  projectName: z.string(),
+  content: z.string(),
+  snippet: z.string(),
+  preview: z.string().optional(),
+  hitTime: z.number(),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+  rank: z.number().optional(),
+});
+
+export const IncrementAgentEntryHitSchema = z.object({
+  ids: z.array(z.string().min(1)).min(1),
+});
+
 export type SearchEntriesQuery = z.infer<typeof SearchEntriesQuerySchema>;
 export type SearchProjectsQuery = z.infer<typeof SearchProjectsQuerySchema>;
 export type EntrySearchResult = z.infer<typeof EntrySearchResultSchema>;
 export type ProjectSearchResult = z.infer<typeof ProjectSearchResultSchema>;
+
+export type AgentEntry = z.infer<typeof AgentEntrySchema>;
+export type CreateAgentEntryInput = z.infer<typeof CreateAgentEntryInputSchema>;
+export type SearchAgentEntriesQuery = z.infer<typeof SearchAgentEntriesQuerySchema>;
+export type AgentEntrySearchResult = z.infer<typeof AgentEntrySearchResultSchema>;
+export type IncrementAgentEntryHitInput = z.infer<typeof IncrementAgentEntryHitSchema>;
 
 export type Project = z.infer<typeof ProjectSchema>;
 export type Entry = z.infer<typeof EntrySchema>;
