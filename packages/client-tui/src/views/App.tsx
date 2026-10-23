@@ -405,6 +405,7 @@ export function App() {
           width={width}
           height={height}
           entrySummary={selectedEntry.content}
+          warningIcon={icons.warning || ""}
           theme={theme}
         />
       )}

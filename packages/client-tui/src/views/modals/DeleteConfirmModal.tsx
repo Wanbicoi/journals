@@ -5,6 +5,7 @@ interface DeleteConfirmModalProps {
   width: number;
   height: number;
   entrySummary: string;
+  warningIcon?: string;
   theme: ThemePalette;
 }
 
@@ -12,12 +13,13 @@ export function DeleteConfirmModal({
   width,
   height,
   entrySummary,
+  warningIcon = "",
   theme,
 }: DeleteConfirmModalProps) {
   return (
     <Modal width={width} height={height} theme={theme} borderColor={theme.highlight} maxWidth={64}>
       <text bg={theme.highlight} fg={theme.selectedFg}>
-        {" ⚠️  DELETE NOTE "}
+        {` ${warningIcon} DELETE NOTE `}
       </text>
       <text fg={theme.fg} marginTop={1}>
         {"Are you sure you want to delete:"}
