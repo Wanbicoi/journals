@@ -15,7 +15,7 @@ export function Header({ width, currentTab, journalIcon, theme }: HeaderProps) {
         <text> </text>
         {currentTab === "TIMELINE" ? (
           <text bg={theme.secondary} fg={theme.selectedFg}>
-            {" [1] Timeline Stream "}
+            {" [1] Timeline "}
           </text>
         ) : (
           <text fg={theme.muted}>{" [1] Timeline "}</text>

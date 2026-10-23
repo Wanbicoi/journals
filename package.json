@@ -15,10 +15,13 @@
     "prepare": "bunx simple-git-hooks"
   },
   "simple-git-hooks": {
-    "pre-commit": "bunx biome check --write --staged --no-errors-on-unmatched && git update-index --again && bun run typecheck"
+    "pre-commit": "bunx biome check --write --staged --no-errors-on-unmatched && git update-index --again && bun run typecheck",
+    "commit-msg": "bunx commitlint --edit \"$1\""
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
     "@types/bun": "^1.4.3",
     "simple-git-hooks": "^2.11.1",
     "typescript": "^5.7.3"
