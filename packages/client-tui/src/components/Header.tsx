@@ -23,7 +23,7 @@ export function Header({ width, currentTab, journalIcon, theme }: HeaderProps) {
         <text> </text>
         {currentTab === "PROJECTS" ? (
           <text bg={theme.primary} fg={theme.selectedFg}>
-            {" [2] Projects & Preview "}
+            {" [2] Projects "}
           </text>
         ) : (
           <text fg={theme.muted}>{" [2] Projects "}</text>

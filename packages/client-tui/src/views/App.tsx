@@ -96,14 +96,14 @@ export function App() {
 
       // Header is at row 0 (or row 1 depending on 0/1 indexing)
       if (y === 0 || y === 1) {
-        // [1] Timeline tab is roughly x: 12 to 34
-        if (x >= 10 && x <= 34) {
+        // [1] Timeline tab is roughly x: 10 to 25
+        if (x >= 10 && x <= 25) {
           setCurrentTab("TIMELINE");
           setStatusMessage("Timeline View (mouse)");
           return;
         }
-        // [2] Projects tab is roughly x: 35 to 60
-        if (x >= 35 && x <= 62) {
+        // [2] Projects tab is roughly x: 26 to 42
+        if (x >= 26 && x <= 42) {
           setCurrentTab("PROJECTS");
           setStatusMessage("Projects View (mouse)");
           return;
