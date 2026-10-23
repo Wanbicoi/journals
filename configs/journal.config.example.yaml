@@ -3,7 +3,7 @@
 # ==========================================
 appearance:
   use_nerd_font: true              # When true, uses Nerd Font glyphs; fallback to ASCII/unicode when false
-  theme: "nord"                    # Color theme (nord, gruvbox, dracula, catppuccin)
+  theme: "rose-pine-dawn"          # Color theme (rose-pine-dawn, rose-pine, nord, gruvbox, dracula, catppuccin)
   date_format: "YYYY-MM-DD"        # Daily stream grouping format
   time_format: "HH:mm"
 

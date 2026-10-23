@@ -3,7 +3,7 @@
 # ==========================================
 appearance:
   use_nerd_font: true
-  theme: "nord"
+  theme: "rose-pine-dawn"
   date_format: "YYYY-MM-DD"
   time_format: "HH:mm"
 
