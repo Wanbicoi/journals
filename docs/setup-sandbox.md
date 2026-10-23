@@ -6,20 +6,14 @@ This guide explains how to run, update, and uninstall `journals` for daily produ
 
 ## 1. Quick Setup (Executable Launcher)
 
-A launcher script placed in `~/.local/state/nix/profile/bin/journals` enables the `journals` command globally in your terminal (since `~/.local/state/nix/profile/bin` is already part of your `$PATH` on NixOS).
+A launcher script is placed in `~/.local/state/nix/profile/bin/journals` (and linked to `~/.local/bin/journals`) to provide the `journals` command globally in your terminal.
 
-### Installation Command
-
-Run this once:
+Whenever you rebuild NixOS or want to install/re-link it, run:
 
 ```bash
-mkdir -p ~/.local/state/nix/profile/bin
-cat << 'EOF' > ~/.local/state/nix/profile/bin/journals
-#!/usr/bin/env bash
-REPO_DIR="/home/nixos/Repos/journals"
-exec /usr/bin/env bun "$REPO_DIR/packages/client-tui/dist/index.js" "$@"
-EOF
-chmod +x ~/.local/state/nix/profile/bin/journals
+bun run install:bin
+# Or run the script directly:
+./scripts/install.sh
 ```
 
 Verify the installation:
@@ -28,6 +22,7 @@ Verify the installation:
 which journals
 # Output: /home/nixos/.local/state/nix/profile/bin/journals
 
+journals daemon status
 journals agent --help
 ```
 
@@ -52,7 +47,31 @@ quick_add:
   default_project: "Inbox"
 ```
 
-With `auto_start: true`, running `journals` or `journals agent` automatically starts the background HTTP server daemon if it is not already running.
+With `auto_start: true` (default), any invocation of `journals`, `journals agent`, or the TUI automatically starts the background HTTP server daemon if it is not already running, so you never have to start it manually.
+
+---
+
+## 3. Daemon Management (`journals daemon`)
+
+You can also inspect or manage the daemon server explicitly at any time:
+
+```bash
+# Check daemon status (PID, health, URL, logs)
+journals daemon status
+
+# Stop background server
+journals daemon stop
+
+# Start background server explicitly
+journals daemon start
+
+# Restart daemon
+journals daemon restart
+```
+
+PID and logs are saved under:
+- **PID File**: `~/.local/share/journals/server.pid`
+- **Log File**: `~/.local/share/journals/server.log`
 
 ---
 

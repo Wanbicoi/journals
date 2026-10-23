@@ -8,6 +8,7 @@
     "dev": "JOURNAL_CONFIG=configs/journal.sandbox.yaml bun run dev:tui",
     "seed": "JOURNAL_CONFIG=configs/journal.sandbox.yaml bun run --cwd packages/server scripts/seed.ts",
     "build": "bun --filter '*' build",
+    "install:bin": "./scripts/install.sh",
     "format": "bunx biome format --write .",
     "lint": "bunx biome check .",
     "lint:fix": "bunx biome check --write .",
