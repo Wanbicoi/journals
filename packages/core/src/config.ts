@@ -8,7 +8,7 @@ export const ConfigSchema = z.object({
   appearance: z
     .object({
       use_nerd_font: z.boolean().default(true),
-      theme: z.string().default("nord"),
+      theme: z.string().default("rose-pine-dawn"),
       date_format: z.string().default("YYYY-MM-DD"),
       time_format: z.string().default("HH:mm"),
     })

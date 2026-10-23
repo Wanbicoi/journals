@@ -15,7 +15,7 @@
 #SingleInstance Force
 TraySetIcon "shell32.dll", 265  ; Notepad-like icon in system tray
 
-SERVER_URL := "http://127.0.0.1:4321/capture"
+SERVER_URL := "http://127.0.0.1:4322/capture"
 
 ; Build the GUI once and keep it resident in memory for instant show/hide
 CaptureGui := Gui("+AlwaysOnTop -MaximizeBox -MinimizeBox", "Journals Quick Capture")

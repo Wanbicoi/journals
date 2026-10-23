@@ -131,12 +131,13 @@ export const themes: Record<string, ThemePalette> = {
 };
 
 export function getTheme(themeName?: string): ThemePalette {
-  const normalized = (themeName || "nord").toLowerCase().replace(/[-_ ]/g, "");
+  const normalized = (themeName || "rose-pine-dawn").toLowerCase().replace(/[-_ ]/g, "");
   if (normalized === "rosepinedawn") return themes["rose-pine-dawn"];
   if (normalized === "rosepinemoon") return themes["rose-pine-moon"];
   if (normalized === "rosepine") return themes["rose-pine"];
   if (normalized === "catppuccin" || normalized === "mocha") return themes.catppuccin;
   if (normalized === "dracula") return themes.dracula;
   if (normalized === "gruvbox") return themes.gruvbox;
-  return themes.nord;
+  if (normalized === "nord") return themes.nord;
+  return themes["rose-pine-dawn"];
 }
