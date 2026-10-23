@@ -11,7 +11,6 @@ export function listEntries(db: DatabaseInstance) {
       projectId: entries.projectId,
       projectName: projects.name,
       content: entries.content,
-      isQuickCapture: entries.isQuickCapture,
       createdAt: entries.createdAt,
       updatedAt: entries.updatedAt,
     })
@@ -99,7 +98,6 @@ export function searchEntries(db: DatabaseInstance, query: string, limit = 50) {
     projectName: string;
     content: string;
     snippet: string;
-    isQuickCapture: number;
     createdAt: number;
     updatedAt: number;
     rank: number;
@@ -112,7 +110,6 @@ export function searchEntries(db: DatabaseInstance, query: string, limit = 50) {
       p.name AS projectName,
       e.content,
       snippet(entries_fts, 0, '<mark>', '</mark>', '...', 15) AS snippet,
-      e.is_quick_capture AS isQuickCapture,
       e.created_at AS createdAt,
       e.updated_at AS updatedAt,
       bm25(entries_fts) AS rank
@@ -147,7 +144,6 @@ export function searchEntries(db: DatabaseInstance, query: string, limit = 50) {
 
   return rows.map((r) => ({
     ...r,
-    isQuickCapture: Boolean(r.isQuickCapture),
     tags: tagsByEntryId.get(r.id) || [],
   }));
 }

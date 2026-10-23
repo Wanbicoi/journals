@@ -64,7 +64,6 @@ export const entries = sqliteTable("entries", {
   id: text("id").primaryKey(),
   projectId: text("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
-  isQuickCapture: integer("is_quick_capture", { mode: "boolean" }).notNull().default(false),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });

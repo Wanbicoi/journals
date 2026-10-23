@@ -145,7 +145,6 @@ async function seed() {
           id: entryId,
           projectId: project.id,
           content: template.text,
-          isQuickCapture: true,
           createdAt: entryTime.getTime(),
           updatedAt: entryTime.getTime(),
         })

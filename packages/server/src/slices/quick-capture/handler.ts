@@ -24,7 +24,6 @@ export function handleQuickCapture(
         id: entryId,
         projectId: project.id,
         content: parsed.content || "Empty note",
-        isQuickCapture: true,
         createdAt: now,
         updatedAt: now,
       })

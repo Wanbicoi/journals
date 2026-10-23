@@ -14,7 +14,17 @@ export const entries = sqliteTable("entries", {
     .notNull()
     .references(() => projects.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
-  isQuickCapture: integer("is_quick_capture", { mode: "boolean" }).notNull().default(false),
+  createdAt: integer("created_at").notNull(),
+  updatedAt: integer("updated_at").notNull(),
+});
+
+export const agentEntries = sqliteTable("agent_entries", {
+  id: text("id").primaryKey(),
+  projectId: text("project_id")
+    .notNull()
+    .references(() => projects.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  hitTime: integer("hit_time").notNull().default(0),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
