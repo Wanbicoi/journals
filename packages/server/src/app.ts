@@ -36,7 +36,7 @@ export function createApp(db: DatabaseInstance) {
     // Quick Capture
     .post("/capture", zValidator("json", QuickCaptureInputSchema), (c) => {
       const data = c.req.valid("json");
-      const result = handleQuickCapture(db, data.raw, data.defaultProject, data.defaultTags);
+      const result = handleQuickCapture(db, data.raw, data.defaultProject);
       return c.json(result);
     })
 

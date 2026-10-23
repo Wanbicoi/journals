@@ -53,12 +53,10 @@ keymaps:
   quit: "q"
 
 # ==========================================
-# QUICK CAPTURE & GENERAL DEFAULTS
+# QUICK ADD DEFAULTS
 # ==========================================
-defaults:
-  project: "Inbox"                 # Default project if @project is omitted in 1-line capture
-  tags:                            # Default tags if #tag is omitted in 1-line capture
-    - "quick"
+quick_add:
+  default_project: "Inbox"         # Default project if @project is omitted in quick capture
 
 # ==========================================
 # SERVER & STORAGE OPTIONS

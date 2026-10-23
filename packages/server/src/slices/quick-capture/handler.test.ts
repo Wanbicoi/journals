@@ -14,12 +14,12 @@ describe("Quick Capture Slice", () => {
     expect(typeof result.projectId).toBe("string");
   });
 
-  test("uses defaultProject and defaultTags when not supplied in raw string", () => {
+  test("uses defaultProject and empty tags when not supplied in raw string", () => {
     const db = initDb(":memory:", false);
     const result = handleQuickCapture(db, "Simple thought without tags or project");
 
     expect(result.projectName).toBe("Inbox");
-    expect(result.tags).toEqual(["quick"]);
+    expect(result.tags).toEqual([]);
     expect(result.content).toBe("Simple thought without tags or project");
   });
 });

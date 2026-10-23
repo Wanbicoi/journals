@@ -60,10 +60,9 @@ export const ConfigSchema = z.object({
       quit: z.string().default("q"),
     })
     .default({}),
-  defaults: z
+  quick_add: z
     .object({
-      project: z.string().default("Inbox"),
-      tags: z.array(z.string()).default(["quick"]),
+      default_project: z.string().default("Inbox"),
     })
     .default({}),
   server: z

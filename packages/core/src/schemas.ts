@@ -38,7 +38,6 @@ export const EntrySchema = z.object({
 export const QuickCaptureInputSchema = z.object({
   raw: z.string().min(1),
   defaultProject: z.string().optional().default("Inbox"),
-  defaultTags: z.array(z.string()).optional().default(["quick"]),
 });
 
 export const UpdateEntryProjectSchema = z.object({

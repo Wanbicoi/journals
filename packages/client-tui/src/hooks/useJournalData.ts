@@ -61,8 +61,7 @@ export function useJournalData() {
     await client.capture.$post({
       json: {
         raw: content,
-        defaultProject: config.defaults.project,
-        defaultTags: config.defaults.tags,
+        defaultProject: config.quick_add.default_project,
       },
     });
     await reloadData();

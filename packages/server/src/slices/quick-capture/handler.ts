@@ -4,13 +4,8 @@ import type { DatabaseInstance } from "../../db/client.js";
 import { entries, entryTags, tags } from "../../db/schema.js";
 import { findOrCreateProject } from "../projects/handler.js";
 
-export function handleQuickCapture(
-  db: DatabaseInstance,
-  raw: string,
-  defaultProject = "Inbox",
-  defaultTags: string[] = ["quick"],
-) {
-  const parsed = parseCaptureLine(raw, defaultProject, defaultTags);
+export function handleQuickCapture(db: DatabaseInstance, raw: string, defaultProject = "Inbox") {
+  const parsed = parseCaptureLine(raw, defaultProject);
   const now = Date.now();
 
   return db.transaction((tx) => {

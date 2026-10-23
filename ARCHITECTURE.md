@@ -129,10 +129,8 @@ keymaps:
   cancel: "escape"
   quit: "q"
 
-defaults:
-  project: "Inbox"
-  tags:
-    - "quick"
+quick_add:
+  default_project: "Inbox"
 
 server:
   host: "127.0.0.1"

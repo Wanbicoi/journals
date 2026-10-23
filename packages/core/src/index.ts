@@ -7,11 +7,7 @@ export interface ParsedCapture {
   tags: string[];
 }
 
-export function parseCaptureLine(
-  raw: string,
-  defaultProject = "Inbox",
-  defaultTags: string[] = ["quick"],
-): ParsedCapture {
+export function parseCaptureLine(raw: string, defaultProject = "Inbox"): ParsedCapture {
   const tokens = raw.trim().split(/\s+/);
   let projectName = defaultProject;
   const tags: string[] = [];
@@ -30,6 +26,6 @@ export function parseCaptureLine(
   return {
     content: textWords.join(" "),
     projectName,
-    tags: tags.length > 0 ? tags : defaultTags,
+    tags,
   };
 }

@@ -13,3 +13,7 @@ server:
   db_path: "./data/sandbox.sqlite"
   wal_mode: true
   auto_start: true
+
+quick_add:
+  default_project: "Inbox"
+
