@@ -2,16 +2,24 @@
 import { createCliRenderer } from "@opentui/core";
 import { createRoot } from "@opentui/react";
 import { runAgentCli } from "./cli/agent.js";
-import { App } from "./views/App.js";
+import { runDaemonCli } from "./cli/daemon.js";
 
 async function main() {
   const args = process.argv.slice(2);
+
+  // If invoked with "daemon" subcommand, route to daemon CLI
+  if (args[0] === "daemon") {
+    await runDaemonCli(args.slice(1));
+    process.exit(0);
+  }
 
   // If invoked with "agent" subcommand, route to headless agent CLI
   if (args[0] === "agent") {
     await runAgentCli(args.slice(1));
     process.exit(0);
   }
+
+  const { App } = await import("./views/App.js");
 
   if (!process.stdin.isTTY) {
     console.error(

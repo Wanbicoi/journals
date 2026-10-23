@@ -1,6 +1,7 @@
 import { type Config, loadConfig } from "@journals/core";
-import { type AppType, startServer } from "@journals/server";
+import type { AppType } from "@journals/server";
 import { hc } from "hono/client";
+import { startDaemon } from "../daemon.js";
 
 export const config: Config = loadConfig();
 export const serverUrl = `http://${config.server.host}:${config.server.port}`;
@@ -10,8 +11,7 @@ try {
   if (!testRes.ok) throw new Error("not running");
 } catch {
   if (config.server.auto_start) {
-    startServer();
-    await new Promise((r) => setTimeout(r, 200));
+    await startDaemon(config);
   }
 }
 
