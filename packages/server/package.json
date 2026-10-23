@@ -5,10 +5,12 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp -r src/db/migrations dist/db/migrations",
     "test": "bun test",
     "start": "bun dist/index.js",
-    "dev": "bun --watch src/index.ts"
+    "dev": "bun --watch src/index.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "bun src/db/migrate.ts"
   },
   "dependencies": {
     "@hono/zod-validator": "^0.4.3",
@@ -19,6 +21,7 @@
   },
   "devDependencies": {
     "@types/bun": "^1.4.3",
+    "drizzle-kit": "^0.31.11",
     "typescript": "^5.7.3"
   }
 }

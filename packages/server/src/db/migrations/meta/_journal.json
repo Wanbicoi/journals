@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1792738963016,
+      "tag": "0000_magical_captain_marvel",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1792738973582,
+      "tag": "0001_add_fts5_indexes",
+      "breakpoints": true
+    }
+  ]
+}
