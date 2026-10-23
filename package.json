@@ -5,7 +5,10 @@
   "scripts": {
     "dev:server": "bun run --cwd packages/server dev",
     "dev:tui": "bun run --cwd packages/client-tui dev",
+    "dev:sandbox": "JOURNAL_CONFIG=configs/journal.sandbox.yaml bun run dev:tui",
+    "dev:sandbox:server": "JOURNAL_CONFIG=configs/journal.sandbox.yaml bun run dev:server",
     "seed": "bun run --cwd packages/server scripts/seed.ts",
+    "seed:sandbox": "JOURNAL_CONFIG=configs/journal.sandbox.yaml bun run seed",
     "build": "bun --filter '*' build",
     "format": "bunx biome format --write .",
     "lint": "bunx biome check .",

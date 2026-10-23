@@ -1,0 +1,15 @@
+# ==========================================
+# SANDBOX CONFIGURATION (Isolated dev & testing)
+# ==========================================
+appearance:
+  use_nerd_font: true
+  theme: "nord"
+  date_format: "YYYY-MM-DD"
+  time_format: "HH:mm"
+
+server:
+  host: "127.0.0.1"
+  port: 4322
+  db_path: "./data/sandbox.sqlite"
+  wal_mode: true
+  auto_start: true
