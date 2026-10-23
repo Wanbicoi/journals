@@ -49,6 +49,14 @@ export function useJournalData() {
     reloadData();
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: background polling
+  useEffect(() => {
+    const timer = setInterval(() => {
+      reloadData();
+    }, 2000);
+    return () => clearInterval(timer);
+  }, []);
+
   async function quickCapture(content: string) {
     await client.capture.$post({
       json: {

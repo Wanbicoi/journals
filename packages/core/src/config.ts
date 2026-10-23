@@ -51,6 +51,7 @@ export const ConfigSchema = z.object({
       edit_project_content: z.string().default("e"),
       search_filter: z.string().default("/"),
       help: z.string().default("?"),
+      refresh: z.string().default("r"),
       cancel: z.string().default("escape"),
       quit: z.string().default("q"),
     })

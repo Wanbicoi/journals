@@ -36,6 +36,7 @@ export function HelpModal({ width, height, keymaps, theme }: HelpModalProps) {
       <text fg={theme.fg}>{`[${keymaps.edit_tags}] : Edit note tags`}</text>
       <text fg={theme.fg}>{`[${keymaps.new_project}] : Create new project`}</text>
       <text fg={theme.fg}>{`[${keymaps.search_filter}] : Filter / Search stream`}</text>
+      <text fg={theme.fg}>{`[${keymaps.refresh}] : Refresh timeline & projects`}</text>
       <text fg={theme.fg}>{`[${cancelKey}] : Dismiss modal / Clear filter`}</text>
       <text fg={theme.fg}>{`[${keymaps.quit}] / [Ctrl+C] : Quit application`}</text>
       <text fg={theme.muted} marginTop={1}>

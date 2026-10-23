@@ -35,6 +35,7 @@ export function App() {
     projects,
     tags,
     loading,
+    reloadData,
     quickCapture,
     createProject,
     updateProjectContent,
@@ -253,6 +254,9 @@ export function App() {
       setStatusMessage("Filter stream (type text, @project, #tag)");
     } else if (keyName === config.keymaps.help || str === config.keymaps.help) {
       setInputMode("HELP");
+    } else if (keyName === config.keymaps.refresh || str === config.keymaps.refresh) {
+      await reloadData();
+      setStatusMessage("Refreshed data");
     } else if (keyName === config.keymaps.cancel || str === config.keymaps.cancel) {
       if (filterQuery) {
         setFilterQuery("");
