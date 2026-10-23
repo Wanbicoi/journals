@@ -57,7 +57,8 @@ export function App() {
     | "FILTER"
     | "HELP"
   >("NONE");
-  const [filterQuery, setFilterQuery] = useState("");
+  const [timelineFilterQuery, setTimelineFilterQuery] = useState("");
+  const [projectsFilterQuery, setProjectsFilterQuery] = useState("");
   const [inputBuffer, setInputBuffer] = useState("");
 
   const [selectedEntryIdx, setSelectedEntryIdx] = useState(0);
@@ -66,10 +67,10 @@ export function App() {
 
   const { activeSuggestionIdx, getSuggestions, applySuggestion } = useSuggestions(projects, tags);
 
-  // Filter entries
+  // Filter entries (Timeline Tab filter)
   const filteredEntries = entries.filter((e) => {
-    if (!filterQuery) return true;
-    const q = filterQuery.toLowerCase();
+    if (!timelineFilterQuery) return true;
+    const q = timelineFilterQuery.toLowerCase();
     return (
       e.content.toLowerCase().includes(q) ||
       e.projectName.toLowerCase().includes(q) ||
@@ -77,10 +78,10 @@ export function App() {
     );
   });
 
-  // Filter projects
+  // Filter projects (Projects Tab filter)
   const filteredProjects = projects.filter((p) => {
-    if (!filterQuery) return true;
-    const q = filterQuery.toLowerCase();
+    if (!projectsFilterQuery) return true;
+    const q = projectsFilterQuery.toLowerCase();
     return p.name.toLowerCase().includes(q) || p.content.toLowerCase().includes(q);
   });
 
@@ -180,7 +181,11 @@ export function App() {
       }
       if (keyName === "escape") {
         if (inputMode === "FILTER") {
-          setFilterQuery("");
+          if (currentTab === "TIMELINE") {
+            setTimelineFilterQuery("");
+          } else {
+            setProjectsFilterQuery("");
+          }
         }
         setInputMode("NONE");
         setInputBuffer("");
@@ -250,17 +255,25 @@ export function App() {
       }
     } else if (keyName === config.keymaps.search_filter || str === config.keymaps.search_filter) {
       setInputMode("FILTER");
-      setInputBuffer(filterQuery);
-      setStatusMessage("Filter stream (type text, @project, #tag)");
+      const currentQuery = currentTab === "TIMELINE" ? timelineFilterQuery : projectsFilterQuery;
+      setInputBuffer(currentQuery);
+      setStatusMessage(
+        currentTab === "TIMELINE"
+          ? "Filter timeline entries (type text, @project, #tag)"
+          : "Filter projects (type project name or content)",
+      );
     } else if (keyName === config.keymaps.help || str === config.keymaps.help) {
       setInputMode("HELP");
     } else if (keyName === config.keymaps.refresh || str === config.keymaps.refresh) {
       await reloadData();
       setStatusMessage("Refreshed data");
     } else if (keyName === config.keymaps.cancel || str === config.keymaps.cancel) {
-      if (filterQuery) {
-        setFilterQuery("");
-        setStatusMessage("Filter cleared");
+      if (currentTab === "TIMELINE" && timelineFilterQuery) {
+        setTimelineFilterQuery("");
+        setStatusMessage("Timeline filter cleared");
+      } else if (currentTab === "PROJECTS" && projectsFilterQuery) {
+        setProjectsFilterQuery("");
+        setStatusMessage("Projects filter cleared");
       }
     } else if (
       keyName === config.keymaps.edit_project_content ||
@@ -298,8 +311,16 @@ export function App() {
         setStatusMessage(`Created project @${name}`);
       }
     } else if (inputMode === "FILTER") {
-      setFilterQuery(inputBuffer.trim());
-      setStatusMessage(inputBuffer.trim() ? `Filter: "${inputBuffer.trim()}"` : "Filter cleared");
+      const q = inputBuffer.trim();
+      if (currentTab === "TIMELINE") {
+        setTimelineFilterQuery(q);
+        setSelectedEntryIdx(0);
+        setStatusMessage(q ? `Timeline Filter: "${q}"` : "Timeline filter cleared");
+      } else {
+        setProjectsFilterQuery(q);
+        setSelectedProjectIdx(0);
+        setStatusMessage(q ? `Projects Filter: "${q}"` : "Projects filter cleared");
+      }
     } else if (inputMode === "EDIT_PROJECT") {
       const entry = filteredEntries[selectedEntryIdx];
       const targetProj = inputBuffer.trim().replace(/^@/, "");
@@ -345,7 +366,7 @@ export function App() {
             onSelectEntry={(idx) => {
               setSelectedEntryIdx(idx);
             }}
-            filterQuery={filterQuery}
+            filterQuery={timelineFilterQuery}
             quickCaptureKey={config.keymaps.quick_capture}
             loading={loading}
             icons={icons}
@@ -359,6 +380,7 @@ export function App() {
               setSelectedProjectIdx(idx);
             }}
             entries={entries}
+            filterQuery={projectsFilterQuery}
             width={width}
             icons={icons}
             theme={theme}
@@ -445,7 +467,13 @@ export function App() {
       )}
 
       {inputMode === "FILTER" && (
-        <FilterModal width={width} height={height} inputBuffer={inputBuffer} theme={theme} />
+        <FilterModal
+          width={width}
+          height={height}
+          inputBuffer={inputBuffer}
+          tabTitle={currentTab === "TIMELINE" ? "Timeline / Journal" : "Projects"}
+          theme={theme}
+        />
       )}
 
       {inputMode === "HELP" && (
@@ -455,7 +483,7 @@ export function App() {
       {/* Anchored Bottom Status Line */}
       <StatusBar
         width={width}
-        filterQuery={filterQuery}
+        filterQuery={currentTab === "TIMELINE" ? timelineFilterQuery : projectsFilterQuery}
         statusMessage={statusMessage}
         theme={theme}
       />

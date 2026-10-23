@@ -1,5 +1,6 @@
 import type { ScrollBoxRenderable } from "@opentui/core";
 import { useEffect, useRef } from "react";
+import { HighlightText } from "../../components/HighlightText.js";
 import type { Entry } from "../../hooks/useJournalData.js";
 import type { ThemePalette } from "../../theme.js";
 
@@ -121,10 +122,14 @@ export function TimelineView({
                 {/* Content lines */}
                 <box flexDirection="column" marginTop={0}>
                   {entry.content.split("\n").map((line, lIdx) => (
-                    // biome-ignore lint/suspicious/noArrayIndexKey: line-by-line render of entry content
-                    <text key={lIdx} fg={theme.fg} selectable>
-                      {line}
-                    </text>
+                    <HighlightText
+                      key={`${entry.id}-line-${lIdx}`}
+                      text={line || " "}
+                      query={filterQuery}
+                      theme={theme}
+                      defaultFg={theme.fg}
+                      selectable
+                    />
                   ))}
                 </box>
               </box>

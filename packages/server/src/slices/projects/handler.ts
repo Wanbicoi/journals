@@ -1,7 +1,8 @@
 import crypto from "node:crypto";
-import { count, desc, eq } from "drizzle-orm";
+import { count, desc, eq, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "../../db/client.js";
 import { entries, projects } from "../../db/schema.js";
+import { sanitizeFtsQuery } from "../../lib/search-utils.js";
 
 type DbOrTx = DatabaseInstance | Parameters<Parameters<DatabaseInstance["transaction"]>[0]>[0];
 
@@ -63,4 +64,41 @@ export function updateProjectContent(db: DbOrTx, id: string, content: string) {
   const now = Date.now();
   db.update(projects).set({ content, updatedAt: now }).where(eq(projects.id, id)).run();
   return { id, content, updatedAt: now };
+}
+
+export function searchProjects(db: DatabaseInstance, query: string, limit = 50) {
+  const ftsQuery = sanitizeFtsQuery(query);
+  if (!ftsQuery) {
+    return [];
+  }
+
+  type ProjectFtsRow = {
+    id: string;
+    name: string;
+    content: string;
+    snippet: string;
+    entryCount: number;
+    createdAt: number;
+    updatedAt: number;
+    rank: number;
+  };
+
+  const rows = db.all(sql`
+    SELECT
+      p.id,
+      p.name,
+      p.content,
+      snippet(projects_fts, -1, '<mark>', '</mark>', '...', 15) AS snippet,
+      (SELECT COUNT(e.id) FROM entries e WHERE e.project_id = p.id) AS entryCount,
+      p.created_at AS createdAt,
+      p.updated_at AS updatedAt,
+      bm25(projects_fts) AS rank
+    FROM projects_fts
+    JOIN projects p ON projects_fts.rowid = p.rowid
+    WHERE projects_fts MATCH ${ftsQuery}
+    ORDER BY bm25(projects_fts)
+    LIMIT ${limit};
+  `) as ProjectFtsRow[];
+
+  return rows;
 }

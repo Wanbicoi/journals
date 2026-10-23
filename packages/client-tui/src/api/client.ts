@@ -34,3 +34,21 @@ export async function fetchTags() {
   const data = await res.json();
   return data.tags;
 }
+
+export async function searchEntriesApi(query: string, limit = 50) {
+  const res = await client.entries.search.$get({
+    query: { q: query, limit: String(limit) },
+  });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.entries;
+}
+
+export async function searchProjectsApi(query: string, limit = 50) {
+  const res = await client.projects.search.$get({
+    query: { q: query, limit: String(limit) },
+  });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.projects;
+}

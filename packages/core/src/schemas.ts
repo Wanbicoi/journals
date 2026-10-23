@@ -54,6 +54,45 @@ export const UpdateEntryContentSchema = z.object({
   content: z.string().min(1),
 });
 
+export const SearchEntriesQuerySchema = z.object({
+  q: z.string().min(1),
+  limit: z.coerce.number().int().positive().default(50),
+});
+
+export const SearchProjectsQuerySchema = z.object({
+  q: z.string().min(1),
+  limit: z.coerce.number().int().positive().default(50),
+});
+
+export const EntrySearchResultSchema = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  projectName: z.string(),
+  content: z.string(),
+  snippet: z.string(),
+  isQuickCapture: z.boolean(),
+  tags: z.array(z.string()),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+  rank: z.number().optional(),
+});
+
+export const ProjectSearchResultSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  content: z.string(),
+  snippet: z.string(),
+  entryCount: z.number(),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+  rank: z.number().optional(),
+});
+
+export type SearchEntriesQuery = z.infer<typeof SearchEntriesQuerySchema>;
+export type SearchProjectsQuery = z.infer<typeof SearchProjectsQuerySchema>;
+export type EntrySearchResult = z.infer<typeof EntrySearchResultSchema>;
+export type ProjectSearchResult = z.infer<typeof ProjectSearchResultSchema>;
+
 export type Project = z.infer<typeof ProjectSchema>;
 export type Entry = z.infer<typeof EntrySchema>;
 export type QuickCaptureInput = z.infer<typeof QuickCaptureInputSchema>;

@@ -1,6 +1,7 @@
-import { desc, eq, inArray } from "drizzle-orm";
+import { desc, eq, inArray, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "../../db/client.js";
 import { entries, entryTags, projects, tags } from "../../db/schema.js";
+import { sanitizeFtsQuery } from "../../lib/search-utils.js";
 import { findOrCreateProject } from "../projects/handler.js";
 
 export function listEntries(db: DatabaseInstance) {
@@ -84,4 +85,69 @@ export function deleteEntry(db: DatabaseInstance, entryId: string) {
     tx.delete(entries).where(eq(entries.id, entryId)).run();
     return { success: true, id: entryId };
   });
+}
+
+export function searchEntries(db: DatabaseInstance, query: string, limit = 50) {
+  const ftsQuery = sanitizeFtsQuery(query);
+  if (!ftsQuery) {
+    return [];
+  }
+
+  type EntryFtsRow = {
+    id: string;
+    projectId: string;
+    projectName: string;
+    content: string;
+    snippet: string;
+    isQuickCapture: number;
+    createdAt: number;
+    updatedAt: number;
+    rank: number;
+  };
+
+  const rows = db.all(sql`
+    SELECT
+      e.id,
+      e.project_id AS projectId,
+      p.name AS projectName,
+      e.content,
+      snippet(entries_fts, 0, '<mark>', '</mark>', '...', 15) AS snippet,
+      e.is_quick_capture AS isQuickCapture,
+      e.created_at AS createdAt,
+      e.updated_at AS updatedAt,
+      bm25(entries_fts) AS rank
+    FROM entries_fts
+    JOIN entries e ON entries_fts.rowid = e.rowid
+    JOIN projects p ON e.project_id = p.id
+    WHERE entries_fts MATCH ${ftsQuery}
+    ORDER BY bm25(entries_fts)
+    LIMIT ${limit};
+  `) as EntryFtsRow[];
+
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const entryIds = rows.map((r) => r.id);
+  const tagRows = db
+    .select({
+      entryId: entryTags.entryId,
+      tagName: entryTags.tagName,
+    })
+    .from(entryTags)
+    .where(inArray(entryTags.entryId, entryIds))
+    .all();
+
+  const tagsByEntryId = new Map<string, string[]>();
+  for (const row of tagRows) {
+    const list = tagsByEntryId.get(row.entryId) || [];
+    list.push(row.tagName);
+    tagsByEntryId.set(row.entryId, list);
+  }
+
+  return rows.map((r) => ({
+    ...r,
+    isQuickCapture: Boolean(r.isQuickCapture),
+    tags: tagsByEntryId.get(r.id) || [],
+  }));
 }

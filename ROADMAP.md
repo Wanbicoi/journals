@@ -11,8 +11,8 @@ kanban-plugin: basic
 
 ## 📋 Next
 - [ ] Automated installer script (`install.sh`) with daemon setup detection
-- [ ] Full-text search (SQLite FTS5) across timeline entries and markdown projects
-- [ ] TUI search bar & filters (filter by date range, tag, or project)
+- [x] Full-text search (SQLite FTS5) across timeline entries and markdown projects
+- [x] TUI search bar & filters (filter per tab: timeline & projects)
 - [ ] Multi-line entry editing via `$EDITOR` / temporary file
 
 ## 💡 Ideas / Backlog

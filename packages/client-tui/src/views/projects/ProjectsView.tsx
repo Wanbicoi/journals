@@ -1,5 +1,6 @@
 import type { ScrollBoxRenderable } from "@opentui/core";
 import { useEffect, useRef } from "react";
+import { HighlightText } from "../../components/HighlightText.js";
 import type { Entry, Project } from "../../hooks/useJournalData.js";
 import type { ThemePalette } from "../../theme.js";
 
@@ -8,6 +9,7 @@ interface ProjectsViewProps {
   selectedProjectIdx: number;
   onSelectProject?: (idx: number) => void;
   entries: Entry[];
+  filterQuery?: string;
   width: number;
   icons: Record<string, string>;
   theme: ThemePalette;
@@ -35,6 +37,7 @@ export function ProjectsView({
   selectedProjectIdx,
   onSelectProject,
   entries,
+  filterQuery = "",
   width: _width,
   icons,
   theme,
@@ -89,9 +92,16 @@ export function ProjectsView({
                   onSelectProject?.(idx);
                 }}
               >
-                <text fg={isSel ? theme.primary : theme.fg}>
-                  {`${isSel ? "❯ " : "  "}${p.name}`}
-                </text>
+                <box flexDirection="row">
+                  <text fg={isSel ? theme.primary : theme.fg}>{isSel ? "❯ " : "  "}</text>
+                  <HighlightText
+                    text={p.name}
+                    query={filterQuery}
+                    theme={theme}
+                    defaultFg={isSel ? theme.primary : theme.fg}
+                    selectable={false}
+                  />
+                </box>
                 <text fg={theme.muted}>{`(${p.entryCount})`}</text>
               </box>
             );
@@ -124,12 +134,18 @@ export function ProjectsView({
             marginBottom={1}
           >
             {selProj.content ? (
-              selProj.content.split("\n").map((line, lIdx) => (
-                // biome-ignore lint/suspicious/noArrayIndexKey: line-by-line render of markdown text
-                <text key={lIdx} fg={line.startsWith("#") ? theme.primary : theme.fg} selectable>
-                  {line || " "}
-                </text>
-              ))
+              selProj.content
+                .split("\n")
+                .map((line, lIdx) => (
+                  <HighlightText
+                    key={`${selProj.name}-line-${lIdx}`}
+                    text={line || " "}
+                    query={filterQuery}
+                    theme={theme}
+                    defaultFg={line.startsWith("#") ? theme.primary : theme.fg}
+                    selectable
+                  />
+                ))
             ) : (
               <text fg={theme.muted}>{"No project overview notes."}</text>
             )}

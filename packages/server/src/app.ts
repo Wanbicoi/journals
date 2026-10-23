@@ -2,6 +2,8 @@ import { zValidator } from "@hono/zod-validator";
 import {
   CreateProjectInputSchema,
   QuickCaptureInputSchema,
+  SearchEntriesQuerySchema,
+  SearchProjectsQuerySchema,
   UpdateEntryContentSchema,
   UpdateEntryProjectSchema,
   UpdateEntryTagsSchema,
@@ -12,11 +14,17 @@ import type { DatabaseInstance } from "./db/client.js";
 import {
   deleteEntry,
   listEntries,
+  searchEntries,
   updateEntryContent,
   updateEntryProject,
   updateEntryTags,
 } from "./slices/entries/handler.js";
-import { createProject, listProjects, updateProjectContent } from "./slices/projects/handler.js";
+import {
+  createProject,
+  listProjects,
+  searchProjects,
+  updateProjectContent,
+} from "./slices/projects/handler.js";
 import { handleQuickCapture } from "./slices/quick-capture/handler.js";
 import { listTags } from "./slices/tags/handler.js";
 
@@ -35,6 +43,11 @@ export function createApp(db: DatabaseInstance) {
     .get("/entries", (c) => {
       const entries = listEntries(db);
       return c.json({ entries });
+    })
+    .get("/entries/search", zValidator("query", SearchEntriesQuerySchema), (c) => {
+      const { q, limit } = c.req.valid("query");
+      const results = searchEntries(db, q, limit);
+      return c.json({ entries: results });
     })
     .patch("/entries/:id/project", zValidator("json", UpdateEntryProjectSchema), (c) => {
       const id = c.req.param("id");
@@ -64,6 +77,11 @@ export function createApp(db: DatabaseInstance) {
     .get("/projects", (c) => {
       const projects = listProjects(db);
       return c.json({ projects });
+    })
+    .get("/projects/search", zValidator("query", SearchProjectsQuerySchema), (c) => {
+      const { q, limit } = c.req.valid("query");
+      const results = searchProjects(db, q, limit);
+      return c.json({ projects: results });
     })
     .post("/projects", zValidator("json", CreateProjectInputSchema), (c) => {
       const { name, content } = c.req.valid("json");
