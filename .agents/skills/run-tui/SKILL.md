@@ -1,111 +1,70 @@
 ---
 name: run-tui
 description: >-
-  Use this skill to run the Journals Terminal User Interface (TUI), inspect its layout,
-  test keybindings and navigation, capture notes, or verify client-side UI behaviors
-  headlessly or interactively.
+  Run, inspect, and test the Journals TUI headlessly via PTY or interactively.
 ---
 
-# Run and Interact with the Journals TUI
+# Journals TUI (`packages/client-tui`)
 
-This skill provides step-by-step guidance and utilities for running, testing, and interacting with the `packages/client-tui` application.
+Test, drive, and inspect the Terminal User Interface headlessly using a virtual pseudo-terminal (PTY) runner.
 
 ## Prerequisites
 
-1. **Backend Server**: The TUI interacts with the Hono SQLite backend.
-   Ensure the server is running on `http://127.0.0.1:4321`:
-   ```bash
-   # Check if running
-   curl -s http://127.0.0.1:4321/health
-
-   # If not running, start in the background:
-   bun run dev:server
-   ```
-
-2. **Terminal Requirements**:
-   The TUI uses `@opentui/react` and expects ANSI terminal capabilities (e.g. `xterm-256color`, minimum 80x24 dimensions).
-
----
-
-## Direct Interactive Run (Manual User Mode)
-
-To launch the TUI directly in a terminal session:
-
+The TUI requires the Hono backend on `http://127.0.0.1:4321`. Check before running:
 ```bash
-bun run dev:tui
+curl -sf http://127.0.0.1:4321/health || bun run dev:server
 ```
 
-### Keybindings & Mouse Controls
-
-| Input | Action |
-| :--- | :--- |
-| **Mouse Click** | • Click top tabs (`[1] Timeline Stream`, `[2] Projects`) to switch tabs<br/>• Click any journal entry card in Timeline view to select/focus it<br/>• Click any project item in Projects view to select/focus it |
-| `1` | Switch to **Timeline Stream** view (grouped chronologically) |
-| `2` | Switch to **Projects & Preview** view |
-| `j` / `k` or `Down` / `Up` | Navigate entries / project list |
-| `n` | Open **Quick Capture** modal (`@project #tags note content`) |
-| `N` | Create a new project modal |
-| `e` | **Timeline View**: Edit selected note content inline<br/>**Projects View**: Open project markdown in `$EDITOR` |
-| `d` | **Delete** selected note (with confirmation dialog `y/n`) |
-| `p` | Reassign selected note's project (`@project`) |
-| `t` | Edit selected note's tags (comma-separated `#tags`) |
-| `/` | Filter timeline notes or projects |
-| `?` | Open **Help** modal (shows all shortcuts) |
-| `Escape` | Dismiss modal or clear search filter |
-| `Ctrl+c` / `q` | Quit the TUI |
-
 ---
 
-## Headless / Automated Interaction (Subagents & CI)
+## Headless Execution (Automated & Agents)
 
-Because the agent runs in non-interactive subshells without an attached TTY, run the bundled helper script [`interact_tui.py`](./scripts/interact_tui.py) which opens a virtual pseudo-terminal (PTY) to send key sequences and capture terminal frames.
+Because agents lack an interactive TTY, use [`interact_tui.py`](./scripts/interact_tui.py). It spins up a PTY, sends key sequences, and renders/snapshots output.
 
-### 1. Capture a Snapshot of the Current TUI Screen
-
+### 1. Capture Screen Snapshot
+Inspect the rendered layout, active view, and modal states:
 ```bash
 python3 .agents/skills/run-tui/scripts/interact_tui.py --snapshot
 ```
 
-### 2. Switch Views and Navigate
-
+### 2. Drive Key Sequences
+Send inputs, pauses, and actions with `--keys`:
 ```bash
-# Switch to Projects view (key '2'), sleep 0.5s, then quit ('q')
-python3 .agents/skills/run-tui/scripts/interact_tui.py --keys "2" "SLEEP:0.5" "q"
+# Navigate: Switch to Projects (2), wait, switch back to Timeline (1), quit (q)
+python3 .agents/skills/run-tui/scripts/interact_tui.py --keys "2" "SLEEP:0.5" "1" "q"
 
-# Switch back to Timeline (key '1'), move down twice ('j', 'j')
-python3 .agents/skills/run-tui/scripts/interact_tui.py --keys "1" "j" "j" "q"
-```
+# Quick Capture: open note modal (n), type text, submit (ENTER), wait, quit (q)
+python3 .agents/skills/run-tui/scripts/interact_tui.py --keys "n" "Automated note @Inbox #agent" "ENTER" "SLEEP:0.5" "q"
 
-### 3. Test Quick Capture (`n`)
-
-```bash
-# Press 'n' to open modal, write a note, press ENTER, then quit
-python3 .agents/skills/run-tui/scripts/interact_tui.py --keys "n" "Testing quick capture note @Inbox #automated" "ENTER" "SLEEP:0.5" "q"
-```
-
-### 4. Test Filtering (`/`)
-
-```bash
-# Filter for specific keyword
+# Filter: search notes (/)
 python3 .agents/skills/run-tui/scripts/interact_tui.py --keys "/" "Journals" "ENTER" "SLEEP:0.5" "q"
+
+# Debug raw ANSI escape codes:
+python3 .agents/skills/run-tui/scripts/interact_tui.py --keys "1" "q" --raw
 ```
 
-### 5. Inspect Raw ANSI Stream
+### Key Tokens Reference
 
-To debug styling, colors, or OpenTUI escape codes:
+- **Views**: `1` (Timeline), `2` (Projects)
+- **Modals**: `n` (Quick Capture), `N` (New Project), `?` (Help), `/` (Filter)
+- **Actions**: `e` (Edit), `d` (Delete + `y/n`), `p` (Reassign project), `t` (Edit tags)
+- **Special Tokens**: `ENTER`, `ESCAPE`, `UP`, `DOWN`, `LEFT`, `RIGHT`, `SPACE`, `TAB`, `SLEEP:<seconds>`
+
+---
+
+## Interactive Run (Human Only)
+
+When driving in an attached terminal:
 ```bash
-python3 .agents/skills/run-tui/scripts/interact_tui.py --keys "1" "q" --raw
+bun run dev:tui
 ```
 
 ---
 
-## Verifying Server Integration
+## Verification
 
-After interacting with the TUI, you can verify changes directly against the server API:
+After executing headless mutations via `interact_tui.py`, verify state persistence against the backend API:
 ```bash
-# Verify entries
-curl -s http://127.0.0.1:4321/entries | jq .
-
-# Verify projects
-curl -s http://127.0.0.1:4321/projects | jq .
+# Verify new entry was created
+curl -s http://127.0.0.1:4321/entries | jq '.[0]'
 ```
