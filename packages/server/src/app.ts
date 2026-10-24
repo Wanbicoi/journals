@@ -27,6 +27,7 @@ import {
   updateProjectContent,
 } from "./slices/projects/handler.js";
 import { handleQuickCapture } from "./slices/quick-capture/handler.js";
+import { createReflectionsRouter } from "./slices/reflections/router.js";
 import { listTags } from "./slices/tags/handler.js";
 
 export function createApp(db: DatabaseInstance) {
@@ -101,6 +102,9 @@ export function createApp(db: DatabaseInstance) {
       const tags = listTags(db);
       return c.json({ tags });
     })
+
+    // Periodic Reflections Slice
+    .route("/reflections", createReflectionsRouter(db))
 
     // Agent Entries Slice
     .route("/agent-entries", createAgentEntriesRouter(db));

@@ -44,7 +44,8 @@ export const ConfigSchema = z.object({
   keymaps: z
     .object({
       view_timeline: z.string().default("1"),
-      view_projects: z.string().default("2"),
+      view_reflections: z.string().default("2"),
+      view_projects: z.string().default("3"),
       up: z.string().default("k"),
       down: z.string().default("j"),
       quick_capture: z.string().default("n"),
@@ -63,6 +64,14 @@ export const ConfigSchema = z.object({
   quick_add: z
     .object({
       default_project: z.string().default("Inbox"),
+    })
+    .default({}),
+  reflections: z
+    .object({
+      start_date: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/, "start_date must be in YYYY-MM-DD format")
+        .default("2026-01-01"),
     })
     .default({}),
   server: z

@@ -29,6 +29,13 @@
       "when": 1792741435000,
       "tag": "0003_curvy_living_mummy",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1792772667561,
+      "tag": "0004_bumpy_wong",
+      "breakpoints": true
     }
   ]
 }

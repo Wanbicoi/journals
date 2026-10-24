@@ -34,7 +34,8 @@ icons:
 keymaps:
   # Views / Tabs
   view_timeline: "1"               # Switch to daily timeline stream
-  view_projects: "2"               # Switch to projects view & preview
+  view_reflections: "2"            # Switch to periodic reflections view
+  view_projects: "3"               # Switch to projects view & preview
   
   # Navigation
   up: "k"
@@ -57,6 +58,12 @@ keymaps:
 # ==========================================
 quick_add:
   default_project: "Inbox"         # Default project if @project is omitted in quick capture
+
+# ==========================================
+# PERIODIC REFLECTIONS
+# ==========================================
+reflections:
+  start_date: "2026-01-01"         # Earliest start date for reflection periods (YYYY-MM-DD)
 
 # ==========================================
 # SERVER & STORAGE OPTIONS

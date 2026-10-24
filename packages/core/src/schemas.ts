@@ -137,3 +137,71 @@ export type IncrementAgentEntryHitInput = z.infer<typeof IncrementAgentEntryHitS
 export type Project = z.infer<typeof ProjectSchema>;
 export type Entry = z.infer<typeof EntrySchema>;
 export type QuickCaptureInput = z.infer<typeof QuickCaptureInputSchema>;
+
+export const ReflectionPeriodTypeSchema = z.enum(["WEEK", "MONTH", "QUARTER", "YEAR"]);
+export type ReflectionPeriodType = z.infer<typeof ReflectionPeriodTypeSchema>;
+
+export const PeriodTypeParamSchema = z.object({
+  periodType: z
+    .string()
+    .transform((val) => val.toUpperCase())
+    .pipe(ReflectionPeriodTypeSchema),
+});
+
+export const PeriodDetailParamSchema = z.object({
+  periodType: z
+    .string()
+    .transform((val) => val.toUpperCase())
+    .pipe(ReflectionPeriodTypeSchema),
+  periodKey: z.string().min(1),
+});
+
+export const PeriodicReflectionSchema = z.object({
+  id: z.string(),
+  periodType: ReflectionPeriodTypeSchema,
+  periodKey: z.string().min(1),
+  content: z.string().default(""),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+});
+export type PeriodicReflection = z.infer<typeof PeriodicReflectionSchema>;
+
+export const SaveReflectionInputSchema = z.object({
+  content: z.string(),
+});
+export type SaveReflectionInput = z.infer<typeof SaveReflectionInputSchema>;
+
+export const PeriodItemStatusSchema = z.object({
+  periodKey: z.string(),
+  periodType: ReflectionPeriodTypeSchema,
+  label: z.string(),
+  startDate: z.number(),
+  endDate: z.number(),
+  hasReflection: z.boolean(),
+  reflectionId: z.string().optional(),
+  entryCount: z.number(),
+  subReflectionCount: z.number().optional(),
+});
+export type PeriodItemStatus = z.infer<typeof PeriodItemStatusSchema>;
+
+export const SubReflectionSummarySchema = z.object({
+  periodType: ReflectionPeriodTypeSchema,
+  periodKey: z.string(),
+  label: z.string(),
+  content: z.string(),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+});
+export type SubReflectionSummary = z.infer<typeof SubReflectionSummarySchema>;
+
+export const PeriodDetailSchema = z.object({
+  periodKey: z.string(),
+  periodType: ReflectionPeriodTypeSchema,
+  label: z.string(),
+  startDate: z.number(),
+  endDate: z.number(),
+  reflection: PeriodicReflectionSchema.nullable(),
+  entries: z.array(EntrySchema),
+  subReflections: z.array(SubReflectionSummarySchema).optional().default([]),
+});
+export type PeriodDetail = z.infer<typeof PeriodDetailSchema>;

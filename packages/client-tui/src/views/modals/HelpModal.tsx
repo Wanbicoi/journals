@@ -21,16 +21,22 @@ export function HelpModal({ width, height, keymaps, theme }: HelpModalProps) {
       <text fg={theme.fg}>{`[${keymaps.view_timeline}] or Click Header : Timeline Stream`}</text>
       <text
         fg={theme.fg}
+      >{`[${keymaps.view_reflections}] or Click Header : Periodic Reflections`}</text>
+      <text
+        fg={theme.fg}
       >{`[${keymaps.view_projects}] or Click Header : Projects & Markdown Preview`}</text>
       <text
         fg={theme.fg}
-      >{`[${keymaps.down}] / [${keymaps.up}] or [Down]/[Up] : Navigate entries / projects`}</text>
+      >{`[${keymaps.down}] / [${keymaps.up}] or [Down]/[Up] : Navigate entries / periods / projects`}</text>
+      <text fg={theme.fg}>
+        {"[w] / [m] / [q] / [y] : Toggle Weekly/Monthly/Quarterly/Yearly (Reflections)"}
+      </text>
       <text
         fg={theme.fg}
       >{`[${keymaps.quick_capture}] : Quick capture note (@project #tags note)`}</text>
       <text
         fg={theme.fg}
-      >{`[${keymaps.edit_project_content}] : Edit note (Timeline) or $EDITOR (Projects)`}</text>
+      >{`[${keymaps.edit_project_content}] / [Enter] : Edit note or $EDITOR (Reflection / Project)`}</text>
       <text fg={theme.fg}>{`[${keymaps.delete_entry}] : Delete selected note`}</text>
       <text fg={theme.fg}>{`[${keymaps.edit_project}] : Reassign note project`}</text>
       <text fg={theme.fg}>{`[${keymaps.edit_tags}] : Edit note tags`}</text>

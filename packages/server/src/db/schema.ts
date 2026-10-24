@@ -45,3 +45,12 @@ export const entryTags = sqliteTable(
   },
   (table) => [primaryKey({ columns: [table.entryId, table.tagName] })],
 );
+
+export const periodicReflections = sqliteTable("periodic_reflections", {
+  id: text("id").primaryKey(),
+  periodType: text("period_type").notNull(), // 'WEEK' | 'MONTH' | 'QUARTER' | 'YEAR'
+  periodKey: text("period_key").notNull().unique(), // e.g. '2026-W42', '2026-10', '2026-Q4', '2026'
+  content: text("content").notNull().default(""),
+  createdAt: integer("created_at").notNull(),
+  updatedAt: integer("updated_at").notNull(),
+});

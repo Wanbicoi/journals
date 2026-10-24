@@ -1,3 +1,4 @@
+import type { ReflectionPeriodType } from "@journals/core";
 import {
   useKeyboard,
   useRenderer,
@@ -5,7 +6,7 @@ import {
   useTerminalDimensions,
 } from "@opentui/react";
 import { useCallback, useState } from "react";
-import { config } from "../api/client.js";
+import { config, fetchPeriodDetailApi, fetchPeriodsApi, saveReflectionApi } from "../api/client.js";
 import { copyToClipboard } from "../clipboard.js";
 import { Header } from "../components/Header.js";
 import { StatusBar } from "../components/StatusBar.js";
@@ -23,6 +24,7 @@ import { HelpModal } from "./modals/HelpModal.js";
 import { NewProjectModal } from "./modals/NewProjectModal.js";
 import { QuickCaptureModal } from "./modals/QuickCaptureModal.js";
 import { ProjectsView } from "./projects/ProjectsView.js";
+import { ReflectionsView } from "./reflections/ReflectionsView.js";
 import { TimelineView } from "./timeline/TimelineView.js";
 
 export function App() {
@@ -45,7 +47,10 @@ export function App() {
     deleteEntry,
   } = useJournalData();
 
-  const [currentTab, setCurrentTab] = useState<"TIMELINE" | "PROJECTS">("TIMELINE");
+  const [currentTab, setCurrentTab] = useState<"TIMELINE" | "REFLECTIONS" | "PROJECTS">("TIMELINE");
+  const [reflectionPeriodType, setReflectionPeriodType] = useState<ReflectionPeriodType>("WEEK");
+  const [selectedPeriodIdx, setSelectedPeriodIdx] = useState(0);
+  const [reflectionsRefreshSignal, setReflectionsRefreshSignal] = useState(0);
   const [inputMode, setInputMode] = useState<
     | "NONE"
     | "CAPTURE"
@@ -91,27 +96,9 @@ export function App() {
       ? getSuggestions(inputBuffer)
       : null;
 
-  // Handle Mouse Click anywhere in terminal (e.g. Header tabs)
+  // Handle Mouse Click anywhere in terminal
   const handleMouse = useCallback(
-    ({ x, y, type }: { x: number; y: number; button: number; type: string }) => {
-      if (type !== "down") return;
-
-      // Header is at row 0 (or row 1 depending on 0/1 indexing)
-      if (y === 0 || y === 1) {
-        // [1] Timeline tab is roughly x: 10 to 25
-        if (x >= 10 && x <= 25) {
-          setCurrentTab("TIMELINE");
-          setStatusMessage("Timeline View (mouse)");
-          return;
-        }
-        // [2] Projects tab is roughly x: 26 to 42
-        if (x >= 26 && x <= 42) {
-          setCurrentTab("PROJECTS");
-          setStatusMessage("Projects View (mouse)");
-          return;
-        }
-      }
-
+    (_pos: { x: number; y: number; button: number; type: string }) => {
       if (inputMode === "HELP") {
         setInputMode("NONE");
       }
@@ -211,12 +198,36 @@ export function App() {
     if (keyName === config.keymaps.view_timeline || str === config.keymaps.view_timeline) {
       setCurrentTab("TIMELINE");
       setStatusMessage("Timeline View");
+    } else if (
+      keyName === config.keymaps.view_reflections ||
+      str === config.keymaps.view_reflections
+    ) {
+      setCurrentTab("REFLECTIONS");
+      setStatusMessage("Reflections View");
     } else if (keyName === config.keymaps.view_projects || str === config.keymaps.view_projects) {
       setCurrentTab("PROJECTS");
       setStatusMessage("Projects View");
+    } else if (currentTab === "REFLECTIONS" && (str === "w" || str === "W")) {
+      setReflectionPeriodType("WEEK");
+      setSelectedPeriodIdx(0);
+      setStatusMessage("Weekly Reflections");
+    } else if (currentTab === "REFLECTIONS" && (str === "m" || str === "M")) {
+      setReflectionPeriodType("MONTH");
+      setSelectedPeriodIdx(0);
+      setStatusMessage("Monthly Reflections");
+    } else if (currentTab === "REFLECTIONS" && (str === "q" || str === "Q")) {
+      setReflectionPeriodType("QUARTER");
+      setSelectedPeriodIdx(0);
+      setStatusMessage("Quarterly Reflections");
+    } else if (currentTab === "REFLECTIONS" && (str === "y" || str === "Y")) {
+      setReflectionPeriodType("YEAR");
+      setSelectedPeriodIdx(0);
+      setStatusMessage("Yearly Reflections");
     } else if (keyName === config.keymaps.down || str === config.keymaps.down) {
       if (currentTab === "TIMELINE") {
         setSelectedEntryIdx((prev) => Math.min(prev + 1, Math.max(0, filteredEntries.length - 1)));
+      } else if (currentTab === "REFLECTIONS") {
+        setSelectedPeriodIdx((prev) => prev + 1);
       } else {
         setSelectedProjectIdx((prev) =>
           Math.min(prev + 1, Math.max(0, filteredProjects.length - 1)),
@@ -225,6 +236,8 @@ export function App() {
     } else if (keyName === config.keymaps.up || str === config.keymaps.up) {
       if (currentTab === "TIMELINE") {
         setSelectedEntryIdx((prev) => Math.max(0, prev - 1));
+      } else if (currentTab === "REFLECTIONS") {
+        setSelectedPeriodIdx((prev) => Math.max(0, prev - 1));
       } else {
         setSelectedProjectIdx((prev) => Math.max(0, prev - 1));
       }
@@ -277,9 +290,29 @@ export function App() {
       }
     } else if (
       keyName === config.keymaps.edit_project_content ||
-      str === config.keymaps.edit_project_content
+      str === config.keymaps.edit_project_content ||
+      (currentTab === "REFLECTIONS" && keyName === "return")
     ) {
-      if (currentTab === "PROJECTS" && filteredProjects[selectedProjectIdx]) {
+      if (currentTab === "REFLECTIONS") {
+        // Open editor for the selected period reflection
+        try {
+          const periodList = await fetchPeriodsApi(reflectionPeriodType);
+          const currentP = periodList[selectedPeriodIdx];
+          if (currentP) {
+            const pDetail = await fetchPeriodDetailApi(reflectionPeriodType, currentP.periodKey);
+            const initialContent =
+              pDetail?.reflection?.content || `# Reflection: ${currentP.label}\n\n`;
+            const updated = openExternalEditor(initialContent);
+            if (updated !== initialContent) {
+              await saveReflectionApi(reflectionPeriodType, currentP.periodKey, updated);
+              setReflectionsRefreshSignal((prev) => prev + 1);
+              setStatusMessage(`Saved reflection for ${currentP.periodKey}`);
+            }
+          }
+        } catch (_e) {
+          setStatusMessage("Failed to edit reflection");
+        }
+      } else if (currentTab === "PROJECTS" && filteredProjects[selectedProjectIdx]) {
         const targetProj = filteredProjects[selectedProjectIdx];
         const updated = openExternalEditor(targetProj.content);
         if (updated !== targetProj.content) {
@@ -355,7 +388,16 @@ export function App() {
   return (
     <box flexDirection="column" width={width} height={height}>
       {/* Top Header */}
-      <Header width={width} currentTab={currentTab} journalIcon={icons.journal} theme={theme} />
+      <Header
+        width={width}
+        currentTab={currentTab}
+        onSelectTab={(tab) => {
+          setCurrentTab(tab);
+          setStatusMessage(`${tab.charAt(0) + tab.slice(1).toLowerCase()} View`);
+        }}
+        journalIcon={icons.journal}
+        theme={theme}
+      />
 
       {/* Main View Area */}
       <box flexGrow={1} flexDirection="column">
@@ -369,6 +411,22 @@ export function App() {
             filterQuery={timelineFilterQuery}
             quickCaptureKey={config.keymaps.quick_capture}
             loading={loading}
+            icons={icons}
+            theme={theme}
+          />
+        ) : currentTab === "REFLECTIONS" ? (
+          <ReflectionsView
+            periodType={reflectionPeriodType}
+            onChangePeriodType={(pt) => {
+              setReflectionPeriodType(pt);
+              setSelectedPeriodIdx(0);
+            }}
+            selectedPeriodIdx={selectedPeriodIdx}
+            onSelectPeriodIdx={(idx) => {
+              setSelectedPeriodIdx(idx);
+            }}
+            refreshTrigger={reflectionsRefreshSignal}
+            width={width}
             icons={icons}
             theme={theme}
           />
