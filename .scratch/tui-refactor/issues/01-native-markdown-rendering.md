@@ -5,9 +5,9 @@ Rich terminal markdown rendering across the TUI using OpenTUI's native markdown 
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Project preview pane renders project notes using OpenTUI `<markdown />` component instead of line-by-line manual string splitting.
-- [ ] Reflections review pane renders reflection content inside OpenTUI `<markdown />` component.
-- [ ] Headings, lists, code spans, and blockquotes render with theme palette styles.
-- [ ] Preserves text search highlighting compatibility where applicable.
+- [x] Project preview pane renders project notes using OpenTUI `<markdown />` component instead of line-by-line manual string splitting.
+- [x] Reflections review pane renders reflection content inside OpenTUI `<markdown />` component.
+- [x] Headings, lists, code spans, and blockquotes render with theme palette styles.
+- [x] Preserves text search highlighting compatibility where applicable.

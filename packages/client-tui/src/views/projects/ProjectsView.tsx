@@ -2,6 +2,7 @@ import type { ScrollBoxRenderable } from "@opentui/core";
 import { useEffect, useRef } from "react";
 import { HighlightText } from "../../components/HighlightText.js";
 import type { Entry, Project } from "../../hooks/useJournalData.js";
+import { useMarkdownSyntaxStyle } from "../../hooks/useMarkdownSyntaxStyle.js";
 import type { ThemePalette } from "../../theme.js";
 
 interface ProjectsViewProps {
@@ -43,6 +44,7 @@ export function ProjectsView({
   theme,
 }: ProjectsViewProps) {
   const scrollBoxRef = useRef<ScrollBoxRenderable | null>(null);
+  const syntaxStyle = useMarkdownSyntaxStyle(theme);
 
   useEffect(() => {
     if (scrollBoxRef.current && projects[selectedProjectIdx]) {
@@ -134,18 +136,7 @@ export function ProjectsView({
             marginBottom={1}
           >
             {selProj.content ? (
-              selProj.content
-                .split("\n")
-                .map((line, lIdx) => (
-                  <HighlightText
-                    key={`${selProj.name}-line-${lIdx}`}
-                    text={line || " "}
-                    query={filterQuery}
-                    theme={theme}
-                    defaultFg={line.startsWith("#") ? theme.primary : theme.fg}
-                    selectable
-                  />
-                ))
+              <markdown content={selProj.content} syntaxStyle={syntaxStyle} />
             ) : (
               <text fg={theme.muted}>{"No project overview notes."}</text>
             )}
