@@ -1,19 +1,16 @@
-import type { ReflectionPeriodType } from "@journals/core";
-import { getEffectiveDateStr, normalizeRecurrenceRule } from "@journals/core";
+import { type ReflectionPeriodType, normalizeRecurrenceRule } from "@journals/core";
 import {
   useKeyboard,
   useRenderer,
   useSelectionHandler,
   useTerminalDimensions,
 } from "@opentui/react";
-import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
-import { config, fetchPeriodDetailApi, fetchPeriodsApi, saveReflectionApi } from "../api/client.js";
+import { config } from "../api/client.js";
 import { copyToClipboard } from "../clipboard.js";
 import { Header } from "../components/Header.js";
 import { StatusBar } from "../components/StatusBar.js";
 import { openExternalEditor } from "../editor.js";
-import { queryKeys } from "../hooks/queries.js";
 import type { Entry } from "../hooks/useJournalData.js";
 import { useJournalData } from "../hooks/useJournalData.js";
 import { useMouseClick } from "../hooks/useMouseClick.js";
@@ -37,7 +34,6 @@ export function App() {
   const { width = 100, height = 30 } = useTerminalDimensions();
   const icons = config.appearance.use_nerd_font ? config.icons.nerd : config.icons.plain;
   const theme = getTheme(config.appearance.theme);
-  const queryClient = useQueryClient();
 
   const [currentTab, setCurrentTab] = useState<
     "DASHBOARD" | "TIMELINE" | "REFLECTIONS" | "PROJECTS"
@@ -249,7 +245,7 @@ export function App() {
       return;
     }
 
-    // Normal Mode Navigation & Shortcuts
+    // Global Navigation & Shortcuts (Normal Mode)
     if (
       keyName === "1" ||
       str === "1" ||
@@ -292,168 +288,6 @@ export function App() {
               ? "PROJECTS"
               : "DASHBOARD",
       );
-    } else if (currentTab === "REFLECTIONS" && (str === "w" || str === "W")) {
-      setReflectionPeriodType("WEEK");
-      setSelectedPeriodIdx(0);
-      setStatusMessage("Weekly Reflections");
-    } else if (currentTab === "REFLECTIONS" && (str === "m" || str === "M")) {
-      setReflectionPeriodType("MONTH");
-      setSelectedPeriodIdx(0);
-      setStatusMessage("Monthly Reflections");
-    } else if (currentTab === "REFLECTIONS" && (str === "q" || str === "Q")) {
-      setReflectionPeriodType("QUARTER");
-      setSelectedPeriodIdx(0);
-      setStatusMessage("Quarterly Reflections");
-    } else if (currentTab === "REFLECTIONS" && (str === "y" || str === "Y")) {
-      setReflectionPeriodType("YEAR");
-      setSelectedPeriodIdx(0);
-      setStatusMessage("Yearly Reflections");
-    } else if (keyName === "return" && currentTab === "DASHBOARD" && dashboard) {
-      const day = dashboard.days[focusedDayIdx];
-      if (day) {
-        navigateToDate(day.date);
-      }
-    } else if (keyName === config.keymaps.down || str === config.keymaps.down) {
-      if (currentTab === "TIMELINE") {
-        setSelectedEntryIdx((prev) => Math.min(prev + 1, Math.max(0, filteredEntries.length - 1)));
-      } else if (currentTab === "REFLECTIONS") {
-        setSelectedPeriodIdx((prev) => prev + 1);
-      } else if (currentTab === "PROJECTS") {
-        setSelectedProjectIdx((prev) =>
-          Math.min(prev + 1, Math.max(0, filteredProjects.length - 1)),
-        );
-      }
-    } else if (keyName === config.keymaps.up || str === config.keymaps.up) {
-      if (currentTab === "TIMELINE") {
-        setSelectedEntryIdx((prev) => Math.max(0, prev - 1));
-      } else if (currentTab === "REFLECTIONS") {
-        setSelectedPeriodIdx((prev) => Math.max(0, prev - 1));
-      } else if (currentTab === "PROJECTS") {
-        setSelectedProjectIdx((prev) => Math.max(0, prev - 1));
-      }
-    } else if (
-      keyName === "left" ||
-      keyName === "h" ||
-      (currentTab === "DASHBOARD" && str === "h")
-    ) {
-      if (currentTab === "DASHBOARD") {
-        setFocusedDayIdx((prev) => Math.max(0, prev - 1));
-      }
-    } else if (
-      keyName === "right" ||
-      keyName === "l" ||
-      (currentTab === "DASHBOARD" && str === "l")
-    ) {
-      if (currentTab === "DASHBOARD") {
-        setFocusedDayIdx((prev) => Math.min(59, prev + 1));
-      }
-    } else if (currentTab === "DASHBOARD" && (keyName === "space" || str === " ")) {
-      const pending = dashboard?.todayRoutines?.find((r) => r.isDueToday && !r.isCompletedToday);
-      if (pending) {
-        await quickCapture(`Completed @${pending.projectName} routine`);
-        setStatusMessage(`Completed today's routine for @${pending.projectName}!`);
-      }
-    } else if (currentTab === "TIMELINE" && (str === "t" || str === "T")) {
-      const todayStr = getEffectiveDateStr(Date.now(), config.appearance.day_start_hour ?? 0);
-      const todayIdx = filteredEntries.findIndex(
-        (e) => getEffectiveDateStr(e.createdAt, config.appearance.day_start_hour ?? 0) === todayStr,
-      );
-      if (todayIdx !== -1) {
-        setSelectedEntryIdx(todayIdx);
-        setStatusMessage(`Jumped to Today (${todayStr})`);
-      } else {
-        setStatusMessage(`No entries logged yet for Today (${todayStr})`);
-      }
-    } else if (currentTab === "TIMELINE" && (str === "]" || keyName === "]")) {
-      const currentEntry = filteredEntries[selectedEntryIdx];
-      if (currentEntry) {
-        const curDate = getEffectiveDateStr(
-          currentEntry.createdAt,
-          config.appearance.day_start_hour ?? 0,
-        );
-        const nextIdx = filteredEntries.findIndex(
-          (e, i) =>
-            i > selectedEntryIdx &&
-            getEffectiveDateStr(e.createdAt, config.appearance.day_start_hour ?? 0) !== curDate,
-        );
-        if (nextIdx !== -1) {
-          setSelectedEntryIdx(nextIdx);
-          const nextDate = getEffectiveDateStr(
-            filteredEntries[nextIdx].createdAt,
-            config.appearance.day_start_hour ?? 0,
-          );
-          setStatusMessage(`Jumped to ${nextDate}`);
-        }
-      }
-    } else if (currentTab === "TIMELINE" && (str === "[" || keyName === "[")) {
-      const currentEntry = filteredEntries[selectedEntryIdx];
-      if (currentEntry) {
-        const curDate = getEffectiveDateStr(
-          currentEntry.createdAt,
-          config.appearance.day_start_hour ?? 0,
-        );
-        for (let i = selectedEntryIdx - 1; i >= 0; i--) {
-          const thatDate = getEffectiveDateStr(
-            filteredEntries[i].createdAt,
-            config.appearance.day_start_hour ?? 0,
-          );
-          if (thatDate !== curDate) {
-            const groupStart = filteredEntries.findIndex(
-              (e) =>
-                getEffectiveDateStr(e.createdAt, config.appearance.day_start_hour ?? 0) ===
-                thatDate,
-            );
-            setSelectedEntryIdx(groupStart !== -1 ? groupStart : i);
-            setStatusMessage(`Jumped to ${thatDate}`);
-            break;
-          }
-        }
-      }
-    } else if (currentTab === "TIMELINE" && (str === "u" || str === "U")) {
-      if (lastDeletedEntry) {
-        await restoreEntry(lastDeletedEntry.id);
-        setStatusMessage(`Restored entry "${lastDeletedEntry.content.slice(0, 30)}..."`);
-        setLastDeletedEntry(null);
-      } else {
-        setStatusMessage("No recently deleted entry to undo");
-      }
-    } else if (keyName === config.keymaps.quick_capture || str === config.keymaps.quick_capture) {
-      setInputMode("CAPTURE");
-      setInputBuffer("");
-      setStatusMessage("Quick Capture: @project #tags note content");
-    } else if (keyName === config.keymaps.new_project || str === config.keymaps.new_project) {
-      setInputMode("NEW_PROJECT");
-      setInputBuffer("");
-      setStatusMessage("Enter new project name");
-    } else if (
-      keyName === "P" ||
-      str === "P" ||
-      keyName === config.keymaps.edit_project ||
-      str === config.keymaps.edit_project
-    ) {
-      if (currentTab === "PROJECTS" && filteredProjects[selectedProjectIdx]) {
-        const proj = filteredProjects[selectedProjectIdx];
-        setInputMode("EDIT_PROJECT_SETTINGS");
-        const recurStr = proj.recurrence ? ` /recur ${proj.recurrence}` : "";
-        const policyStr = ` /policy:${proj.missedPolicy || "spike"}`;
-        setInputBuffer(`${proj.name}${recurStr}${policyStr}`);
-        setStatusMessage(`Edit routine & settings for @${proj.name}`);
-      } else if (currentTab === "TIMELINE" && filteredEntries[selectedEntryIdx]) {
-        setInputMode("EDIT_PROJECT");
-        setInputBuffer(`@${filteredEntries[selectedEntryIdx].projectName}`);
-        setStatusMessage("Reassign note project (@name)");
-      }
-    } else if (keyName === config.keymaps.edit_tags || str === config.keymaps.edit_tags) {
-      if (currentTab === "TIMELINE" && filteredEntries[selectedEntryIdx]) {
-        setInputMode("EDIT_TAGS");
-        setInputBuffer(filteredEntries[selectedEntryIdx].tags.join(", "));
-        setStatusMessage("Edit note tags (comma-separated)");
-      }
-    } else if (keyName === config.keymaps.delete_entry || str === config.keymaps.delete_entry) {
-      if (currentTab === "TIMELINE" && filteredEntries[selectedEntryIdx]) {
-        setInputMode("DELETE_CONFIRM");
-        setStatusMessage("Confirm delete (y/n)");
-      }
     } else if (keyName === config.keymaps.search_filter || str === config.keymaps.search_filter) {
       setInputMode("FILTER");
       const currentQuery = currentTab === "TIMELINE" ? timelineFilterQuery : projectsFilterQuery;
@@ -476,46 +310,6 @@ export function App() {
         setProjectsFilterQuery("");
         setStatusMessage("Projects filter cleared");
       }
-    } else if (
-      keyName === config.keymaps.edit_project_content ||
-      str === config.keymaps.edit_project_content ||
-      (currentTab === "REFLECTIONS" && keyName === "return")
-    ) {
-      if (currentTab === "REFLECTIONS") {
-        // Open editor for the selected period reflection
-        try {
-          const periodList = await fetchPeriodsApi(reflectionPeriodType);
-          const currentP = periodList[selectedPeriodIdx];
-          if (currentP) {
-            const pDetail = await fetchPeriodDetailApi(reflectionPeriodType, currentP.periodKey);
-            const initialContent =
-              pDetail?.reflection?.content || `# Reflection: ${currentP.label}\n\n`;
-            const updated = openExternalEditor(initialContent);
-            if (updated !== initialContent) {
-              await saveReflectionApi(reflectionPeriodType, currentP.periodKey, updated);
-              await queryClient.invalidateQueries({ queryKey: queryKeys.reflections.all });
-              setStatusMessage(`Saved reflection for ${currentP.periodKey}`);
-            }
-          }
-        } catch (_e) {
-          setStatusMessage("Failed to edit reflection");
-        }
-      } else if (currentTab === "PROJECTS" && filteredProjects[selectedProjectIdx]) {
-        const targetProj = filteredProjects[selectedProjectIdx];
-        const updated = openExternalEditor(targetProj.content);
-        if (updated !== targetProj.content) {
-          await updateProjectContent(targetProj.id, updated);
-          setStatusMessage(`Updated content for @${targetProj.name}`);
-        }
-      } else if (currentTab === "TIMELINE" && filteredEntries[selectedEntryIdx]) {
-        // Edit entry content
-        const entry = filteredEntries[selectedEntryIdx];
-        setInputMode("EDIT_CONTENT");
-        setInputBuffer(entry.content);
-        setStatusMessage("Edit note content");
-      }
-    } else if (keyName === config.keymaps.quit || str === config.keymaps.quit) {
-      process.exit(0);
     }
   });
 
@@ -662,9 +456,13 @@ export function App() {
             projects={projects}
             loading={loading}
             focusedDayIdx={focusedDayIdx}
+            onFocusDayIdx={setFocusedDayIdx}
             onNavigateDate={navigateToDate}
+            onQuickCapture={quickCapture}
+            onStatusMessage={setStatusMessage}
             theme={theme}
             quickCaptureKey={config.keymaps.quick_capture}
+            isActive={inputMode === "NONE"}
           />
         ) : currentTab === "TIMELINE" ? (
           <TimelineView
@@ -678,6 +476,45 @@ export function App() {
             loading={loading}
             icons={icons}
             theme={theme}
+            isActive={inputMode === "NONE"}
+            onStatusMessage={setStatusMessage}
+            onQuickCapture={() => {
+              setInputMode("CAPTURE");
+              setInputBuffer("");
+              setStatusMessage("Quick Capture: @project #tags note content");
+            }}
+            onEditContent={(entry) => {
+              setInputMode("EDIT_CONTENT");
+              setInputBuffer(entry.content);
+              setStatusMessage("Edit note content");
+            }}
+            onEditProject={(entry) => {
+              setInputMode("EDIT_PROJECT");
+              setInputBuffer(`@${entry.projectName || ""}`);
+              setStatusMessage("Reassign note project (@name)");
+            }}
+            onEditTags={(entry) => {
+              setInputMode("EDIT_TAGS");
+              setInputBuffer(entry.tags.join(", "));
+              setStatusMessage("Edit note tags (comma-separated)");
+            }}
+            onDeleteEntry={() => {
+              setInputMode("DELETE_CONFIRM");
+              setStatusMessage("Confirm delete (y/n)");
+            }}
+            onUndoDelete={async () => {
+              if (lastDeletedEntry) {
+                await restoreEntry(lastDeletedEntry.id);
+                setStatusMessage(`Restored entry "${lastDeletedEntry.content.slice(0, 30)}..."`);
+                setLastDeletedEntry(null);
+              } else {
+                setStatusMessage("No recently deleted entry to undo");
+              }
+            }}
+            onUpdateEntryContent={async (id, content) => {
+              await updateEntryContent(id, content);
+              setStatusMessage("Updated note content via editor!");
+            }}
           />
         ) : currentTab === "REFLECTIONS" ? (
           <ReflectionsView
@@ -693,6 +530,8 @@ export function App() {
             width={width}
             icons={icons}
             theme={theme}
+            isActive={inputMode === "NONE"}
+            onStatusMessage={setStatusMessage}
           />
         ) : (
           <ProjectsView
@@ -706,6 +545,25 @@ export function App() {
             width={width}
             icons={icons}
             theme={theme}
+            isActive={inputMode === "NONE"}
+            onStatusMessage={setStatusMessage}
+            onNewProject={() => {
+              setInputMode("NEW_PROJECT");
+              setInputBuffer("");
+              setStatusMessage("Enter new project name");
+            }}
+            onEditProjectSettings={(proj) => {
+              setInputMode("EDIT_PROJECT_SETTINGS");
+              const recurStr = proj.recurrence ? ` /recur ${proj.recurrence}` : "";
+              const policyStr = ` /policy:${proj.missedPolicy || "spike"}`;
+              setInputBuffer(`${proj.name}${recurStr}${policyStr}`);
+              setStatusMessage(`Edit routine & settings for @${proj.name}`);
+            }}
+            onUpdateProjectContent={async (id, content) => {
+              await updateProjectContent(id, content);
+              const targetProj = filteredProjects.find((p) => p.id === id);
+              setStatusMessage(`Updated content for @${targetProj?.name || "project"}`);
+            }}
           />
         )}
       </box>

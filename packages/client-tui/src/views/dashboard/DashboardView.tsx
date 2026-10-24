@@ -1,4 +1,5 @@
 import { formatRecurrenceRule } from "@journals/core";
+import { useKeyboard } from "@opentui/react";
 import { BiDirectionalBarChart } from "../../components/BiDirectionalBarChart.js";
 import type { DashboardData, Project } from "../../hooks/useJournalData.js";
 import type { ThemePalette } from "../../theme.js";
@@ -11,6 +12,13 @@ interface DashboardViewProps {
   onNavigateDate: (dateStr: string) => void;
   theme: ThemePalette;
   quickCaptureKey: string;
+  isActive?: boolean;
+  onFocusDayIdx?: (idx: number) => void;
+  onStatusMessage?: (msg: string) => void;
+  onQuickCapture?: (text: string) => Promise<void> | void;
+  onToggleRoutine?: (
+    routine: NonNullable<DashboardData["todayRoutines"]>[number],
+  ) => Promise<void> | void;
 }
 
 export function DashboardView({
@@ -21,7 +29,42 @@ export function DashboardView({
   onNavigateDate,
   theme,
   quickCaptureKey,
+  isActive = true,
+  onFocusDayIdx,
+  onStatusMessage,
+  onQuickCapture,
+  onToggleRoutine,
 }: DashboardViewProps) {
+  useKeyboard(async (key) => {
+    if (!isActive) return;
+    const keyName = key.name;
+    const str = key.sequence || key.name;
+
+    // Focus navigation: h/l and left/right
+    if (keyName === "h" || str === "h" || keyName === "left") {
+      onFocusDayIdx?.(Math.max(0, focusedDayIdx - 1));
+    } else if (keyName === "l" || str === "l" || keyName === "right") {
+      onFocusDayIdx?.(Math.min(59, focusedDayIdx + 1));
+    } else if (keyName === "space" || str === " ") {
+      // Today checklist routine completion toggle: Space
+      const pending = dashboard?.todayRoutines?.find((r) => r.isDueToday && !r.isCompletedToday);
+      if (pending) {
+        if (onToggleRoutine) {
+          await onToggleRoutine(pending);
+        } else if (onQuickCapture) {
+          await onQuickCapture(`Completed @${pending.projectName} routine`);
+          onStatusMessage?.(`Completed today's routine for @${pending.projectName}!`);
+        }
+      }
+    } else if (keyName === "return" && dashboard) {
+      // Date jump: Enter
+      const day = dashboard.days[focusedDayIdx];
+      if (day) {
+        onNavigateDate(day.date);
+      }
+    }
+  });
+
   if (loading || !dashboard) {
     return (
       <box padding={1}>

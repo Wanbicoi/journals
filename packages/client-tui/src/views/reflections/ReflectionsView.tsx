@@ -1,7 +1,11 @@
 import type { ReflectionPeriodType } from "@journals/core";
 import type { ScrollBoxRenderable } from "@opentui/core";
+import { useKeyboard } from "@opentui/react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
-import { useReflectionDetail, useReflectionPeriods } from "../../hooks/queries.js";
+import { config, fetchPeriodDetailApi, saveReflectionApi } from "../../api/client.js";
+import { openExternalEditor } from "../../editor.js";
+import { queryKeys, useReflectionDetail, useReflectionPeriods } from "../../hooks/queries.js";
 import { useMarkdownSyntaxStyle } from "../../hooks/useMarkdownSyntaxStyle.js";
 import type { ThemePalette } from "../../theme.js";
 
@@ -13,6 +17,9 @@ interface ReflectionsViewProps {
   width: number;
   icons: Record<string, string>;
   theme: ThemePalette;
+  isActive?: boolean;
+  onStatusMessage?: (msg: string) => void;
+  onOpenEditor?: () => void;
 }
 
 export function ReflectionsView({
@@ -23,9 +30,13 @@ export function ReflectionsView({
   width: _width,
   icons,
   theme,
+  isActive = true,
+  onStatusMessage,
+  onOpenEditor,
 }: ReflectionsViewProps) {
   const scrollBoxRef = useRef<ScrollBoxRenderable | null>(null);
   const syntaxStyle = useMarkdownSyntaxStyle(theme);
+  const queryClient = useQueryClient();
 
   const { data: periods = [] } = useReflectionPeriods(periodType);
   const selectedPeriod = periods[selectedPeriodIdx];
@@ -33,6 +44,75 @@ export function ReflectionsView({
     selectedPeriod?.periodType,
     selectedPeriod?.periodKey,
   );
+
+  useKeyboard(async (key) => {
+    if (!isActive) return;
+    const keyName = key.name;
+    const str = key.sequence || key.name;
+
+    // Cadence switching: w, m, q, y
+    if (str === "w" || str === "W" || keyName === "w") {
+      onChangePeriodType("WEEK");
+      onSelectPeriodIdx(0);
+      onStatusMessage?.("Weekly Reflections");
+    } else if (str === "m" || str === "M" || keyName === "m") {
+      onChangePeriodType("MONTH");
+      onSelectPeriodIdx(0);
+      onStatusMessage?.("Monthly Reflections");
+    } else if (str === "q" || str === "Q" || keyName === "q") {
+      onChangePeriodType("QUARTER");
+      onSelectPeriodIdx(0);
+      onStatusMessage?.("Quarterly Reflections");
+    } else if (str === "y" || str === "Y" || keyName === "y") {
+      onChangePeriodType("YEAR");
+      onSelectPeriodIdx(0);
+      onStatusMessage?.("Yearly Reflections");
+    } else if (
+      keyName === "j" ||
+      str === "j" ||
+      keyName === "down" ||
+      keyName === config.keymaps.down ||
+      str === config.keymaps.down
+    ) {
+      onSelectPeriodIdx(Math.min(selectedPeriodIdx + 1, Math.max(0, periods.length - 1)));
+    } else if (
+      keyName === "k" ||
+      str === "k" ||
+      keyName === "up" ||
+      keyName === config.keymaps.up ||
+      str === config.keymaps.up
+    ) {
+      onSelectPeriodIdx(Math.max(0, selectedPeriodIdx - 1));
+    } else if (
+      keyName === "e" ||
+      str === "e" ||
+      keyName === "return" ||
+      keyName === config.keymaps.edit_project_content ||
+      str === config.keymaps.edit_project_content
+    ) {
+      // External editor spawn: e, Enter
+      if (onOpenEditor) {
+        onOpenEditor();
+      } else {
+        try {
+          const currentP = periods[selectedPeriodIdx];
+          if (currentP) {
+            const pDetail = await fetchPeriodDetailApi(periodType, currentP.periodKey);
+            const initialContent =
+              pDetail?.reflection?.content || `# Reflection: ${currentP.label}\n\n`;
+            const updated = openExternalEditor(initialContent);
+            if (updated !== initialContent) {
+              await saveReflectionApi(periodType, currentP.periodKey, updated);
+              await queryClient.invalidateQueries({ queryKey: queryKeys.reflections.all });
+              onStatusMessage?.(`Saved reflection for ${currentP.periodKey}`);
+            }
+          }
+        } catch (_e) {
+          onStatusMessage?.("Failed to edit reflection");
+        }
+      }
+    }
+  });
 
   // If index out of bounds after changing periodType or filter, reset to 0
   useEffect(() => {
