@@ -207,14 +207,6 @@ export function App() {
       if (inputMode === "EDIT_CONTENT") {
         return;
       }
-      if (key.ctrl && keyName === "w") {
-        setInputBuffer((prev) => prev.replace(/(?:[^\s]+|\s+)\s*$/, ""));
-        return;
-      }
-      if (key.ctrl && keyName === "u") {
-        setInputBuffer("");
-        return;
-      }
       if (keyName === "return") {
         await commitModalInput();
         return;
@@ -233,11 +225,11 @@ export function App() {
         return;
       }
       if (suggestions && suggestions.matches.length > 1) {
-        if (keyName === "down" || keyName === "right") {
+        if (keyName === "down") {
           setActiveSuggestionIdx((prev) => (prev + 1) % suggestions.matches.length);
           return;
         }
-        if (keyName === "up" || keyName === "left") {
+        if (keyName === "up") {
           setActiveSuggestionIdx(
             (prev) => (prev - 1 + suggestions.matches.length) % suggestions.matches.length,
           );
@@ -252,14 +244,6 @@ export function App() {
       }
       if (keyName === "tab") {
         setInputBuffer((prev) => applySuggestion(prev, suggestions));
-        return;
-      }
-      if (keyName === "backspace") {
-        setInputBuffer((prev) => prev.slice(0, -1));
-        return;
-      }
-      if (str && str.length === 1 && !key.ctrl && !key.meta) {
-        setInputBuffer((prev) => prev + str);
         return;
       }
       return;
@@ -535,14 +519,20 @@ export function App() {
     }
   });
 
-  async function commitModalInput() {
-    if (inputMode === "CAPTURE") {
-      if (inputBuffer.trim()) {
-        await quickCapture(inputBuffer.trim());
+  async function commitModalInput(overrideBuffer?: string) {
+    if (inputMode === "NONE") return;
+    const currentMode = inputMode;
+    const buffer = (overrideBuffer !== undefined ? overrideBuffer : inputBuffer).trim();
+    setInputMode("NONE");
+    setInputBuffer("");
+
+    if (currentMode === "CAPTURE") {
+      if (buffer) {
+        await quickCapture(buffer);
         setStatusMessage("Captured new journal entry!");
       }
-    } else if (inputMode === "NEW_PROJECT") {
-      const raw = inputBuffer.trim();
+    } else if (currentMode === "NEW_PROJECT") {
+      const raw = buffer;
       if (raw) {
         // Parse name, recurrence, and policy
         const tokens = raw.split(/\s+/);
@@ -572,8 +562,8 @@ export function App() {
         await createProject(name, recurrence, missedPolicy);
         setStatusMessage(`Created project @${name}`);
       }
-    } else if (inputMode === "FILTER") {
-      const q = inputBuffer.trim();
+    } else if (currentMode === "FILTER") {
+      const q = buffer;
       if (currentTab === "TIMELINE") {
         setTimelineFilterQuery(q);
         setSelectedEntryIdx(0);
@@ -583,32 +573,32 @@ export function App() {
         setSelectedProjectIdx(0);
         setStatusMessage(q ? `Projects Filter: "${q}"` : "Projects filter cleared");
       }
-    } else if (inputMode === "EDIT_PROJECT") {
+    } else if (currentMode === "EDIT_PROJECT") {
       const entry = filteredEntries[selectedEntryIdx];
-      const targetProj = inputBuffer.trim().replace(/^@/, "");
+      const targetProj = buffer.replace(/^@/, "");
       if (entry && targetProj) {
         await updateEntryProject(entry.id, targetProj);
         setStatusMessage(`Note reassigned to @${targetProj}`);
       }
-    } else if (inputMode === "EDIT_TAGS") {
+    } else if (currentMode === "EDIT_TAGS") {
       const entry = filteredEntries[selectedEntryIdx];
       if (entry) {
-        const newTags = inputBuffer
+        const newTags = buffer
           .split(",")
           .map((t) => t.trim().toLowerCase().replace(/^#/, ""))
           .filter((t) => /^[a-z0-9-_]+$/.test(t));
         await updateEntryTags(entry.id, newTags);
         setStatusMessage("Updated note tags!");
       }
-    } else if (inputMode === "EDIT_CONTENT") {
+    } else if (currentMode === "EDIT_CONTENT") {
       const entry = filteredEntries[selectedEntryIdx];
-      if (entry && inputBuffer.trim()) {
-        await updateEntryContent(entry.id, inputBuffer.trim());
+      if (entry && buffer) {
+        await updateEntryContent(entry.id, buffer);
         setStatusMessage("Updated note content!");
       }
-    } else if (inputMode === "EDIT_PROJECT_SETTINGS") {
+    } else if (currentMode === "EDIT_PROJECT_SETTINGS") {
       const targetProj = filteredProjects[selectedProjectIdx];
-      const raw = inputBuffer.trim();
+      const raw = buffer;
       if (targetProj && raw) {
         const tokens = raw.split(/\s+/);
         let name = tokens[0];
@@ -646,9 +636,6 @@ export function App() {
         setStatusMessage(`Updated settings for @${name.replace(/^@/, "") || targetProj.name}`);
       }
     }
-
-    setInputMode("NONE");
-    setInputBuffer("");
   }
 
   const selectedEntry = filteredEntries[selectedEntryIdx];
@@ -733,6 +720,8 @@ export function App() {
           activeSuggestionIdx={activeSuggestionIdx}
           quickIcon={icons.quick}
           theme={theme}
+          onChange={setInputBuffer}
+          onSubmit={commitModalInput}
         />
       )}
 
@@ -776,6 +765,8 @@ export function App() {
           activeSuggestionIdx={activeSuggestionIdx}
           projectIcon={icons.project}
           theme={theme}
+          onChange={setInputBuffer}
+          onSubmit={commitModalInput}
         />
       )}
 
@@ -788,6 +779,8 @@ export function App() {
           activeSuggestionIdx={activeSuggestionIdx}
           tagIcon={icons.tag}
           theme={theme}
+          onChange={setInputBuffer}
+          onSubmit={commitModalInput}
         />
       )}
 
@@ -798,6 +791,8 @@ export function App() {
           inputBuffer={inputBuffer}
           projectIcon={icons.project}
           theme={theme}
+          onChange={setInputBuffer}
+          onSubmit={commitModalInput}
         />
       )}
 
@@ -809,6 +804,8 @@ export function App() {
           inputBuffer={inputBuffer}
           projectIcon={icons.project}
           theme={theme}
+          onChange={setInputBuffer}
+          onSubmit={commitModalInput}
         />
       )}
 
@@ -819,6 +816,8 @@ export function App() {
           inputBuffer={inputBuffer}
           tabTitle={currentTab === "TIMELINE" ? "Timeline / Journal" : "Projects"}
           theme={theme}
+          onChange={setInputBuffer}
+          onSubmit={commitModalInput}
         />
       )}
 
