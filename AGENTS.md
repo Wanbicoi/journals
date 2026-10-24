@@ -1,1 +1,2 @@
 - Use `bun` as package manager
+- Glossary: Consult [GLOSSARY.md](GLOSSARY.md) for domain concepts (routines, missed policies, spikes, breaks, debts, reflections, slices).
