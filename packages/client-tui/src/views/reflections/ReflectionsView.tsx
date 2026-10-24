@@ -2,6 +2,7 @@ import type { PeriodDetail, PeriodItemStatus, ReflectionPeriodType } from "@jour
 import type { ScrollBoxRenderable } from "@opentui/core";
 import { useEffect, useRef, useState } from "react";
 import { fetchPeriodDetailApi, fetchPeriodsApi } from "../../api/client.js";
+import { useMarkdownSyntaxStyle } from "../../hooks/useMarkdownSyntaxStyle.js";
 import type { ThemePalette } from "../../theme.js";
 
 interface ReflectionsViewProps {
@@ -29,6 +30,7 @@ export function ReflectionsView({
   const [currentDetail, setCurrentDetail] = useState<PeriodDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const scrollBoxRef = useRef<ScrollBoxRenderable | null>(null);
+  const syntaxStyle = useMarkdownSyntaxStyle(theme);
 
   // Load period list for current periodType or when refreshTrigger changes
   // biome-ignore lint/correctness/useExhaustiveDependencies: initial, periodType change, & refreshTrigger
@@ -193,7 +195,7 @@ export function ReflectionsView({
 
             <scrollbox flexGrow={1}>
               {currentDetail?.reflection?.content.trim() ? (
-                <text fg={theme.fg}>{currentDetail.reflection.content}</text>
+                <markdown content={currentDetail.reflection.content} syntaxStyle={syntaxStyle} />
               ) : (
                 <box flexDirection="column">
                   <text fg={theme.accent}>
@@ -232,7 +234,7 @@ export function ReflectionsView({
                   {currentDetail.subReflections.map((sub) => (
                     <box key={sub.periodKey} flexDirection="column" marginBottom={1}>
                       <text fg={theme.accent}>{`[${sub.periodKey}] ${sub.label}`}</text>
-                      <text fg={theme.fg}>{sub.content}</text>
+                      <markdown content={sub.content} syntaxStyle={syntaxStyle} />
                     </box>
                   ))}
                   <text fg={theme.secondary}>{"─── Journal Entries ───"}</text>
