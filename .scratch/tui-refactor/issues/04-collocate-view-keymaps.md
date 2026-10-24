@@ -5,10 +5,10 @@ Self-contained, view-level keyboard navigation and action handling. Each tab vie
 
 **Blocked by:** 02: Native OpenTUI Input Primitives for All TUI Modals
 
-**Status:** ready-for-agent
+**Status:** closed
 
-- [ ] `TimelineView` handles its own navigation keys (`j`/`k`, `g`/`G`), date jumps (`t`, `[`, `]`), soft-delete undo (`u`), and entry actions (`c`, `e`, `p`, `t`, `d`).
-- [ ] `ProjectsView` handles project list navigation (`j`/`k`), new project modal trigger (`n`), routine settings modal (`P`), and external editor launch (`o`).
-- [ ] `DashboardView` handles routine telemetry focus navigation (`h`/`l`) and today's checklist completion toggle (`Space`).
-- [ ] `ReflectionsView` handles cadence switching (`w`, `m`, `q`, `y`) and external editor reflection editing (`e`, `Enter`).
-- [ ] Root keyboard listener only handles global actions: application tabs (`1`, `2`, `3`, `4`, `Tab`), global help (`?`), and exit (`Ctrl+C`).
+- [x] `TimelineView` handles its own navigation keys (`j`/`k`, `g`/`G`), date jumps (`t`, `[`, `]`), soft-delete undo (`u`), and entry actions (`c`, `e`, `p`, `t`, `d`).
+- [x] `ProjectsView` handles project list navigation (`j`/`k`), new project modal trigger (`n`), routine settings modal (`P`), and external editor launch (`o`).
+- [x] `DashboardView` handles routine telemetry focus navigation (`h`/`l`) and today's checklist completion toggle (`Space`).
+- [x] `ReflectionsView` handles cadence switching (`w`, `m`, `q`, `y`) and external editor reflection editing (`e`, `Enter`).
+- [x] Root keyboard listener only handles global actions: application tabs (`1`, `2`, `3`, `4`, `Tab`), global help (`?`), and exit (`Ctrl+C`).
