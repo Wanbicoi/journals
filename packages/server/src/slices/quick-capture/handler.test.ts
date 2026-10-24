@@ -22,4 +22,21 @@ describe("Quick Capture Slice", () => {
     expect(result.tags).toEqual([]);
     expect(result.content).toBe("Simple thought without tags or project");
   });
+
+  test("parses /yesterday and /date overrides", () => {
+    const db = initDb(":memory:", false);
+    const yesterdayRes = handleQuickCapture(db, "Retro note /yesterday @work");
+    const now = Date.now();
+    // Yesterday should be ~24h in the past
+    expect(yesterdayRes.createdAt).toBeLessThan(now - 20 * 3600 * 1000);
+    expect(yesterdayRes.content).toBe("Retro note");
+
+    const dateRes = handleQuickCapture(db, "Old memory /date:2025-05-15 @journal #memory");
+    const d = new Date(dateRes.createdAt);
+    expect(d.getFullYear()).toBe(2025);
+    expect(d.getMonth()).toBe(4); // 0-indexed May
+    expect(d.getDate()).toBe(15);
+    expect(dateRes.content).toBe("Old memory");
+    expect(dateRes.tags).toEqual(["memory"]);
+  });
 });

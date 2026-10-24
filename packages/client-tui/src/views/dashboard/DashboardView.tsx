@@ -77,6 +77,51 @@ export function DashboardView({
         </box>
       </box>
 
+      {/* Today's Agenda & Routine Checklist */}
+      {dashboard.todayRoutines && dashboard.todayRoutines.length > 0 && (
+        <box
+          flexDirection="column"
+          borderStyle="single"
+          borderColor={
+            dashboard.todayRoutines.some((r) => r.isDueToday && !r.isCompletedToday)
+              ? theme.warning || "yellow"
+              : theme.success || "green"
+          }
+          paddingLeft={1}
+          paddingRight={1}
+          marginTop={1}
+        >
+          <box flexDirection="row" justifyContent="space-between">
+            <text fg={theme.primary}>{"🎯 TODAY'S ROUTINE AGENDA"}</text>
+            <text fg={theme.muted}>
+              {`${dashboard.todayRoutines.filter((r) => r.isCompletedToday).length}/${dashboard.todayRoutines.length} completed`}
+            </text>
+          </box>
+          <box flexDirection="column" marginTop={1}>
+            {dashboard.todayRoutines.map((routine) => {
+              const ruleDesc = formatRecurrenceRule(routine.recurrence) || routine.recurrence;
+              const isDone = routine.isCompletedToday;
+              return (
+                <box key={routine.projectId} flexDirection="row" justifyContent="space-between">
+                  <box flexDirection="row">
+                    <text fg={isDone ? theme.success || "green" : theme.warning || "yellow"}>
+                      {isDone ? "[✓] " : "[ ] "}
+                    </text>
+                    <text
+                      fg={isDone ? theme.fg : theme.secondary}
+                    >{`@${routine.projectName} `}</text>
+                    <text fg={theme.muted}>{`(${ruleDesc})`}</text>
+                  </box>
+                  <text fg={isDone ? theme.success || "green" : theme.warning || "yellow"}>
+                    {isDone ? "COMPLETED" : "DUE TODAY (Space to complete)"}
+                  </text>
+                </box>
+              );
+            })}
+          </box>
+        </box>
+      )}
+
       {/* 60-Day Bi-directional Monitor Chart */}
       <box
         flexDirection="column"

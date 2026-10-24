@@ -7,6 +7,17 @@ export interface ParsedCapture {
   projectName: string | null;
   tags: string[];
   breakDays: number;
+  date?: number | null;
+}
+
+/**
+ * Returns effective YYYY-MM-DD string considering a day rollover hour cutoff.
+ * If hour < dayStartHour, the date is considered part of the previous calendar day.
+ */
+export function getEffectiveDateStr(dateInput: number | string | Date, dayStartHour = 0): string {
+  const d = new Date(dateInput);
+  const shifted = new Date(d.getTime() - dayStartHour * 3600 * 1000);
+  return shifted.toISOString().slice(0, 10);
 }
 
 /**
@@ -61,6 +72,7 @@ export function parseCaptureLine(
   const tokens = raw.trim().split(/\s+/);
   let explicitProject: string | null = null;
   let breakDays = 0;
+  let explicitDate: number | null = null;
   const tags: string[] = [];
   const textWords: string[] = [];
 
@@ -70,6 +82,24 @@ export function parseCaptureLine(
       explicitProject = token.slice(1);
     } else if (token.startsWith("#") && token.length > 1) {
       tags.push(token.slice(1).toLowerCase());
+    } else if (token.toLowerCase() === "/yesterday") {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      explicitDate = yesterday.getTime();
+    } else if (token.toLowerCase().startsWith("/date")) {
+      let dateString: string | null = null;
+      if (token.includes(":")) {
+        dateString = token.split(":")[1];
+      } else if (i + 1 < tokens.length && /^\d{4}-\d{2}-\d{2}$/.test(tokens[i + 1])) {
+        dateString = tokens[i + 1];
+        i++; // consume date token
+      }
+      if (dateString && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        const [y, m, d] = dateString.split("-").map(Number);
+        const parsed = new Date();
+        parsed.setFullYear(y, m - 1, d);
+        explicitDate = parsed.getTime();
+      }
     } else if (token.toLowerCase().startsWith("/break")) {
       // Check syntax: "/break 3d", "/break 3", "/break:3d", "/break:3"
       let days = 1;
@@ -108,5 +138,6 @@ export function parseCaptureLine(
     projectName: resolvedProject,
     tags,
     breakDays,
+    date: explicitDate,
   };
 }

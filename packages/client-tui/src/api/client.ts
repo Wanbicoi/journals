@@ -36,6 +36,7 @@ export async function fetchDashboardAnalytics(days = 60) {
 export async function updateProjectApi(
   id: string,
   data: {
+    name?: string;
     content?: string;
     recurrence?: string | null;
     missedPolicy?: "accumulate" | "spike" | "mark_done";
@@ -48,6 +49,16 @@ export async function updateProjectApi(
   });
   if (!res.ok) {
     throw new Error(`Failed to update project: ${res.statusText}`);
+  }
+  return await res.json();
+}
+
+export async function restoreEntryApi(id: string) {
+  const res = await fetch(`${serverUrl}/entries/${id}/restore`, {
+    method: "POST",
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to restore entry: ${res.statusText}`);
   }
   return await res.json();
 }

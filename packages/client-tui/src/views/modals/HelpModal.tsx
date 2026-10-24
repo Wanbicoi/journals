@@ -36,11 +36,17 @@ export function HelpModal({ width, height, keymaps, theme }: HelpModalProps) {
       </text>
       <text
         fg={theme.fg}
-      >{`[${keymaps.quick_capture}] : Quick capture note (@project #tags note)`}</text>
+      >{`[${keymaps.quick_capture}] : Quick capture note (@project #tags /date /break)`}</text>
+      <text fg={theme.fg}>{"[Ctrl+E] : Open $EDITOR inside quick capture modal"}</text>
       <text
         fg={theme.fg}
       >{`[${keymaps.edit_project_content}] / [Enter] : Edit note or $EDITOR (Reflection / Project)`}</text>
-      <text fg={theme.fg}>{`[${keymaps.delete_entry}] : Delete selected note`}</text>
+      <text fg={theme.fg}>{"[P] : Edit routine rule & missed policy (Projects view)"}</text>
+      <text fg={theme.fg}>{"[Space] : Check-off routine due today (Dashboard view)"}</text>
+      <text fg={theme.fg}>
+        {"[t] / [[] / []] : Jump to Today / Prev Day / Next Day (Timeline)"}
+      </text>
+      <text fg={theme.fg}>{`[${keymaps.delete_entry}] : Delete note (Press [u] to Undo)`}</text>
       <text fg={theme.fg}>{`[${keymaps.edit_project}] : Reassign note project`}</text>
       <text fg={theme.fg}>{`[${keymaps.edit_tags}] : Edit note tags`}</text>
       <text fg={theme.fg}>{`[${keymaps.new_project}] : Create new project`}</text>

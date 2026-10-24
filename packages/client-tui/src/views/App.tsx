@@ -1,5 +1,5 @@
 import type { ReflectionPeriodType } from "@journals/core";
-import { normalizeRecurrenceRule } from "@journals/core";
+import { getEffectiveDateStr, normalizeRecurrenceRule } from "@journals/core";
 import {
   useKeyboard,
   useRenderer,
@@ -12,6 +12,7 @@ import { copyToClipboard } from "../clipboard.js";
 import { Header } from "../components/Header.js";
 import { StatusBar } from "../components/StatusBar.js";
 import { openExternalEditor } from "../editor.js";
+import type { Entry } from "../hooks/useJournalData.js";
 import { useJournalData } from "../hooks/useJournalData.js";
 import { useMouseClick } from "../hooks/useMouseClick.js";
 import { useSuggestions } from "../hooks/useSuggestions.js";
@@ -20,6 +21,7 @@ import { DashboardView } from "./dashboard/DashboardView.js";
 import { DeleteConfirmModal } from "./modals/DeleteConfirmModal.js";
 import { EditContentModal } from "./modals/EditContentModal.js";
 import { EditProjectModal } from "./modals/EditProjectModal.js";
+import { EditProjectSettingsModal } from "./modals/EditProjectSettingsModal.js";
 import { EditTagsModal } from "./modals/EditTagsModal.js";
 import { FilterModal } from "./modals/FilterModal.js";
 import { HelpModal } from "./modals/HelpModal.js";
@@ -43,11 +45,13 @@ export function App() {
     reloadData,
     quickCapture,
     createProject,
+    updateProject,
     updateProjectContent,
     updateEntryProject,
     updateEntryTags,
     updateEntryContent,
     deleteEntry,
+    restoreEntry,
   } = useJournalData();
 
   const [currentTab, setCurrentTab] = useState<
@@ -66,10 +70,12 @@ export function App() {
     | "DELETE_CONFIRM"
     | "FILTER"
     | "HELP"
+    | "EDIT_PROJECT_SETTINGS"
   >("NONE");
   const [timelineFilterQuery, setTimelineFilterQuery] = useState("");
   const [projectsFilterQuery, setProjectsFilterQuery] = useState("");
   const [inputBuffer, setInputBuffer] = useState("");
+  const [lastDeletedEntry, setLastDeletedEntry] = useState<Entry | null>(null);
 
   const [selectedEntryIdx, setSelectedEntryIdx] = useState(0);
   const [selectedProjectIdx, setSelectedProjectIdx] = useState(0);
@@ -180,9 +186,10 @@ export function App() {
       if (keyName === "y" || str === "y") {
         const entry = filteredEntries[selectedEntryIdx];
         if (entry) {
+          setLastDeletedEntry(entry);
           await deleteEntry(entry.id);
           setSelectedEntryIdx((prev) => Math.max(0, prev - 1));
-          setStatusMessage("Deleted entry!");
+          setStatusMessage("Deleted entry. Press 'u' to undo.");
         }
         setInputMode("NONE");
       } else if (keyName === "n" || str === "n" || keyName === "escape") {
@@ -233,6 +240,12 @@ export function App() {
           );
           return;
         }
+      }
+      if (inputMode === "CAPTURE" && key.ctrl && (keyName === "e" || str === "e")) {
+        const edited = openExternalEditor(inputBuffer);
+        setInputBuffer(edited);
+        setStatusMessage("Drafted capture in external editor");
+        return;
       }
       if (keyName === "tab") {
         setInputBuffer((prev) => applySuggestion(prev, suggestions));
@@ -347,6 +360,76 @@ export function App() {
       if (currentTab === "DASHBOARD") {
         setFocusedDayIdx((prev) => Math.min(59, prev + 1));
       }
+    } else if (currentTab === "DASHBOARD" && (keyName === "space" || str === " ")) {
+      const pending = dashboard?.todayRoutines?.find((r) => r.isDueToday && !r.isCompletedToday);
+      if (pending) {
+        await quickCapture(`Completed @${pending.projectName} routine`);
+        setStatusMessage(`Completed today's routine for @${pending.projectName}!`);
+      }
+    } else if (currentTab === "TIMELINE" && (str === "t" || str === "T")) {
+      const todayStr = getEffectiveDateStr(Date.now(), config.appearance.day_start_hour ?? 0);
+      const todayIdx = filteredEntries.findIndex(
+        (e) => getEffectiveDateStr(e.createdAt, config.appearance.day_start_hour ?? 0) === todayStr,
+      );
+      if (todayIdx !== -1) {
+        setSelectedEntryIdx(todayIdx);
+        setStatusMessage(`Jumped to Today (${todayStr})`);
+      } else {
+        setStatusMessage(`No entries logged yet for Today (${todayStr})`);
+      }
+    } else if (currentTab === "TIMELINE" && (str === "]" || keyName === "]")) {
+      const currentEntry = filteredEntries[selectedEntryIdx];
+      if (currentEntry) {
+        const curDate = getEffectiveDateStr(
+          currentEntry.createdAt,
+          config.appearance.day_start_hour ?? 0,
+        );
+        const nextIdx = filteredEntries.findIndex(
+          (e, i) =>
+            i > selectedEntryIdx &&
+            getEffectiveDateStr(e.createdAt, config.appearance.day_start_hour ?? 0) !== curDate,
+        );
+        if (nextIdx !== -1) {
+          setSelectedEntryIdx(nextIdx);
+          const nextDate = getEffectiveDateStr(
+            filteredEntries[nextIdx].createdAt,
+            config.appearance.day_start_hour ?? 0,
+          );
+          setStatusMessage(`Jumped to ${nextDate}`);
+        }
+      }
+    } else if (currentTab === "TIMELINE" && (str === "[" || keyName === "[")) {
+      const currentEntry = filteredEntries[selectedEntryIdx];
+      if (currentEntry) {
+        const curDate = getEffectiveDateStr(
+          currentEntry.createdAt,
+          config.appearance.day_start_hour ?? 0,
+        );
+        for (let i = selectedEntryIdx - 1; i >= 0; i--) {
+          const thatDate = getEffectiveDateStr(
+            filteredEntries[i].createdAt,
+            config.appearance.day_start_hour ?? 0,
+          );
+          if (thatDate !== curDate) {
+            const groupStart = filteredEntries.findIndex(
+              (e) =>
+                getEffectiveDateStr(e.createdAt, config.appearance.day_start_hour ?? 0) ===
+                thatDate,
+            );
+            setSelectedEntryIdx(groupStart !== -1 ? groupStart : i);
+            setStatusMessage(`Jumped to ${thatDate}`);
+            break;
+          }
+        }
+      }
+    } else if (currentTab === "TIMELINE" && (str === "u" || str === "U")) {
+      if (lastDeletedEntry) {
+        await restoreEntry(lastDeletedEntry.id);
+        setStatusMessage(`Restored entry "${lastDeletedEntry.content.slice(0, 30)}..."`);
+        setLastDeletedEntry(null);
+      } else {
+        setStatusMessage("No recently deleted entry to undo");
+      }
     } else if (keyName === config.keymaps.quick_capture || str === config.keymaps.quick_capture) {
       setInputMode("CAPTURE");
       setInputBuffer("");
@@ -355,8 +438,20 @@ export function App() {
       setInputMode("NEW_PROJECT");
       setInputBuffer("");
       setStatusMessage("Enter new project name");
-    } else if (keyName === config.keymaps.edit_project || str === config.keymaps.edit_project) {
-      if (currentTab === "TIMELINE" && filteredEntries[selectedEntryIdx]) {
+    } else if (
+      keyName === "P" ||
+      str === "P" ||
+      keyName === config.keymaps.edit_project ||
+      str === config.keymaps.edit_project
+    ) {
+      if (currentTab === "PROJECTS" && filteredProjects[selectedProjectIdx]) {
+        const proj = filteredProjects[selectedProjectIdx];
+        setInputMode("EDIT_PROJECT_SETTINGS");
+        const recurStr = proj.recurrence ? ` /recur ${proj.recurrence}` : "";
+        const policyStr = ` /policy:${proj.missedPolicy || "spike"}`;
+        setInputBuffer(`${proj.name}${recurStr}${policyStr}`);
+        setStatusMessage(`Edit routine & settings for @${proj.name}`);
+      } else if (currentTab === "TIMELINE" && filteredEntries[selectedEntryIdx]) {
         setInputMode("EDIT_PROJECT");
         setInputBuffer(`@${filteredEntries[selectedEntryIdx].projectName}`);
         setStatusMessage("Reassign note project (@name)");
@@ -507,6 +602,45 @@ export function App() {
       if (entry && inputBuffer.trim()) {
         await updateEntryContent(entry.id, inputBuffer.trim());
         setStatusMessage("Updated note content!");
+      }
+    } else if (inputMode === "EDIT_PROJECT_SETTINGS") {
+      const targetProj = filteredProjects[selectedProjectIdx];
+      const raw = inputBuffer.trim();
+      if (targetProj && raw) {
+        const tokens = raw.split(/\s+/);
+        let name = tokens[0];
+        let recurrence: string | null | undefined = undefined;
+        let missedPolicy: "accumulate" | "spike" | "mark_done" | undefined = undefined;
+
+        const recurIdx = tokens.findIndex((t) => t.startsWith("/every") || t.startsWith("/recur"));
+        if (recurIdx !== -1) {
+          name = tokens.slice(0, recurIdx).join(" ");
+          const recurPart = tokens
+            .slice(recurIdx)
+            .filter((t) => !t.startsWith("/policy"))
+            .join(" ")
+            .replace(/^\/(every|recur:?)\s*/, "");
+          if (recurPart.toLowerCase() === "none" || recurPart.toLowerCase() === "clear") {
+            recurrence = null;
+          } else {
+            recurrence = normalizeRecurrenceRule(recurPart);
+          }
+        }
+
+        const policyToken = tokens.find((t) => t.startsWith("/policy:"));
+        if (policyToken) {
+          const val = policyToken.replace("/policy:", "").toLowerCase();
+          if (val === "accumulate" || val === "spike" || val === "mark_done") {
+            missedPolicy = val;
+          }
+        }
+
+        await updateProject(targetProj.id, {
+          name: name.replace(/^@/, "") || targetProj.name,
+          recurrence,
+          missedPolicy,
+        });
+        setStatusMessage(`Updated settings for @${name.replace(/^@/, "") || targetProj.name}`);
       }
     }
 
@@ -659,6 +793,17 @@ export function App() {
         <NewProjectModal
           width={width}
           height={height}
+          inputBuffer={inputBuffer}
+          projectIcon={icons.project}
+          theme={theme}
+        />
+      )}
+
+      {inputMode === "EDIT_PROJECT_SETTINGS" && filteredProjects[selectedProjectIdx] && (
+        <EditProjectSettingsModal
+          width={width}
+          height={height}
+          projectName={filteredProjects[selectedProjectIdx].name}
           inputBuffer={inputBuffer}
           projectIcon={icons.project}
           theme={theme}

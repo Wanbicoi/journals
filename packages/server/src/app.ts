@@ -16,6 +16,7 @@ import { getDashboardAnalytics } from "./slices/analytics/handler.js";
 import {
   deleteEntry,
   listEntries,
+  restoreEntry,
   searchEntries,
   updateEntryContent,
   updateEntryProject,
@@ -73,6 +74,11 @@ export function createApp(db: DatabaseInstance) {
     .delete("/entries/:id", (c) => {
       const id = c.req.param("id");
       const res = deleteEntry(db, id);
+      return c.json(res);
+    })
+    .post("/entries/:id/restore", (c) => {
+      const id = c.req.param("id");
+      const res = restoreEntry(db, id);
       return c.json(res);
     })
 

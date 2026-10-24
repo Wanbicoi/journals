@@ -29,7 +29,8 @@ export const CreateProjectInputSchema = z.object({
 });
 
 export const UpdateProjectContentInputSchema = z.object({
-  content: z.string(),
+  name: z.string().min(1).optional(),
+  content: z.string().optional(),
   recurrence: z.string().nullable().optional(),
   missedPolicy: ProjectMissedPolicySchema.optional(),
 });

@@ -4,13 +4,14 @@ import { handleQuickCapture } from "../quick-capture/handler.js";
 import {
   deleteEntry,
   listEntries,
+  restoreEntry,
   updateEntryContent,
   updateEntryProject,
   updateEntryTags,
 } from "./handler.js";
 
 describe("Entries Slice", () => {
-  test("manages entries lifecycle (list, update content/project/tags, delete)", () => {
+  test("manages entries lifecycle (list, update content/project/tags, delete, restore)", () => {
     const db = initDb(":memory:", false);
 
     // Initial empty
@@ -44,9 +45,16 @@ describe("Entries Slice", () => {
     expect(updatedTags.success).toBe(true);
     expect(updatedTags.tags).toEqual(["slides", "keynote"]);
 
-    // Delete
+    // Soft delete
     const deleted = deleteEntry(db, entryId);
     expect(deleted.success).toBe(true);
     expect(listEntries(db)).toHaveLength(0);
+
+    // Restore from trash
+    const restored = restoreEntry(db, entryId);
+    expect(restored.success).toBe(true);
+    const afterRestore = listEntries(db);
+    expect(afterRestore).toHaveLength(1);
+    expect(afterRestore[0].id).toBe(entryId);
   });
 });

@@ -9,3 +9,4 @@ export * from "./modals/EditTagsModal.js";
 export * from "./modals/FilterModal.js";
 export * from "./modals/HelpModal.js";
 export * from "./modals/NewProjectModal.js";
+export * from "./modals/EditProjectSettingsModal.js";

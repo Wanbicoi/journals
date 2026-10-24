@@ -12,11 +12,13 @@ Journals
 │   ├── 1.1 Single-Line Parser
 │   │   ├── Project Target (@project)
 │   │   ├── Tag Assignment (#tag)
-│   │   └── Break Syntax (/break <N>d, /break:N)
+│   │   ├── Break Syntax (/break <N>d, /break:N)
+│   │   └── Date Override (/date YYYY-MM-DD, /yesterday)
 │   ├── 1.2 TUI Capture Modal ('n')
 │   │   ├── Live Inline Preview
 │   │   ├── Interactive Suggestions (@projects, #tags)
-│   │   └── Break Preset Autocomplete (/break 1d..14d, custom duration)
+│   │   ├── Break Preset Autocomplete (/break 1d..14d, custom duration)
+│   │   └── In-Modal External Editor (Ctrl+E to draft in $EDITOR)
 │   └── 1.3 External Global Popups
 │       ├── AutoHotkey v2 Desktop Resident Popup
 │       └── Python / PowerShell Fallback Triggers
@@ -30,10 +32,11 @@ Journals
 │   │   ├── Content Edit ('e')
 │   │   ├── Project Reassignment ('p')
 │   │   ├── Tag Modification ('t')
-│   │   └── Entry Deletion ('d' + confirm)
+│   │   └── Entry Deletion ('d' + confirm) with Soft-Delete & Trash Recovery
 │   └── 2.3 Search & Date Filtering
 │       ├── Text & Token Filter ('/')
-│       └── Date Filter Drilldown (YYYY-MM-DD)
+│       ├── Date Filter Drilldown (YYYY-MM-DD)
+│       └── Relative Date Jumps ('t' for Today, '[' / ']' for Prev/Next Day)
 │
 ├── 3. Projects & Recurring Routines
 │   ├── 3.1 Project Notebooks (Tab [3])
@@ -50,25 +53,32 @@ Journals
 │   │       ├── 'accumulate' (compounds overdue make-up backlog)
 │   │       └── 'mark_done' (grace policy; forgiven)
 │   └── 3.4 Creation & Management
-│       └── New Project Modal ('N') with inline /recur and /policy shortcuts
+│       ├── New Project Modal ('N') with inline /recur and /policy shortcuts
+│       └── Project Settings & Routine Edit Modal ('P' in Projects view)
+│           ├── Edit Recurrence Rule (/recur or clear)
+│           ├── Update Missed Policy (spike, accumulate, mark_done)
+│           └── Project Rename & Archive
 │
 ├── 4. Routine Anomaly Monitor & Telemetry Dashboard
-│   ├── 4.1 Bi-Directional Telemetry Chart (Tab [1])
+│   ├── 4.1 "Today" Agenda & Active Routine Checklist (Tab [1] Top Section)
+│   │   ├── Real-time status of routines due today (Pending vs. Done)
+│   │   └── Fast Routine Completion Toggle (check-off without manual retyping)
+│   ├── 4.2 Bi-Directional Telemetry Chart
 │   │   ├── Upward Spikes (+Y, Red): Missed Due Routines
 │   │   ├── Downward Bars (-Y, Yellow): Active Break Days
 │   │   ├── Baseline & Dynamic Range Scaling
 │   │   └── Interactive Focus Cursor (← / →, h / l)
-│   ├── 4.2 Interactive Date Drilldown
+│   ├── 4.3 Interactive Date Drilldown
 │   │   ├── Mouse Click on chart column -> Jump to Date in Timeline
 │   │   └── Keyboard 'Enter' on focused date -> Jump to Date in Timeline
-│   ├── 4.3 System Health Metrics
+│   ├── 4.4 System Health Metrics
 │   │   └── State Indicator (● NORMAL, ● DEGRADED, ● OUTAGE)
-│   ├── 4.4 Routine Backlog & Debt Ledger
+│   ├── 4.5 Routine Backlog & Debt Ledger
 │   │   └── Overdue entries owed by projects with 'accumulate' policy
-│   ├── 4.5 Active Breaks Ledger
+│   ├── 4.6 Active Breaks Ledger
 │   │   ├── Remaining days countdown & reason
 │   │   └── Project-specific vs. Global scope
-│   └── 4.6 Schedule Overview
+│   └── 4.7 Schedule Overview
 │       └── Active project routines, recurrence rules & policies
 │
 ├── 5. Periodic Reflections & Cadences
@@ -101,8 +111,11 @@ Journals
 │   │   ├── Keyboard Shortcuts & Vim Bindings
 │   │   ├── Mouse Navigation (Header Tabs, Chart, Buttons)
 │   │   └── Color Palettes (Rosé Pine Dawn, Nord, Tokyo Night, etc.)
-│   └── 7.2 Zero-Codegen Typed RPC
-│       └── Hono client (hc<AppType>) sharing HTTP routes end-to-end
+│   ├── 7.2 Zero-Codegen Typed RPC
+│   │   └── Hono client (hc<AppType>) sharing HTTP routes end-to-end
+│   └── 7.3 Temporal & Lifecycle Preferences
+│       ├── Configurable Day Rollover Cutoff (e.g. 03:00 AM late-night boundary)
+│       └── Configurable Reflection Start Horizon & Keymaps
 │
 └── 8. Daemon & Process Architecture
     ├── 8.1 Standalone Daemon Mode
@@ -117,10 +130,10 @@ Journals
 
 | Category | Primary Trigger / Key | Inputs | Outputs / Effects |
 | :--- | :--- | :--- | :--- |
-| **Quick Capture** | `n` (TUI) or desktop shortcut | Shorthand text: `@proj #tag /break 3d` | Creates atomic entry, auto-creates projects, schedules breaks |
-| **Timeline View** | `2` or click `[2] Timeline` | Scroll keys `j`/`k`, filter `/` | Chronological daily grouped cards, tags, breaks |
-| **Projects View** | `3` or click `[3] Projects` | Selection keys `j`/`k`, editor `e` | Markdown preview, note history, routine rules |
-| **Routine Dashboard** | `1` or click `[1] Dashboard` | `h`/`l`, click column, `Enter` | 60-day bi-directional chart, debt ledger, breaks tracker |
+| **Quick Capture** | `n` (TUI) or desktop shortcut | Shorthand text: `@proj #tag /date YYYY-MM-DD /break 3d` | Creates atomic entry, auto-creates projects, schedules breaks, supports past-date logging |
+| **Timeline View** | `2` or click `[2] Timeline` | Scroll `j`/`k`, jumps `t`, `[`/`]`, filter `/` | Chronological daily grouped cards, tags, breaks, soft-delete undo |
+| **Projects View** | `3` or click `[3] Projects` | Selection `j`/`k`, content `e`, settings `P` | Markdown preview, note history, routine rule & policy editor |
+| **Routine Dashboard** | `1` or click `[1] Dashboard` | `h`/`l`, click column, `Enter`, toggle `Space` | "Today" due checklist, 60-day bi-directional chart, debt ledger, breaks tracker |
 | **Reflections** | Header click or keymap | Period selection, editor | Retrospectives grouped by week/month/quarter/year |
 | **Search Engine** | `/` in views or API RPC | Search query string | Fast FTS5 bm25-ranked matches across notes & projects |
 | **Agent CLI** | `journals agent <cmd>` | JSON/CLI flags | Subagent memory recording, observation logging, recall |

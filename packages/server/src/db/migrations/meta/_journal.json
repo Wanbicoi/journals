@@ -43,6 +43,13 @@
       "when": 1792814166337,
       "tag": "0005_heavy_albert_cleary",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1792827863493,
+      "tag": "0006_grey_zombie",
+      "breakpoints": true
     }
   ]
 }

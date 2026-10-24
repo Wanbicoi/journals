@@ -7,7 +7,6 @@ kanban-plugin: basic
 ## 🚀 Now
 - [x] Global shortcut quick capture script (AutoHotkey v2 resident popup + Python/PowerShell fallbacks)
 - [ ] Daemon runner & service setup (`systemd --user` unit + on-demand auto-spawn fallback)
-- [ ] CLI capture command / flags (e.g. `journals capture "quick note"`)
 - [ ] Filter by date in timeline view
 
 ## 📋 Next
@@ -18,8 +17,14 @@ kanban-plugin: basic
 - [x] Full-text search (SQLite FTS5) across timeline entries and markdown projects
 - [x] TUI search bar & filters (filter per tab: timeline & projects)
 - [ ] Multi-line entry editing via `$EDITOR` / temporary file
+- [ ] Quick capture entry templates (`/template <name>` e.g. morning review, standup log)
+- [ ] Pinned / bookmarked entries (pin key notes to top of timeline day or project stream)
+- [ ] Dedicated tag browser & taxonomy view (list all `#tags` with counts and cross-filtering)
 
 ## 💡 Ideas / Backlog
+- [ ] Habit consistency scoring & streaks (`🔥 N-day streak`, best streaks, completion % per routine)
+- [ ] "On this day" / Flashback recall (surfacing historical entries from 1 month / 1 year ago for reflection)
+- [ ] Shell prompt status integration (lightweight `journals status --short` hook for bash/zsh/starship)
 - [ ] Agent Search Ranking & Memory Recall:
   - FTS5 multi-pattern retrieval with dynamic `hit_time` priority multiplier:
     $$\text{Rank Score} = \text{MatchRelevance} \times (1 + \log(1 + \text{hit\_time}))$$

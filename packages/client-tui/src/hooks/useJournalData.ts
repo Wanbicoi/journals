@@ -6,6 +6,7 @@ import {
   fetchEntries,
   fetchProjects,
   fetchTags,
+  restoreEntryApi,
   updateProjectApi,
 } from "../api/client.js";
 
@@ -61,6 +62,13 @@ export interface DashboardData {
     content: string;
     remainingDays: number;
     startDate: string;
+  }[];
+  todayRoutines?: {
+    projectId: string;
+    projectName: string;
+    recurrence: string;
+    isDueToday: boolean;
+    isCompletedToday: boolean;
   }[];
 }
 
@@ -130,6 +138,7 @@ export function useJournalData() {
   async function updateProject(
     id: string,
     data: {
+      name?: string;
       content?: string;
       recurrence?: string | null;
       missedPolicy?: "accumulate" | "spike" | "mark_done";
@@ -178,6 +187,11 @@ export function useJournalData() {
     await reloadData();
   }
 
+  async function restoreEntry(entryId: string) {
+    await restoreEntryApi(entryId);
+    await reloadData();
+  }
+
   return {
     entries,
     projects,
@@ -193,5 +207,6 @@ export function useJournalData() {
     updateEntryTags,
     updateEntryContent,
     deleteEntry,
+    restoreEntry,
   };
 }

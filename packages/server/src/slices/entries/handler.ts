@@ -1,4 +1,4 @@
-import { desc, eq, inArray, sql } from "drizzle-orm";
+import { desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "../../db/client.js";
 import { entries, entryTags, projects, tags } from "../../db/schema.js";
 import { sanitizeFtsQuery } from "../../lib/search-utils.js";
@@ -17,6 +17,7 @@ export function listEntries(db: DatabaseInstance) {
     })
     .from(entries)
     .leftJoin(projects, eq(entries.projectId, projects.id))
+    .where(isNull(entries.deletedAt))
     .orderBy(desc(entries.createdAt))
     .all();
 
@@ -99,11 +100,15 @@ export function updateEntryContent(
 }
 
 export function deleteEntry(db: DatabaseInstance, entryId: string) {
-  return db.transaction((tx) => {
-    tx.delete(entryTags).where(eq(entryTags.entryId, entryId)).run();
-    tx.delete(entries).where(eq(entries.id, entryId)).run();
-    return { success: true, id: entryId };
-  });
+  const now = Date.now();
+  db.update(entries).set({ deletedAt: now, updatedAt: now }).where(eq(entries.id, entryId)).run();
+  return { success: true, id: entryId };
+}
+
+export function restoreEntry(db: DatabaseInstance, entryId: string) {
+  const now = Date.now();
+  db.update(entries).set({ deletedAt: null, updatedAt: now }).where(eq(entries.id, entryId)).run();
+  return { success: true, id: entryId };
 }
 
 export function searchEntries(db: DatabaseInstance, query: string, limit = 50) {
@@ -136,7 +141,7 @@ export function searchEntries(db: DatabaseInstance, query: string, limit = 50) {
     FROM entries_fts
     JOIN entries e ON entries_fts.rowid = e.rowid
     JOIN projects p ON e.project_id = p.id
-    WHERE entries_fts MATCH ${ftsQuery}
+    WHERE entries_fts MATCH ${ftsQuery} AND e.deleted_at IS NULL
     ORDER BY bm25(entries_fts)
     LIMIT ${limit};
   `) as EntryFtsRow[];

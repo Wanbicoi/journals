@@ -11,6 +11,7 @@ export const ConfigSchema = z.object({
       theme: z.string().default("rose-pine-dawn"),
       date_format: z.string().default("YYYY-MM-DD"),
       time_format: z.string().default("HH:mm"),
+      day_start_hour: z.number().min(0).max(23).default(0),
     })
     .default({}),
   icons: z

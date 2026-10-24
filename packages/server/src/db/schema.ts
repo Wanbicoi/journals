@@ -15,6 +15,7 @@ export const entries = sqliteTable("entries", {
   projectId: text("project_id").references(() => projects.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
   breakDays: integer("break_days").notNull().default(0),
+  deletedAt: integer("deleted_at"),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });

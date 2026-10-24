@@ -1,3 +1,4 @@
+import { isNull } from "drizzle-orm";
 import { rrulestr } from "rrule";
 import type { DatabaseInstance } from "../../db/client.js";
 import { entries, projects } from "../../db/schema.js";
@@ -22,6 +23,14 @@ export interface ProjectDebtItem {
   lastJournaledAt: number | null;
 }
 
+export interface TodayRoutineItem {
+  projectId: string;
+  projectName: string;
+  recurrence: string;
+  isDueToday: boolean;
+  isCompletedToday: boolean;
+}
+
 export interface DashboardSummary {
   days: DayMetric[];
   status: "NORMAL" | "DEGRADED" | "OUTAGE";
@@ -34,6 +43,7 @@ export interface DashboardSummary {
     remainingDays: number;
     startDate: string;
   }[];
+  todayRoutines: TodayRoutineItem[];
 }
 
 /**
@@ -41,7 +51,7 @@ export interface DashboardSummary {
  */
 export function getDashboardAnalytics(db: DatabaseInstance, numDays = 60): DashboardSummary {
   const allProjects = db.select().from(projects).all();
-  const allEntries = db.select().from(entries).all();
+  const allEntries = db.select().from(entries).where(isNull(entries.deletedAt)).all();
 
   // Create list of dates from (today - numDays + 1) to today in UTC/local date YYYY-MM-DD
   const now = new Date();
@@ -144,6 +154,8 @@ export function getDashboardAnalytics(db: DatabaseInstance, numDays = 60): Dashb
   }
 
   const activeDebts: ProjectDebtItem[] = [];
+  const todayRoutines: TodayRoutineItem[] = [];
+  const todayDateStr = formatDateKey(now);
 
   for (const project of allProjects) {
     if (!project.recurrence) continue;
@@ -163,6 +175,17 @@ export function getDashboardAnalytics(db: DatabaseInstance, numDays = 60): Dashb
     }
 
     const completedDates = projectEntriesByDate.get(project.id) ?? new Set<string>();
+    const isCompletedToday = completedDates.has(todayDateStr);
+    const isDueToday = occurrences.some((occ) => formatDateKey(occ) === todayDateStr);
+
+    todayRoutines.push({
+      projectId: project.id,
+      projectName: project.name,
+      recurrence: project.recurrence,
+      isDueToday,
+      isCompletedToday,
+    });
+
     let projectDebt = 0;
 
     for (const occ of occurrences) {
@@ -237,6 +260,7 @@ export function getDashboardAnalytics(db: DatabaseInstance, numDays = 60): Dashb
     totalBreakDays,
     activeDebts,
     activeBreaks: activeBreaksList,
+    todayRoutines,
   };
 }
 

@@ -1,5 +1,7 @@
+import { getEffectiveDateStr } from "@journals/core";
 import type { ScrollBoxRenderable } from "@opentui/core";
 import { useEffect, useRef } from "react";
+import { config } from "../../api/client.js";
 import { HighlightText } from "../../components/HighlightText.js";
 import type { Entry } from "../../hooks/useJournalData.js";
 import type { ThemePalette } from "../../theme.js";
@@ -64,8 +66,8 @@ export function TimelineView({
   let currentGroup: DateGroup | null = null;
 
   entries.forEach((entry, idx) => {
-    const d = new Date(entry.createdAt);
-    const dateStr = d.toISOString().slice(0, 10);
+    const dayStartHour = config.appearance.day_start_hour ?? 0;
+    const dateStr = getEffectiveDateStr(entry.createdAt, dayStartHour);
 
     if (!currentGroup || currentGroup.dateStr !== dateStr) {
       currentGroup = { dateStr, items: [] };

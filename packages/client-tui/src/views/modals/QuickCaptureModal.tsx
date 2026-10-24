@@ -25,7 +25,7 @@ export function QuickCaptureModal({
     <Modal width={width} height={height} theme={theme} borderColor={theme.primary}>
       <text bg={theme.primary} fg={theme.selectedFg}>{` ${quickIcon} QUICK CAPTURE `}</text>
       <text fg={theme.muted}>
-        {"Syntax: Note text @project #tags /break 3d [Tab for suggestion]"}
+        {"Syntax: Note text @project #tags /date YYYY-MM-DD /yesterday /break 3d"}
       </text>
       <text fg={theme.fg}>{`> ${inputBuffer}█`}</text>
 
@@ -45,7 +45,7 @@ export function QuickCaptureModal({
       )}
 
       <text fg={theme.muted} marginTop={1}>
-        {"[Enter: Save] [Esc: Cancel]"}
+        {"[Enter: Save] [Ctrl+E: Open $EDITOR] [Tab: Suggest] [Esc: Cancel]"}
       </text>
     </Modal>
   );

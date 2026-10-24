@@ -83,10 +83,11 @@ export function createProject(
 export function updateProject(
   db: DbOrTx,
   id: string,
-  data: { content?: string; recurrence?: string | null; missedPolicy?: string },
+  data: { name?: string; content?: string; recurrence?: string | null; missedPolicy?: string },
 ) {
   const now = Date.now();
   const updateData: Record<string, unknown> = { updatedAt: now };
+  if (data.name !== undefined) updateData.name = data.name;
   if (data.content !== undefined) updateData.content = data.content;
   if (data.recurrence !== undefined) updateData.recurrence = data.recurrence;
   if (data.missedPolicy !== undefined) updateData.missedPolicy = data.missedPolicy;

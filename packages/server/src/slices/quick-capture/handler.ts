@@ -10,7 +10,7 @@ export function handleQuickCapture(
   defaultProject: string | null = "Inbox",
 ) {
   const parsed = parseCaptureLine(raw, defaultProject);
-  const now = Date.now();
+  const entryTime = parsed.date ?? Date.now();
 
   return db.transaction((tx) => {
     // 1. Get or create project via shared slice helper (if projectName is not null)
@@ -27,8 +27,8 @@ export function handleQuickCapture(
         projectId: project ? project.id : null,
         content: parsed.content || "Empty note",
         breakDays: parsed.breakDays || 0,
-        createdAt: now,
-        updatedAt: now,
+        createdAt: entryTime,
+        updatedAt: entryTime,
       })
       .run();
 
@@ -45,7 +45,7 @@ export function handleQuickCapture(
       content: parsed.content,
       tags: parsed.tags,
       breakDays: parsed.breakDays || 0,
-      createdAt: now,
+      createdAt: entryTime,
     };
   });
 }
