@@ -6,12 +6,14 @@ import {
   useSelectionHandler,
   useTerminalDimensions,
 } from "@opentui/react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import { config, fetchPeriodDetailApi, fetchPeriodsApi, saveReflectionApi } from "../api/client.js";
 import { copyToClipboard } from "../clipboard.js";
 import { Header } from "../components/Header.js";
 import { StatusBar } from "../components/StatusBar.js";
 import { openExternalEditor } from "../editor.js";
+import { queryKeys } from "../hooks/queries.js";
 import type { Entry } from "../hooks/useJournalData.js";
 import { useJournalData } from "../hooks/useJournalData.js";
 import { useMouseClick } from "../hooks/useMouseClick.js";
@@ -35,6 +37,11 @@ export function App() {
   const { width = 100, height = 30 } = useTerminalDimensions();
   const icons = config.appearance.use_nerd_font ? config.icons.nerd : config.icons.plain;
   const theme = getTheme(config.appearance.theme);
+  const queryClient = useQueryClient();
+
+  const [currentTab, setCurrentTab] = useState<
+    "DASHBOARD" | "TIMELINE" | "REFLECTIONS" | "PROJECTS"
+  >("DASHBOARD");
 
   const {
     entries,
@@ -52,14 +59,10 @@ export function App() {
     updateEntryContent,
     deleteEntry,
     restoreEntry,
-  } = useJournalData();
+  } = useJournalData({ isDashboardActive: currentTab === "DASHBOARD" });
 
-  const [currentTab, setCurrentTab] = useState<
-    "DASHBOARD" | "TIMELINE" | "REFLECTIONS" | "PROJECTS"
-  >("DASHBOARD");
   const [reflectionPeriodType, setReflectionPeriodType] = useState<ReflectionPeriodType>("WEEK");
   const [selectedPeriodIdx, setSelectedPeriodIdx] = useState(0);
-  const [reflectionsRefreshSignal, setReflectionsRefreshSignal] = useState(0);
   const [inputMode, setInputMode] = useState<
     | "NONE"
     | "CAPTURE"
@@ -506,7 +509,7 @@ export function App() {
             const updated = openExternalEditor(initialContent);
             if (updated !== initialContent) {
               await saveReflectionApi(reflectionPeriodType, currentP.periodKey, updated);
-              setReflectionsRefreshSignal((prev) => prev + 1);
+              await queryClient.invalidateQueries({ queryKey: queryKeys.reflections.all });
               setStatusMessage(`Saved reflection for ${currentP.periodKey}`);
             }
           }
@@ -700,7 +703,6 @@ export function App() {
             onSelectPeriodIdx={(idx) => {
               setSelectedPeriodIdx(idx);
             }}
-            refreshTrigger={reflectionsRefreshSignal}
             width={width}
             icons={icons}
             theme={theme}

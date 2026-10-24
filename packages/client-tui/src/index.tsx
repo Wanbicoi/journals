@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 import { createCliRenderer } from "@opentui/core";
 import { createRoot } from "@opentui/react";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { runAgentCli } from "./cli/agent.js";
 import { runDaemonCli } from "./cli/daemon.js";
+import { queryClient } from "./queryClient.js";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -70,7 +72,11 @@ async function main() {
   });
 
   const root = createRoot(renderer);
-  root.render(<App />);
+  root.render(
+    <QueryClientProvider client={queryClient}>
+      <App />
+    </QueryClientProvider>,
+  );
 }
 
 main().catch((err) => {
