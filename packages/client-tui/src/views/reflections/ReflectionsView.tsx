@@ -1,7 +1,7 @@
-import type { PeriodDetail, PeriodItemStatus, ReflectionPeriodType } from "@journals/core";
+import type { ReflectionPeriodType } from "@journals/core";
 import type { ScrollBoxRenderable } from "@opentui/core";
-import { useEffect, useRef, useState } from "react";
-import { fetchPeriodDetailApi, fetchPeriodsApi } from "../../api/client.js";
+import { useEffect, useRef } from "react";
+import { useReflectionDetail, useReflectionPeriods } from "../../hooks/queries.js";
 import { useMarkdownSyntaxStyle } from "../../hooks/useMarkdownSyntaxStyle.js";
 import type { ThemePalette } from "../../theme.js";
 
@@ -10,7 +10,6 @@ interface ReflectionsViewProps {
   onChangePeriodType: (type: ReflectionPeriodType) => void;
   selectedPeriodIdx: number;
   onSelectPeriodIdx: (idx: number) => void;
-  refreshTrigger?: number;
   width: number;
   icons: Record<string, string>;
   theme: ThemePalette;
@@ -21,77 +20,35 @@ export function ReflectionsView({
   onChangePeriodType,
   selectedPeriodIdx,
   onSelectPeriodIdx,
-  refreshTrigger = 0,
   width: _width,
   icons,
   theme,
 }: ReflectionsViewProps) {
-  const [periods, setPeriods] = useState<PeriodItemStatus[]>([]);
-  const [currentDetail, setCurrentDetail] = useState<PeriodDetail | null>(null);
-  const [loading, setLoading] = useState(false);
   const scrollBoxRef = useRef<ScrollBoxRenderable | null>(null);
   const syntaxStyle = useMarkdownSyntaxStyle(theme);
 
-  // Load period list for current periodType or when refreshTrigger changes
-  // biome-ignore lint/correctness/useExhaustiveDependencies: initial, periodType change, & refreshTrigger
-  useEffect(() => {
-    let active = true;
-    async function load() {
-      try {
-        const list = await fetchPeriodsApi(periodType);
-        if (active) {
-          setPeriods(list || []);
-          if (selectedPeriodIdx >= (list?.length || 0)) {
-            onSelectPeriodIdx(0);
-          }
-        }
-      } catch (e) {
-        console.error("Failed to load periods", e);
-      }
-    }
-    load();
-    return () => {
-      active = false;
-    };
-  }, [periodType, refreshTrigger]);
-
-  // Load detail whenever selected period changes or when refreshTrigger fires
+  const { data: periods = [] } = useReflectionPeriods(periodType);
   const selectedPeriod = periods[selectedPeriodIdx];
-  // biome-ignore lint/correctness/useExhaustiveDependencies: reactive to selected period & refreshTrigger
+  const { data: currentDetail = null, isLoading: loadingDetail } = useReflectionDetail(
+    selectedPeriod?.periodType,
+    selectedPeriod?.periodKey,
+  );
+
+  // If index out of bounds after changing periodType or filter, reset to 0
   useEffect(() => {
-    let active = true;
-    if (!selectedPeriod) {
-      setCurrentDetail(null);
-      return;
+    if (periods.length > 0 && selectedPeriodIdx >= periods.length) {
+      onSelectPeriodIdx(0);
     }
+  }, [periods.length, selectedPeriodIdx, onSelectPeriodIdx]);
 
-    async function loadDetail() {
-      setLoading(true);
-      try {
-        const detail = await fetchPeriodDetailApi(
-          selectedPeriod.periodType,
-          selectedPeriod.periodKey,
-        );
-        if (active) {
-          setCurrentDetail(detail);
-        }
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
-
-    loadDetail();
-    return () => {
-      active = false;
-    };
-  }, [selectedPeriod?.periodKey, selectedPeriod?.periodType, refreshTrigger]);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll into view
+  // Scroll into view
   useEffect(() => {
     if (scrollBoxRef.current && selectedPeriod) {
       scrollBoxRef.current.scrollChildIntoView(`period-${selectedPeriod.periodKey}`);
     }
-  }, [selectedPeriodIdx, selectedPeriod]);
+  }, [selectedPeriod]);
+
+  const loading = loadingDetail;
 
   const subTabs: { type: ReflectionPeriodType; key: string; label: string }[] = [
     { type: "WEEK", key: "W", label: "Weekly" },
