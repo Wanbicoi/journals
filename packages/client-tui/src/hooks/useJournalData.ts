@@ -1,113 +1,33 @@
-import { useEffect, useState } from "react";
-import {
-  client,
-  config,
-  fetchDashboardAnalytics,
-  fetchEntries,
-  fetchProjects,
-  fetchTags,
-  restoreEntryApi,
-  updateProjectApi,
-} from "../api/client.js";
+import { useQueryClient } from "@tanstack/react-query";
+import { client, config, restoreEntryApi, updateProjectApi } from "../api/client.js";
+import type { DashboardData, Entry, Project, TagInfo } from "./queries.js";
+import { queryKeys, useDashboardAnalytics, useEntries, useProjects, useTags } from "./queries.js";
 
-export interface Entry {
-  id: string;
-  projectId: string | null;
-  projectName: string | null;
-  content: string;
-  tags: string[];
-  breakDays: number;
-  createdAt: number;
+export type { Entry, Project, TagInfo, DashboardData };
+
+export interface UseJournalDataOptions {
+  isDashboardActive?: boolean;
 }
 
-export interface Project {
-  id: string;
-  name: string;
-  content: string;
-  recurrence?: string | null;
-  missedPolicy?: string;
-  createdAt: number;
-  entryCount: number;
-}
+export function useJournalData(options: UseJournalDataOptions = {}) {
+  const { isDashboardActive = true } = options;
+  const queryClient = useQueryClient();
 
-export interface TagInfo {
-  name: string;
-  count: number;
-}
+  const entriesQuery = useEntries();
+  const projectsQuery = useProjects();
+  const tagsQuery = useTags();
+  const dashboardQuery = useDashboardAnalytics(60, { enabled: isDashboardActive });
 
-export interface DashboardData {
-  days: {
-    date: string;
-    timestamp: number;
-    entryCount: number;
-    breakDaysCount: number;
-    dueProjectsCount: number;
-    completedProjectsCount: number;
-    missedProjectsCount: number;
-    missedProjectNames: string[];
-  }[];
-  status: "NORMAL" | "DEGRADED" | "OUTAGE";
-  totalEntries: number;
-  totalBreakDays: number;
-  activeDebts: {
-    projectId: string;
-    projectName: string;
-    recurrence: string;
-    missedPolicy: string;
-    accumulatedDebt: number;
-    lastJournaledAt: number | null;
-  }[];
-  activeBreaks: {
-    projectName: string | null;
-    content: string;
-    remainingDays: number;
-    startDate: string;
-  }[];
-  todayRoutines?: {
-    projectId: string;
-    projectName: string;
-    recurrence: string;
-    isDueToday: boolean;
-    isCompletedToday: boolean;
-  }[];
-}
+  const entries = entriesQuery.data ?? [];
+  const projects = projectsQuery.data ?? [];
+  const tags = tagsQuery.data ?? [];
+  const dashboard = dashboardQuery.data ?? null;
 
-export function useJournalData() {
-  const [entries, setEntries] = useState<Entry[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [tags, setTags] = useState<TagInfo[]>([]);
-  const [dashboard, setDashboard] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const loading = entriesQuery.isLoading || projectsQuery.isLoading || tagsQuery.isLoading;
 
   async function reloadData() {
-    try {
-      const [entriesData, projectsData, tagsData, dashboardData] = await Promise.all([
-        fetchEntries(),
-        fetchProjects(),
-        fetchTags(),
-        fetchDashboardAnalytics(60).catch(() => null),
-      ]);
-      setEntries((entriesData as Entry[]) || []);
-      setProjects((projectsData as Project[]) || []);
-      setTags(tagsData || []);
-      if (dashboardData) setDashboard(dashboardData);
-    } finally {
-      setLoading(false);
-    }
+    await queryClient.invalidateQueries();
   }
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: initial fetch on mount
-  useEffect(() => {
-    reloadData();
-  }, []);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: background polling
-  useEffect(() => {
-    const timer = setInterval(() => {
-      reloadData();
-    }, 2000);
-    return () => clearInterval(timer);
-  }, []);
 
   async function quickCapture(content: string) {
     await client.capture.$post({
@@ -116,7 +36,13 @@ export function useJournalData() {
         defaultProject: config.quick_add.default_project,
       },
     });
-    await reloadData();
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.entries }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.tags }),
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.reflections.all }),
+    ]);
   }
 
   async function createProject(
@@ -132,7 +58,10 @@ export function useJournalData() {
         missedPolicy,
       },
     });
-    await reloadData();
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects }),
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+    ]);
   }
 
   async function updateProject(
@@ -145,7 +74,10 @@ export function useJournalData() {
     },
   ) {
     await updateProjectApi(id, data);
-    await reloadData();
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects }),
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+    ]);
   }
 
   async function updateProjectContent(id: string, content: string) {
@@ -153,7 +85,7 @@ export function useJournalData() {
       param: { id },
       json: { content },
     });
-    await reloadData();
+    await queryClient.invalidateQueries({ queryKey: queryKeys.projects });
   }
 
   async function updateEntryProject(entryId: string, projectName: string) {
@@ -161,7 +93,12 @@ export function useJournalData() {
       param: { id: entryId },
       json: { projectName },
     });
-    await reloadData();
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.entries }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects }),
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.reflections.all }),
+    ]);
   }
 
   async function updateEntryTags(entryId: string, newTags: string[]) {
@@ -169,7 +106,10 @@ export function useJournalData() {
       param: { id: entryId },
       json: { tags: newTags },
     });
-    await reloadData();
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.entries }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.tags }),
+    ]);
   }
 
   async function updateEntryContent(entryId: string, content: string) {
@@ -177,19 +117,32 @@ export function useJournalData() {
       param: { id: entryId },
       json: { content },
     });
-    await reloadData();
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.entries }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.reflections.all }),
+    ]);
   }
 
   async function deleteEntry(entryId: string) {
     await client.entries[":id"].$delete({
       param: { id: entryId },
     });
-    await reloadData();
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.entries }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.tags }),
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.reflections.all }),
+    ]);
   }
 
   async function restoreEntry(entryId: string) {
     await restoreEntryApi(entryId);
-    await reloadData();
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.entries }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.tags }),
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.reflections.all }),
+    ]);
   }
 
   return {
