@@ -8,6 +8,8 @@ interface NewProjectModalProps {
   inputBuffer: string;
   projectIcon: string;
   theme: ThemePalette;
+  onChange?: (value: string) => void;
+  onSubmit?: (value: string) => void;
 }
 
 export function NewProjectModal({
@@ -16,6 +18,8 @@ export function NewProjectModal({
   inputBuffer,
   projectIcon,
   theme,
+  onChange,
+  onSubmit,
 }: NewProjectModalProps) {
   // Check if buffer contains recurrence syntax: e.g. "Fitness /every 2 days" or "Gym /recur:daily /policy:accumulate"
   const tokens = inputBuffer.split(/\s+/);
@@ -32,7 +36,22 @@ export function NewProjectModal({
   return (
     <Modal width={width} height={height} theme={theme} borderColor={theme.primary}>
       <text fg={theme.primary}>{`${projectIcon} CREATE NEW PROJECT`}</text>
-      <text fg={theme.fg}>{`Input: ${inputBuffer}█`}</text>
+      <box flexDirection="row">
+        <text fg={theme.fg}>{"Input: "}</text>
+        <input
+          value={inputBuffer}
+          focused
+          onChange={onChange}
+          onInput={onChange}
+          onSubmit={
+            onSubmit ? (e: unknown) => onSubmit(typeof e === "string" ? e : inputBuffer) : undefined
+          }
+          placeholder="Project name [/every cadence] [/policy:...]"
+          textColor={theme.fg}
+          focusedTextColor={theme.fg}
+          placeholderColor={theme.muted}
+        />
+      </box>
       {recurrencePreview && <text fg={theme.accent}>{`Detected RRULE: ${recurrencePreview}`}</text>}
       <text fg={theme.muted}>
         {"Optional: Add /recur <interval> (e.g. /recur daily, /every 3 days)"}

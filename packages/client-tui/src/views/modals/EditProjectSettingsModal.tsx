@@ -9,6 +9,8 @@ interface EditProjectSettingsModalProps {
   inputBuffer: string;
   projectIcon: string;
   theme: ThemePalette;
+  onChange?: (value: string) => void;
+  onSubmit?: (value: string) => void;
 }
 
 export function EditProjectSettingsModal({
@@ -18,6 +20,8 @@ export function EditProjectSettingsModal({
   inputBuffer,
   projectIcon,
   theme,
+  onChange,
+  onSubmit,
 }: EditProjectSettingsModalProps) {
   const tokens = inputBuffer.split(/\s+/);
   let recurrencePreview: string | null = null;
@@ -42,7 +46,22 @@ export function EditProjectSettingsModal({
       <text
         fg={theme.primary}
       >{`${projectIcon} EDIT PROJECT ROUTINE & SETTINGS: @${projectName}`}</text>
-      <text fg={theme.fg}>{`Input: ${inputBuffer}█`}</text>
+      <box flexDirection="row">
+        <text fg={theme.fg}>{"Input: "}</text>
+        <input
+          value={inputBuffer}
+          focused
+          onChange={onChange}
+          onInput={onChange}
+          onSubmit={
+            onSubmit ? (e: unknown) => onSubmit(typeof e === "string" ? e : inputBuffer) : undefined
+          }
+          placeholder="/every cadence [/policy:accumulate|spike|mark_done]"
+          textColor={theme.fg}
+          focusedTextColor={theme.fg}
+          placeholderColor={theme.muted}
+        />
+      </box>
       {recurrencePreview && (
         <text fg={theme.accent}>{`Detected Recurrence: ${recurrencePreview}`}</text>
       )}

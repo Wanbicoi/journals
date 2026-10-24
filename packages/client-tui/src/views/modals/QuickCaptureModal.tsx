@@ -10,6 +10,8 @@ interface QuickCaptureModalProps {
   activeSuggestionIdx: number;
   quickIcon: string;
   theme: ThemePalette;
+  onChange?: (value: string) => void;
+  onSubmit?: (value: string) => void;
 }
 
 export function QuickCaptureModal({
@@ -20,6 +22,8 @@ export function QuickCaptureModal({
   activeSuggestionIdx,
   quickIcon,
   theme,
+  onChange,
+  onSubmit,
 }: QuickCaptureModalProps) {
   return (
     <Modal width={width} height={height} theme={theme} borderColor={theme.primary}>
@@ -27,7 +31,22 @@ export function QuickCaptureModal({
       <text fg={theme.muted}>
         {"Syntax: Note text @project #tags /date YYYY-MM-DD /yesterday /break 3d"}
       </text>
-      <text fg={theme.fg}>{`> ${inputBuffer}█`}</text>
+      <box flexDirection="row">
+        <text fg={theme.accent}>{"> "}</text>
+        <input
+          value={inputBuffer}
+          focused
+          onChange={onChange}
+          onInput={onChange}
+          onSubmit={
+            onSubmit ? (e: unknown) => onSubmit(typeof e === "string" ? e : inputBuffer) : undefined
+          }
+          placeholder="Note text @project #tags..."
+          textColor={theme.fg}
+          focusedTextColor={theme.fg}
+          placeholderColor={theme.muted}
+        />
+      </box>
 
       {suggestions && suggestions.matches.length > 0 && (
         <box flexDirection="row" marginTop={1}>
