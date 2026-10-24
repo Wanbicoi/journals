@@ -1,12 +1,21 @@
 import { useEffect, useState } from "react";
-import { client, config, fetchEntries, fetchProjects, fetchTags } from "../api/client.js";
+import {
+  client,
+  config,
+  fetchDashboardAnalytics,
+  fetchEntries,
+  fetchProjects,
+  fetchTags,
+  updateProjectApi,
+} from "../api/client.js";
 
 export interface Entry {
   id: string;
-  projectId: string;
-  projectName: string;
+  projectId: string | null;
+  projectName: string | null;
   content: string;
   tags: string[];
+  breakDays: number;
   createdAt: number;
 }
 
@@ -14,6 +23,8 @@ export interface Project {
   id: string;
   name: string;
   content: string;
+  recurrence?: string | null;
+  missedPolicy?: string;
   createdAt: number;
   entryCount: number;
 }
@@ -23,22 +34,55 @@ export interface TagInfo {
   count: number;
 }
 
+export interface DashboardData {
+  days: {
+    date: string;
+    timestamp: number;
+    entryCount: number;
+    breakDaysCount: number;
+    dueProjectsCount: number;
+    completedProjectsCount: number;
+    missedProjectsCount: number;
+    missedProjectNames: string[];
+  }[];
+  status: "NORMAL" | "DEGRADED" | "OUTAGE";
+  totalEntries: number;
+  totalBreakDays: number;
+  activeDebts: {
+    projectId: string;
+    projectName: string;
+    recurrence: string;
+    missedPolicy: string;
+    accumulatedDebt: number;
+    lastJournaledAt: number | null;
+  }[];
+  activeBreaks: {
+    projectName: string | null;
+    content: string;
+    remainingDays: number;
+    startDate: string;
+  }[];
+}
+
 export function useJournalData() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [tags, setTags] = useState<TagInfo[]>([]);
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
   async function reloadData() {
     try {
-      const [entriesData, projectsData, tagsData] = await Promise.all([
+      const [entriesData, projectsData, tagsData, dashboardData] = await Promise.all([
         fetchEntries(),
         fetchProjects(),
         fetchTags(),
+        fetchDashboardAnalytics(60).catch(() => null),
       ]);
-      setEntries(entriesData || []);
-      setProjects(projectsData || []);
+      setEntries((entriesData as Entry[]) || []);
+      setProjects((projectsData as Project[]) || []);
       setTags(tagsData || []);
+      if (dashboardData) setDashboard(dashboardData);
     } finally {
       setLoading(false);
     }
@@ -67,13 +111,31 @@ export function useJournalData() {
     await reloadData();
   }
 
-  async function createProject(name: string) {
+  async function createProject(
+    name: string,
+    recurrence: string | null = null,
+    missedPolicy: "accumulate" | "spike" | "mark_done" = "spike",
+  ) {
     await client.projects.$post({
       json: {
         name,
         content: `# Project: ${name}\n\nCreated: ${new Date().toISOString()}`,
+        recurrence,
+        missedPolicy,
       },
     });
+    await reloadData();
+  }
+
+  async function updateProject(
+    id: string,
+    data: {
+      content?: string;
+      recurrence?: string | null;
+      missedPolicy?: "accumulate" | "spike" | "mark_done";
+    },
+  ) {
+    await updateProjectApi(id, data);
     await reloadData();
   }
 
@@ -120,10 +182,12 @@ export function useJournalData() {
     entries,
     projects,
     tags,
+    dashboard,
     loading,
     reloadData,
     quickCapture,
     createProject,
+    updateProject,
     updateProjectContent,
     updateEntryProject,
     updateEntryTags,

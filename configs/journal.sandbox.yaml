@@ -12,7 +12,7 @@ server:
   port: 4322
   db_path: "./data/sandbox.sqlite"
   wal_mode: true
-  auto_start: true
+  auto_start: false
 
 quick_add:
   default_project: "Inbox"

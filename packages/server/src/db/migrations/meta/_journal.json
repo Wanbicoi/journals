@@ -29,6 +29,13 @@
       "when": 1792741435000,
       "tag": "0003_curvy_living_mummy",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1792770352502,
+      "tag": "0004_common_bishop",
+      "breakpoints": true
     }
   ]
 }

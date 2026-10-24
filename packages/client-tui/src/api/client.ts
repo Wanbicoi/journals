@@ -1,19 +1,9 @@
 import { type Config, loadConfig } from "@journals/core";
 import type { AppType } from "@journals/server";
 import { hc } from "hono/client";
-import { startDaemon } from "../daemon.js";
 
 export const config: Config = loadConfig();
 export const serverUrl = `http://${config.server.host}:${config.server.port}`;
-
-try {
-  const testRes = await fetch(`${serverUrl}/health`);
-  if (!testRes.ok) throw new Error("not running");
-} catch {
-  if (config.server.auto_start) {
-    await startDaemon(config);
-  }
-}
 
 export const client = hc<AppType>(serverUrl);
 
@@ -33,6 +23,33 @@ export async function fetchTags() {
   const res = await client.tags.$get();
   const data = await res.json();
   return data.tags;
+}
+
+export async function fetchDashboardAnalytics(days = 60) {
+  const res = await fetch(`${serverUrl}/analytics/dashboard?days=${days}`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch dashboard: ${res.statusText}`);
+  }
+  return await res.json();
+}
+
+export async function updateProjectApi(
+  id: string,
+  data: {
+    content?: string;
+    recurrence?: string | null;
+    missedPolicy?: "accumulate" | "spike" | "mark_done";
+  },
+) {
+  const res = await fetch(`${serverUrl}/projects/${id}/content`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to update project: ${res.statusText}`);
+  }
+  return await res.json();
 }
 
 export async function searchEntriesApi(query: string, limit = 50) {

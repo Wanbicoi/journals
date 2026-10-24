@@ -4,21 +4,29 @@ import type { DatabaseInstance } from "../../db/client.js";
 import { entries, entryTags, tags } from "../../db/schema.js";
 import { findOrCreateProject } from "../projects/handler.js";
 
-export function handleQuickCapture(db: DatabaseInstance, raw: string, defaultProject = "Inbox") {
+export function handleQuickCapture(
+  db: DatabaseInstance,
+  raw: string,
+  defaultProject: string | null = "Inbox",
+) {
   const parsed = parseCaptureLine(raw, defaultProject);
   const now = Date.now();
 
   return db.transaction((tx) => {
-    // 1. Get or create project via shared slice helper
-    const project = findOrCreateProject(tx, parsed.projectName);
+    // 1. Get or create project via shared slice helper (if projectName is not null)
+    let project = null;
+    if (parsed.projectName) {
+      project = findOrCreateProject(tx, parsed.projectName);
+    }
 
     // 2. Insert Entry
     const entryId = crypto.randomUUID();
     tx.insert(entries)
       .values({
         id: entryId,
-        projectId: project.id,
+        projectId: project ? project.id : null,
         content: parsed.content || "Empty note",
+        breakDays: parsed.breakDays || 0,
         createdAt: now,
         updatedAt: now,
       })
@@ -32,10 +40,11 @@ export function handleQuickCapture(db: DatabaseInstance, raw: string, defaultPro
 
     return {
       id: entryId,
-      projectId: project.id,
-      projectName: project.name,
+      projectId: project ? project.id : null,
+      projectName: project ? project.name : null,
       content: parsed.content,
       tags: parsed.tags,
+      breakDays: parsed.breakDays || 0,
       createdAt: now,
     };
   });

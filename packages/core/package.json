@@ -3,11 +3,13 @@
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.js",
+  "module": "./src/index.ts",
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc"
   },
   "dependencies": {
+    "rrule": "^2.8.1",
     "yaml": "^2.7.0",
     "zod": "^3.24.2"
   },

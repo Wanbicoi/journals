@@ -1,4 +1,5 @@
 export * from "./App.js";
+export * from "./dashboard/DashboardView.js";
 export * from "./timeline/TimelineView.js";
 export * from "./projects/ProjectsView.js";
 export * from "./modals/QuickCaptureModal.js";

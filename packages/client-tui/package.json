@@ -16,7 +16,8 @@
     "citty": "^0.2.2",
     "hono": "^4.7.2",
     "react": "^19.3.1",
-    "react-reconciler": "^0.34.0"
+    "react-reconciler": "^0.34.0",
+    "rrule": "^2.8.1"
   },
   "devDependencies": {
     "@types/bun": "^1.4.3",

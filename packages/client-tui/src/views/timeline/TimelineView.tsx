@@ -112,7 +112,12 @@ export function TimelineView({
                       </text>
                     )}
                     <text fg={theme.muted}>{` ${time} `}</text>
-                    <text fg={theme.secondary}>{`${icons.project} @${entry.projectName} `}</text>
+                    <text fg={theme.secondary}>
+                      {entry.projectName ? `${icons.project} @${entry.projectName} ` : "🌐 GLOBAL "}
+                    </text>
+                    {entry.breakDays > 0 && (
+                      <text fg={theme.warning || "yellow"}>{`⏸ ${entry.breakDays}d break `}</text>
+                    )}
                     {entry.tags.map((t) => (
                       <text key={t} fg={theme.tag}>{`${icons.tag} #${t} `}</text>
                     ))}

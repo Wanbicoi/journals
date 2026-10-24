@@ -12,6 +12,7 @@ import {
 import { Hono } from "hono";
 import type { DatabaseInstance } from "./db/client.js";
 import { createAgentEntriesRouter } from "./slices/agent-entries/router.js";
+import { getDashboardAnalytics } from "./slices/analytics/handler.js";
 import {
   deleteEntry,
   listEntries,
@@ -24,7 +25,7 @@ import {
   createProject,
   listProjects,
   searchProjects,
-  updateProjectContent,
+  updateProject,
 } from "./slices/projects/handler.js";
 import { handleQuickCapture } from "./slices/quick-capture/handler.js";
 import { listTags } from "./slices/tags/handler.js";
@@ -36,7 +37,7 @@ export function createApp(db: DatabaseInstance) {
     // Quick Capture
     .post("/capture", zValidator("json", QuickCaptureInputSchema), (c) => {
       const data = c.req.valid("json");
-      const result = handleQuickCapture(db, data.raw, data.defaultProject);
+      const result = handleQuickCapture(db, data.raw, data.defaultProject ?? null);
       return c.json(result);
     })
 
@@ -64,8 +65,8 @@ export function createApp(db: DatabaseInstance) {
     })
     .patch("/entries/:id/content", zValidator("json", UpdateEntryContentSchema), (c) => {
       const id = c.req.param("id");
-      const { content } = c.req.valid("json");
-      const res = updateEntryContent(db, id, content);
+      const { content, breakDays } = c.req.valid("json");
+      const res = updateEntryContent(db, id, content, breakDays);
       return c.json(res);
     })
     .delete("/entries/:id", (c) => {
@@ -85,15 +86,22 @@ export function createApp(db: DatabaseInstance) {
       return c.json({ projects: results });
     })
     .post("/projects", zValidator("json", CreateProjectInputSchema), (c) => {
-      const { name, content } = c.req.valid("json");
-      const res = createProject(db, name, content);
+      const { name, content, recurrence, missedPolicy } = c.req.valid("json");
+      const res = createProject(db, name, content, recurrence, missedPolicy);
       return c.json(res);
     })
     .patch("/projects/:id/content", zValidator("json", UpdateProjectContentInputSchema), (c) => {
       const id = c.req.param("id");
-      const { content } = c.req.valid("json");
-      const res = updateProjectContent(db, id, content);
+      const body = c.req.valid("json");
+      const res = updateProject(db, id, body);
       return c.json(res);
+    })
+
+    // Analytics / Dashboard
+    .get("/analytics/dashboard", (c) => {
+      const days = Number.parseInt(c.req.query("days") || "60", 10);
+      const data = getDashboardAnalytics(db, Number.isNaN(days) ? 60 : days);
+      return c.json(data);
     })
 
     // Tags

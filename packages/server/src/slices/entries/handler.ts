@@ -11,11 +11,12 @@ export function listEntries(db: DatabaseInstance) {
       projectId: entries.projectId,
       projectName: projects.name,
       content: entries.content,
+      breakDays: entries.breakDays,
       createdAt: entries.createdAt,
       updatedAt: entries.updatedAt,
     })
     .from(entries)
-    .innerJoin(projects, eq(entries.projectId, projects.id))
+    .leftJoin(projects, eq(entries.projectId, projects.id))
     .orderBy(desc(entries.createdAt))
     .all();
 
@@ -47,16 +48,26 @@ export function listEntries(db: DatabaseInstance) {
   }));
 }
 
-export function updateEntryProject(db: DatabaseInstance, entryId: string, projectName: string) {
+export function updateEntryProject(
+  db: DatabaseInstance,
+  entryId: string,
+  projectName: string | null | undefined,
+) {
   return db.transaction((tx) => {
-    const project = findOrCreateProject(tx, projectName);
+    let projectId: string | null = null;
+    let projName: string | null = null;
+    if (projectName) {
+      const project = findOrCreateProject(tx, projectName);
+      projectId = project.id;
+      projName = project.name;
+    }
 
     tx.update(entries)
-      .set({ projectId: project.id, updatedAt: Date.now() })
+      .set({ projectId, updatedAt: Date.now() })
       .where(eq(entries.id, entryId))
       .run();
 
-    return { success: true, projectId: project.id, projectName: project.name };
+    return { success: true, projectId, projectName: projName };
   });
 }
 
@@ -73,9 +84,18 @@ export function updateEntryTags(db: DatabaseInstance, entryId: string, newTags: 
   });
 }
 
-export function updateEntryContent(db: DatabaseInstance, entryId: string, content: string) {
-  db.update(entries).set({ content, updatedAt: Date.now() }).where(eq(entries.id, entryId)).run();
-  return { success: true, id: entryId, content };
+export function updateEntryContent(
+  db: DatabaseInstance,
+  entryId: string,
+  content: string,
+  breakDays?: number,
+) {
+  const updateData: Record<string, unknown> = { content, updatedAt: Date.now() };
+  if (breakDays !== undefined) {
+    updateData.breakDays = breakDays;
+  }
+  db.update(entries).set(updateData).where(eq(entries.id, entryId)).run();
+  return { success: true, id: entryId, content, breakDays };
 }
 
 export function deleteEntry(db: DatabaseInstance, entryId: string) {
