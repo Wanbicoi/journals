@@ -4,16 +4,17 @@ export const projects = sqliteTable("projects", {
   id: text("id").primaryKey(),
   name: text("name").notNull().unique(),
   content: text("content").notNull().default(""),
+  recurrence: text("recurrence"),
+  missedPolicy: text("missed_policy").notNull().default("spike"),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
 
 export const entries = sqliteTable("entries", {
   id: text("id").primaryKey(),
-  projectId: text("project_id")
-    .notNull()
-    .references(() => projects.id, { onDelete: "cascade" }),
+  projectId: text("project_id").references(() => projects.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
+  breakDays: integer("break_days").notNull().default(0),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });

@@ -12,6 +12,8 @@ export function listProjects(db: DbOrTx) {
       id: projects.id,
       name: projects.name,
       content: projects.content,
+      recurrence: projects.recurrence,
+      missedPolicy: projects.missedPolicy,
       createdAt: projects.createdAt,
       updatedAt: projects.updatedAt,
       entryCount: count(entries.id),
@@ -36,16 +38,32 @@ export function findOrCreateProject(db: DbOrTx, name: string) {
         id,
         name: cleanName,
         content: `# ${cleanName}\n`,
+        recurrence: null,
+        missedPolicy: "spike",
         createdAt: now,
         updatedAt: now,
       })
       .run();
-    project = { id, name: cleanName, content: `# ${cleanName}\n`, createdAt: now, updatedAt: now };
+    project = {
+      id,
+      name: cleanName,
+      content: `# ${cleanName}\n`,
+      recurrence: null,
+      missedPolicy: "spike",
+      createdAt: now,
+      updatedAt: now,
+    };
   }
   return project;
 }
 
-export function createProject(db: DbOrTx, name: string, content = "") {
+export function createProject(
+  db: DbOrTx,
+  name: string,
+  content = "",
+  recurrence: string | null = null,
+  missedPolicy = "spike",
+) {
   const id = crypto.randomUUID();
   const now = Date.now();
   db.insert(projects)
@@ -53,17 +71,32 @@ export function createProject(db: DbOrTx, name: string, content = "") {
       id,
       name,
       content,
+      recurrence,
+      missedPolicy,
       createdAt: now,
       updatedAt: now,
     })
     .run();
-  return { id, name, content, createdAt: now, updatedAt: now };
+  return { id, name, content, recurrence, missedPolicy, createdAt: now, updatedAt: now };
+}
+
+export function updateProject(
+  db: DbOrTx,
+  id: string,
+  data: { content?: string; recurrence?: string | null; missedPolicy?: string },
+) {
+  const now = Date.now();
+  const updateData: Record<string, unknown> = { updatedAt: now };
+  if (data.content !== undefined) updateData.content = data.content;
+  if (data.recurrence !== undefined) updateData.recurrence = data.recurrence;
+  if (data.missedPolicy !== undefined) updateData.missedPolicy = data.missedPolicy;
+
+  db.update(projects).set(updateData).where(eq(projects.id, id)).run();
+  return { id, ...data, updatedAt: now };
 }
 
 export function updateProjectContent(db: DbOrTx, id: string, content: string) {
-  const now = Date.now();
-  db.update(projects).set({ content, updatedAt: now }).where(eq(projects.id, id)).run();
-  return { id, content, updatedAt: now };
+  return updateProject(db, id, { content });
 }
 
 export function searchProjects(db: DatabaseInstance, query: string, limit = 50) {

@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "92e42bc7-5cd3-43ff-84c4-fc340d4afb18",
+  "id": "99d71920-1443-4493-b13b-cb1181e0562d",
   "prevId": "d1d2291b-d0e2-4e72-8ba4-65a213aff861",
   "tables": {
     "agent_entries": {
@@ -81,7 +81,7 @@
           "name": "project_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "content": {
@@ -90,6 +90,14 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "break_days": {
+          "name": "break_days",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
         },
         "created_at": {
           "name": "created_at",
@@ -170,65 +178,6 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "periodic_reflections": {
-      "name": "periodic_reflections",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "period_type": {
-          "name": "period_type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "period_key": {
-          "name": "period_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "content": {
-          "name": "content",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "''"
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "periodic_reflections_period_key_unique": {
-          "name": "periodic_reflections_period_key_unique",
-          "columns": ["period_key"],
-          "isUnique": true
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
     "projects": {
       "name": "projects",
       "columns": {
@@ -253,6 +202,21 @@
           "notNull": true,
           "autoincrement": false,
           "default": "''"
+        },
+        "recurrence": {
+          "name": "recurrence",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "missed_policy": {
+          "name": "missed_policy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'spike'"
         },
         "created_at": {
           "name": "created_at",

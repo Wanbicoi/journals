@@ -8,6 +8,7 @@ kanban-plugin: basic
 - [x] Global shortcut quick capture script (AutoHotkey v2 resident popup + Python/PowerShell fallbacks)
 - [ ] Daemon runner & service setup (`systemd --user` unit + on-demand auto-spawn fallback)
 - [ ] CLI capture command / flags (e.g. `journals capture "quick note"`)
+- [ ] Filter by date in timeline view
 
 ## 📋 Next
 - [ ] Automated installer script (`install.sh`) with daemon setup detection

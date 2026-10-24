@@ -19,9 +19,42 @@ async function main() {
     process.exit(0);
   }
 
+  // Ensure server is started in-process if not running, avoiding detached background daemon
+  const { startServer } = await import("@journals/server");
+  const { serverUrl } = await import("./api/client.js");
+
+  let serverInstance: { server: { stop: () => void } } | null = null;
+  try {
+    const testRes = await fetch(`${serverUrl}/health`);
+    if (!testRes.ok) throw new Error("not running");
+  } catch {
+    // Start local server directly in the same runtime process silently
+    serverInstance = startServer(undefined, { silent: true });
+  }
+
+  const cleanupServer = () => {
+    if (serverInstance) {
+      try {
+        serverInstance.server.stop();
+      } catch {}
+      serverInstance = null;
+    }
+  };
+
+  process.on("exit", cleanupServer);
+  process.on("SIGINT", () => {
+    cleanupServer();
+    process.exit(0);
+  });
+  process.on("SIGTERM", () => {
+    cleanupServer();
+    process.exit(0);
+  });
+
   const { App } = await import("./views/App.js");
 
   if (!process.stdin.isTTY) {
+    cleanupServer();
     console.error(
       "Error: Journals TUI requires an interactive TTY terminal.\n" +
         "To test or interact headlessly, use the automated interaction script:\n" +

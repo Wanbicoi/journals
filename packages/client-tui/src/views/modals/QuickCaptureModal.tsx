@@ -1,11 +1,12 @@
 import { Modal } from "../../components/Modal.js";
+import type { SuggestionType } from "../../suggest.js";
 import type { ThemePalette } from "../../theme.js";
 
 interface QuickCaptureModalProps {
   width: number;
   height: number;
   inputBuffer: string;
-  suggestions: { type: "project" | "tag"; matches: string[] } | null;
+  suggestions: { type: SuggestionType; matches: string[] } | null;
   activeSuggestionIdx: number;
   quickIcon: string;
   theme: ThemePalette;
@@ -23,7 +24,9 @@ export function QuickCaptureModal({
   return (
     <Modal width={width} height={height} theme={theme} borderColor={theme.primary}>
       <text bg={theme.primary} fg={theme.selectedFg}>{` ${quickIcon} QUICK CAPTURE `}</text>
-      <text fg={theme.muted}>{"Syntax: Note text @project #tags [Tab for suggestion]"}</text>
+      <text fg={theme.muted}>
+        {"Syntax: Note text @project #tags /break 3d [Tab for suggestion]"}
+      </text>
       <text fg={theme.fg}>{`> ${inputBuffer}█`}</text>
 
       {suggestions && suggestions.matches.length > 0 && (
@@ -35,7 +38,7 @@ export function QuickCaptureModal({
               fg={idx === activeSuggestionIdx ? theme.selectedFg : theme.muted}
               bg={idx === activeSuggestionIdx ? theme.primary : undefined}
             >
-              {`[${suggestions.type === "project" ? "@" : "#"}${m}] `}
+              {`[${suggestions.type === "project" ? "@" : suggestions.type === "tag" ? "#" : ""}${m}] `}
             </text>
           ))}
         </box>

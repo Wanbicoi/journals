@@ -33,9 +33,10 @@ icons:
 # ==========================================
 keymaps:
   # Views / Tabs
-  view_timeline: "1"               # Switch to daily timeline stream
-  view_reflections: "2"            # Switch to periodic reflections view
-  view_projects: "3"               # Switch to projects view & preview
+  view_dashboard: "1"              # Switch to 60-day routine dashboard
+  view_timeline: "2"               # Switch to daily timeline stream
+  view_reflections: "3"            # Switch to periodic reflections view
+  view_projects: "4"               # Switch to projects view & preview
   
   # Navigation
   up: "k"

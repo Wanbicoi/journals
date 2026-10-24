@@ -1,11 +1,12 @@
 import { Modal } from "../../components/Modal.js";
+import type { SuggestionType } from "../../suggest.js";
 import type { ThemePalette } from "../../theme.js";
 
 interface EditTagsModalProps {
   width: number;
   height: number;
   inputBuffer: string;
-  suggestions: { type: "project" | "tag"; matches: string[] } | null;
+  suggestions: { type: SuggestionType; matches: string[] } | null;
   activeSuggestionIdx: number;
   tagIcon: string;
   theme: ThemePalette;

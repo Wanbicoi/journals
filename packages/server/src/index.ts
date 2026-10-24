@@ -12,7 +12,10 @@ export interface StartedServer {
   db: DatabaseInstance;
 }
 
-export function startServer(customConfigPath?: string): StartedServer {
+export function startServer(
+  customConfigPath?: string,
+  options: { silent?: boolean } = {},
+): StartedServer {
   const config = loadConfig(customConfigPath);
   const dbPath = resolveDbPath(config.server.db_path);
 
@@ -25,8 +28,10 @@ export function startServer(customConfigPath?: string): StartedServer {
     hostname: config.server.host,
   });
 
-  console.log(`[journals-server] Running on http://${config.server.host}:${config.server.port}`);
-  console.log(`[journals-server] SQLite DB: ${dbPath}`);
+  if (!options.silent) {
+    console.log(`[journals-server] Running on http://${config.server.host}:${config.server.port}`);
+    console.log(`[journals-server] SQLite DB: ${dbPath}`);
+  }
 
   return { server, app, db };
 }

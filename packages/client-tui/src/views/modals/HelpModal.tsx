@@ -18,6 +18,9 @@ export function HelpModal({ width, height, keymaps, theme }: HelpModalProps) {
         {" KEYBOARD & MOUSE SHORTCUTS "}
       </text>
       <text fg={theme.border}>{"─".repeat(Math.min(68, width - 12))}</text>
+      <text
+        fg={theme.fg}
+      >{`[${keymaps.view_dashboard ?? "1"}] or Click Header : 60-Day Routine Dashboard`}</text>
       <text fg={theme.fg}>{`[${keymaps.view_timeline}] or Click Header : Timeline Stream`}</text>
       <text
         fg={theme.fg}

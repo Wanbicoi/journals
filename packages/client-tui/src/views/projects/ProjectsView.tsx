@@ -58,7 +58,7 @@ export function ProjectsView({
   };
 
   const projectNotes = entries.filter(
-    (e) => e.projectName.toLowerCase() === selProj.name.toLowerCase(),
+    (e) => !!e.projectName && e.projectName.toLowerCase() === selProj.name.toLowerCase(),
   );
 
   return (

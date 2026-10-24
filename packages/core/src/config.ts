@@ -43,9 +43,10 @@ export const ConfigSchema = z.object({
     .default({}),
   keymaps: z
     .object({
-      view_timeline: z.string().default("1"),
-      view_reflections: z.string().default("2"),
-      view_projects: z.string().default("3"),
+      view_dashboard: z.string().default("1"),
+      view_timeline: z.string().default("2"),
+      view_reflections: z.string().default("3"),
+      view_projects: z.string().default("4"),
       up: z.string().default("k"),
       down: z.string().default("j"),
       quick_capture: z.string().default("n"),

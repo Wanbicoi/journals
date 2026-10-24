@@ -2,75 +2,82 @@ import { loadConfig, resolveDbPath } from "@journals/core";
 import { initDb } from "../src/db/client.js";
 import { entries, entryTags, projects, tags } from "../src/db/schema.js";
 
-// 10 projects
+// Projects including recurring routines with different policies
 const PROJECT_DEFINITIONS = [
-  { name: "Inbox", content: "# Inbox\nQuick captures and unorganized ideas." },
-  { name: "Journals", content: "# Journals\nCore journal CLI and TUI development." },
-  { name: "Website", content: "# Website\nLanding page, documentation, and user guides." },
+  {
+    name: "Fitness",
+    content: "# Fitness Routine\nDaily morning workout, stretching, and cardio.",
+    recurrence: "FREQ=DAILY",
+    missedPolicy: "accumulate", // Accumulates debt if missed
+  },
+  {
+    name: "Deep-Work",
+    content: "# Deep Work & Engineering\nFocused uninterrupted coding sessions.",
+    recurrence: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR", // Weekdays
+    missedPolicy: "accumulate",
+  },
+  {
+    name: "Reading",
+    content: "# Book & Paper Reading\nRead chapters or engineering whitepapers every 2 days.",
+    recurrence: "INTERVAL=2;FREQ=DAILY",
+    missedPolicy: "spike", // Spike only on that date, no accumulated debt
+  },
+  {
+    name: "Meditation",
+    content: "# Mindfulness & Reflection\nDaily evening meditation.",
+    recurrence: "FREQ=DAILY",
+    missedPolicy: "mark_done", // Auto-cleared/forgiven
+  },
+  {
+    name: "Side-Project",
+    content: "# Side Project\nHacking on weekend side projects.",
+    recurrence: "FREQ=WEEKLY;BYDAY=SA,SU",
+    missedPolicy: "spike",
+  },
+  {
+    name: "Inbox",
+    content: "# Inbox\nQuick captures and unorganized ideas.",
+    recurrence: null,
+    missedPolicy: "spike",
+  },
   {
     name: "Infrastructure",
     content: "# Infrastructure\nCI/CD pipelines, containerization, and hosting.",
+    recurrence: null,
+    missedPolicy: "spike",
   },
   {
-    name: "API-Design",
-    content: "# API Design\nREST & RPC protocols, schemas, and API versioning.",
-  },
-  { name: "Mobile", content: "# Mobile App\nReact Native / Expo mobile companion client." },
-  { name: "Analytics", content: "# Analytics\nUsage telemetry, crash reporting, and metrics." },
-  { name: "Security", content: "# Security\nAudit logging, end-to-end encryption, and auth." },
-  {
-    name: "Design-System",
-    content: "# Design System\nTypography, themes, icons, and terminal components.",
-  },
-  {
-    name: "Research",
-    content: "# Research\nExploratory spikes, notes on new libraries and tools.",
+    name: "Website",
+    content: "# Website\nLanding page, documentation, and user guides.",
+    recurrence: null,
+    missedPolicy: "spike",
   },
 ];
 
-const NOTE_TEMPLATES = [
-  {
-    text: "Refactored UI components to use consistent border styling and spacing",
-    tags: ["ui", "cleanup"],
-  },
-  {
-    text: "Benchmarked SQLite query performance under concurrent WAL mode",
-    tags: ["perf", "sqlite"],
-  },
-  {
-    text: "Investigated memory footprint in long-running terminal sessions",
-    tags: ["perf", "debug"],
-  },
-  { text: "Drafted RFC for local-first sync protocol using CRDTs", tags: ["rfc", "sync"] },
-  { text: "Fixed race condition when reassigning note project via shortcut", tags: ["bugfix"] },
-  { text: "Updated documentation on keyboard shortcuts and navigation patterns", tags: ["docs"] },
-  {
-    text: "Reviewed pull request for theme customization and Rosé Pine palette",
-    tags: ["review", "theme"],
-  },
-  {
-    text: "Added unit tests for quick capture parser with edge cases",
-    tags: ["testing", "parser"],
-  },
-  {
-    text: "Configured GitHub Actions workflow for automated typecheck and linting",
-    tags: ["ci", "devops"],
-  },
-  { text: "Brainstormed roadmap items for next milestone release", tags: ["planning", "roadmap"] },
-  { text: "Audited dependencies for vulnerability patches and outdated types", tags: ["security"] },
-  {
-    text: "Implemented fuzzy search filter for timeline and projects views",
-    tags: ["feature", "search"],
-  },
-  {
-    text: "Optimized bundle size and tree-shaking for client distribution",
-    tags: ["perf", "build"],
-  },
-  {
-    text: "Conducted user feedback interview on terminal navigation responsiveness",
-    tags: ["feedback"],
-  },
-];
+const ROUTINE_ENTRIES: Record<string, string[]> = {
+  Fitness: [
+    "Completed 45m strength training + 15m stretch",
+    "5km morning jog around the park",
+    "HIIT workout: kettlebell swings, pull-ups, pushups",
+    "Restorative yoga session and core workout",
+  ],
+  "Deep-Work": [
+    "Refactored terminal bar chart rendering engine",
+    "Optimized SQLite FTS5 queries and indexing",
+    "Built bidirectional routine monitor telemetry panel",
+    "Implemented keyboard navigation and date drilldown in TUI",
+  ],
+  Reading: [
+    "Read chapters 3-4 of Designing Data-Intensive Applications",
+    "Read RFC on iCalendar RFC 5545 recurrence specification",
+    "Studied distributed systems consensus papers (Raft)",
+  ],
+  Meditation: ["15m mindfulness breathing session before sleep", "Morning 10m guided meditation"],
+  "Side-Project": [
+    "Built prototype MCP tool integration",
+    "Configured Nix flake devshell for rust bindings",
+  ],
+};
 
 async function seed() {
   const config = loadConfig();
@@ -88,79 +95,198 @@ async function seed() {
   console.log("Cleared existing data.");
 
   const now = new Date();
-  // Anchor to today at 14:00
   const baseTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 14, 0, 0, 0);
 
-  const createdProjects: { id: string; name: string }[] = [];
+  const projectMap = new Map<string, { id: string; name: string }>();
 
-  // Seed 10 Projects
-  for (let i = 0; i < PROJECT_DEFINITIONS.length; i++) {
-    const def = PROJECT_DEFINITIONS[i];
+  // 1. Seed Projects (anchored 60 days ago)
+  const sixtyDaysAgo = baseTime.getTime() - 60 * 86400 * 1000;
+  for (const def of PROJECT_DEFINITIONS) {
     const id = crypto.randomUUID();
-    const createdAt = baseTime.getTime() - (10 - i) * 86400 * 1000;
-
     db.insert(projects)
       .values({
         id,
         name: def.name,
         content: def.content,
-        createdAt,
-        updatedAt: createdAt,
+        recurrence: def.recurrence,
+        missedPolicy: def.missedPolicy,
+        createdAt: sixtyDaysAgo,
+        updatedAt: sixtyDaysAgo,
       })
       .run();
-    createdProjects.push({ id, name: def.name });
+    projectMap.set(def.name, { id, name: def.name });
   }
-  console.log(`Seeded ${createdProjects.length} projects.`);
+  console.log(`Seeded ${projectMap.size} projects.`);
 
-  // All distinct tags collected
-  const allTags = new Set<string>();
+  // 2. Schedule intentional Break Days:
+  // - Global vacation 25-28 days ago (4 days)
+  // - Sick leave 10-12 days ago (3 days)
+  // - Single-project break for Fitness 40-42 days ago (3 days, sprained ankle)
+  const breakEvents = [
+    {
+      dayOffset: 28,
+      breakDays: 4,
+      projectName: null, // Global break
+      content: "Annual beach vacation with family /break 4d",
+      tags: ["vacation", "holiday"],
+    },
+    {
+      dayOffset: 12,
+      breakDays: 3,
+      projectName: null, // Global break
+      content: "Fever and flu, staying in bed to rest /break 3d",
+      tags: ["sick", "health"],
+    },
+    {
+      dayOffset: 42,
+      breakDays: 3,
+      projectName: "Fitness",
+      content: "Sprained ankle during sprint, pausing workouts @Fitness /break 3d",
+      tags: ["injury", "recovery"],
+    },
+  ];
 
-  // Seed 10 Days of Notes (from 9 days ago to today = 10 days)
-  let totalEntries = 0;
-  for (let dayOffset = 9; dayOffset >= 0; dayOffset--) {
-    const dayDate = new Date(baseTime.getTime() - dayOffset * 86400 * 1000);
+  for (const b of breakEvents) {
+    const bTime = baseTime.getTime() - b.dayOffset * 86400 * 1000;
+    const entryId = crypto.randomUUID();
+    const projId = b.projectName ? (projectMap.get(b.projectName)?.id ?? null) : null;
 
-    // 3 to 5 entries per day distributed at different hours
-    const entriesTodayCount = 3 + (dayOffset % 3); // 3, 4, or 5 notes
-    const hours = [9, 11, 14, 16, 18];
+    db.insert(entries)
+      .values({
+        id: entryId,
+        projectId: projId,
+        content: b.content,
+        breakDays: b.breakDays,
+        createdAt: bTime,
+        updatedAt: bTime,
+      })
+      .run();
 
-    for (let eIdx = 0; eIdx < entriesTodayCount; eIdx++) {
-      const entryTime = new Date(
-        dayDate.getFullYear(),
-        dayDate.getMonth(),
-        dayDate.getDate(),
-        hours[eIdx % hours.length],
-        (eIdx * 17) % 60,
-        0,
-        0,
-      );
-
-      const template = NOTE_TEMPLATES[(dayOffset * 3 + eIdx) % NOTE_TEMPLATES.length];
-      // Distribute across projects
-      const project = createdProjects[(dayOffset + eIdx) % createdProjects.length];
-
-      const entryId = crypto.randomUUID();
-      db.insert(entries)
-        .values({
-          id: entryId,
-          projectId: project.id,
-          content: template.text,
-          createdAt: entryTime.getTime(),
-          updatedAt: entryTime.getTime(),
-        })
-        .run();
-
-      for (const t of template.tags) {
-        allTags.add(t);
-        db.insert(tags).values({ name: t }).onConflictDoNothing().run();
-        db.insert(entryTags).values({ entryId, tagName: t }).onConflictDoNothing().run();
-      }
-
-      totalEntries++;
+    for (const t of b.tags) {
+      db.insert(tags).values({ name: t }).onConflictDoNothing().run();
+      db.insert(entryTags).values({ entryId, tagName: t }).onConflictDoNothing().run();
     }
   }
 
-  console.log(`Seeded ${totalEntries} entries across 10 days spanning ${allTags.size} tags.`);
+  // 3. Generate journal entries over the last 60 days
+  // We intentionally skip some days for "Fitness" and "Reading" to generate realistic
+  // monitor spikes (days lazy/undisciplined) and accumulated debts.
+  let entryCount = breakEvents.length;
+
+  for (let dayOffset = 59; dayOffset >= 0; dayOffset--) {
+    const dayDate = new Date(baseTime.getTime() - dayOffset * 86400 * 1000);
+    const dayOfWeek = dayDate.getDay(); // 0 = Sun, 6 = Sat
+
+    // Check if within global break periods
+    const inVacation = dayOffset <= 28 && dayOffset >= 25;
+    const inFlu = dayOffset <= 12 && dayOffset >= 10;
+    if (inVacation || inFlu) {
+      // No routines logged during sick/vacation
+      continue;
+    }
+
+    // Check if in Fitness break
+    const inFitnessBreak = dayOffset <= 42 && dayOffset >= 40;
+
+    // Simulate routine discipline:
+    // Fitness (Daily): Completed 75% of days, but skipped days: 5, 6, 17, 18, 33, 48 (spikes!)
+    const fitnessSkipped = [5, 6, 17, 18, 33, 48].includes(dayOffset);
+    if (!inFitnessBreak && !fitnessSkipped) {
+      const fitnessProj = projectMap.get("Fitness");
+      if (fitnessProj) {
+        const entryId = crypto.randomUUID();
+        const text = ROUTINE_ENTRIES.Fitness[dayOffset % ROUTINE_ENTRIES.Fitness.length];
+        const entryTime = new Date(dayDate);
+        entryTime.setHours(7, 30, 0, 0);
+
+        db.insert(entries)
+          .values({
+            id: entryId,
+            projectId: fitnessProj.id,
+            content: text,
+            breakDays: 0,
+            createdAt: entryTime.getTime(),
+            updatedAt: entryTime.getTime(),
+          })
+          .run();
+        entryCount++;
+      }
+    }
+
+    // Deep-Work (Weekdays: Mon-Fri)
+    const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
+    const deepWorkSkipped = [3, 14, 31].includes(dayOffset);
+    if (isWeekday && !deepWorkSkipped) {
+      const dwProj = projectMap.get("Deep-Work");
+      if (dwProj) {
+        const entryId = crypto.randomUUID();
+        const text = ROUTINE_ENTRIES["Deep-Work"][dayOffset % ROUTINE_ENTRIES["Deep-Work"].length];
+        const entryTime = new Date(dayDate);
+        entryTime.setHours(11, 0, 0, 0);
+
+        db.insert(entries)
+          .values({
+            id: entryId,
+            projectId: dwProj.id,
+            content: text,
+            breakDays: 0,
+            createdAt: entryTime.getTime(),
+            updatedAt: entryTime.getTime(),
+          })
+          .run();
+        entryCount++;
+      }
+    }
+
+    // Reading (Every 2 days): Skipped on days 2, 8, 20
+    const isReadingDay = dayOffset % 2 === 0;
+    const readingSkipped = [2, 8, 20].includes(dayOffset);
+    if (isReadingDay && !readingSkipped) {
+      const readingProj = projectMap.get("Reading");
+      if (readingProj) {
+        const entryId = crypto.randomUUID();
+        const text = ROUTINE_ENTRIES.Reading[dayOffset % ROUTINE_ENTRIES.Reading.length];
+        const entryTime = new Date(dayDate);
+        entryTime.setHours(21, 15, 0, 0);
+
+        db.insert(entries)
+          .values({
+            id: entryId,
+            projectId: readingProj.id,
+            content: text,
+            breakDays: 0,
+            createdAt: entryTime.getTime(),
+            updatedAt: entryTime.getTime(),
+          })
+          .run();
+        entryCount++;
+      }
+    }
+
+    // Occasional Inbox ideas / notes (every 3 days)
+    if (dayOffset % 3 === 0) {
+      const inboxProj = projectMap.get("Inbox");
+      if (inboxProj) {
+        const entryId = crypto.randomUUID();
+        const entryTime = new Date(dayDate);
+        entryTime.setHours(16, 45, 0, 0);
+
+        db.insert(entries)
+          .values({
+            id: entryId,
+            projectId: inboxProj.id,
+            content: "Thought on local caching and terminal rendering throughput",
+            breakDays: 0,
+            createdAt: entryTime.getTime(),
+            updatedAt: entryTime.getTime(),
+          })
+          .run();
+        entryCount++;
+      }
+    }
+  }
+
+  console.log(`Seeded ${entryCount} total entries across last 60 days.`);
   console.log("Seeding completed successfully!");
 }
 

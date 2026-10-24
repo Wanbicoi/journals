@@ -142,6 +142,7 @@ export function getPeriodDetail(
       projectId: entries.projectId,
       projectName: projects.name,
       content: entries.content,
+      breakDays: entries.breakDays,
       createdAt: entries.createdAt,
       updatedAt: entries.updatedAt,
     })

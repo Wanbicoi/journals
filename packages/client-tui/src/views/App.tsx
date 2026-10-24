@@ -1,4 +1,5 @@
 import type { ReflectionPeriodType } from "@journals/core";
+import { normalizeRecurrenceRule } from "@journals/core";
 import {
   useKeyboard,
   useRenderer,
@@ -15,6 +16,7 @@ import { useJournalData } from "../hooks/useJournalData.js";
 import { useMouseClick } from "../hooks/useMouseClick.js";
 import { useSuggestions } from "../hooks/useSuggestions.js";
 import { getTheme } from "../theme.js";
+import { DashboardView } from "./dashboard/DashboardView.js";
 import { DeleteConfirmModal } from "./modals/DeleteConfirmModal.js";
 import { EditContentModal } from "./modals/EditContentModal.js";
 import { EditProjectModal } from "./modals/EditProjectModal.js";
@@ -36,6 +38,7 @@ export function App() {
     entries,
     projects,
     tags,
+    dashboard,
     loading,
     reloadData,
     quickCapture,
@@ -47,7 +50,9 @@ export function App() {
     deleteEntry,
   } = useJournalData();
 
-  const [currentTab, setCurrentTab] = useState<"TIMELINE" | "REFLECTIONS" | "PROJECTS">("TIMELINE");
+  const [currentTab, setCurrentTab] = useState<
+    "DASHBOARD" | "TIMELINE" | "REFLECTIONS" | "PROJECTS"
+  >("DASHBOARD");
   const [reflectionPeriodType, setReflectionPeriodType] = useState<ReflectionPeriodType>("WEEK");
   const [selectedPeriodIdx, setSelectedPeriodIdx] = useState(0);
   const [reflectionsRefreshSignal, setReflectionsRefreshSignal] = useState(0);
@@ -68,9 +73,11 @@ export function App() {
 
   const [selectedEntryIdx, setSelectedEntryIdx] = useState(0);
   const [selectedProjectIdx, setSelectedProjectIdx] = useState(0);
+  const [focusedDayIdx, setFocusedDayIdx] = useState(59); // Focus latest day on 60-day chart
   const [statusMessage, setStatusMessage] = useState("Ready");
 
-  const { activeSuggestionIdx, getSuggestions, applySuggestion } = useSuggestions(projects, tags);
+  const { activeSuggestionIdx, setActiveSuggestionIdx, getSuggestions, applySuggestion } =
+    useSuggestions(projects, tags);
 
   // Filter entries (Timeline Tab filter)
   const filteredEntries = entries.filter((e) => {
@@ -78,7 +85,7 @@ export function App() {
     const q = timelineFilterQuery.toLowerCase();
     return (
       e.content.toLowerCase().includes(q) ||
-      e.projectName.toLowerCase().includes(q) ||
+      e.projectName?.toLowerCase().includes(q) ||
       e.tags.some((t) => t.toLowerCase().includes(q))
     );
   });
@@ -92,18 +99,54 @@ export function App() {
 
   // Active suggestions for current input buffer
   const suggestions =
-    inputMode === "CAPTURE" || inputMode === "EDIT_PROJECT" || inputMode === "EDIT_TAGS"
-      ? getSuggestions(inputBuffer)
-      : null;
+    inputMode === "CAPTURE"
+      ? getSuggestions(inputBuffer, ["project", "tag", "break"])
+      : inputMode === "EDIT_PROJECT"
+        ? getSuggestions(inputBuffer, ["project"])
+        : inputMode === "EDIT_TAGS"
+          ? getSuggestions(inputBuffer, ["tag"])
+          : null;
+
+  const navigateToDate = useCallback((dateStr: string) => {
+    setTimelineFilterQuery(dateStr);
+    setCurrentTab("TIMELINE");
+    setSelectedEntryIdx(0);
+    setStatusMessage(`Navigated to timeline for date: ${dateStr}`);
+  }, []);
 
   // Handle Mouse Click anywhere in terminal
   const handleMouse = useCallback(
-    (_pos: { x: number; y: number; button: number; type: string }) => {
+    ({ x, y, type }: { x: number; y: number; button: number; type: string }) => {
+      if (type !== "down") return;
+
+      // If clicked on chart area in Dashboard: navigate directly to that date!
+      if (currentTab === "DASHBOARD" && dashboard && y >= 3 && y <= 21) {
+        // Bottom inspector box (around row 19-21)
+        if (y >= 19 && y <= 21) {
+          const day = dashboard.days[focusedDayIdx];
+          if (day) {
+            navigateToDate(day.date);
+            return;
+          }
+        }
+
+        // Bar chart X-axis starts around x=7/8 with 60 columns
+        const chartCol = Math.max(0, Math.min(dashboard.days.length - 1, x - 8));
+        if (x >= 7 && x <= 8 + dashboard.days.length) {
+          const day = dashboard.days[chartCol];
+          if (day) {
+            setFocusedDayIdx(chartCol);
+            navigateToDate(day.date);
+            return;
+          }
+        }
+      }
+
       if (inputMode === "HELP") {
         setInputMode("NONE");
       }
     },
-    [inputMode],
+    [inputMode, currentTab, dashboard, focusedDayIdx, navigateToDate],
   );
 
   useMouseClick(handleMouse);
@@ -179,6 +222,18 @@ export function App() {
         setStatusMessage("Cancelled");
         return;
       }
+      if (suggestions && suggestions.matches.length > 1) {
+        if (keyName === "down" || keyName === "right") {
+          setActiveSuggestionIdx((prev) => (prev + 1) % suggestions.matches.length);
+          return;
+        }
+        if (keyName === "up" || keyName === "left") {
+          setActiveSuggestionIdx(
+            (prev) => (prev - 1 + suggestions.matches.length) % suggestions.matches.length,
+          );
+          return;
+        }
+      }
       if (keyName === "tab") {
         setInputBuffer((prev) => applySuggestion(prev, suggestions));
         return;
@@ -195,18 +250,48 @@ export function App() {
     }
 
     // Normal Mode Navigation & Shortcuts
-    if (keyName === config.keymaps.view_timeline || str === config.keymaps.view_timeline) {
+    if (
+      keyName === "1" ||
+      str === "1" ||
+      keyName === config.keymaps.view_dashboard ||
+      str === config.keymaps.view_dashboard
+    ) {
+      setCurrentTab("DASHBOARD");
+      setStatusMessage("Dashboard View");
+    } else if (
+      keyName === "2" ||
+      str === "2" ||
+      keyName === config.keymaps.view_timeline ||
+      str === config.keymaps.view_timeline
+    ) {
       setCurrentTab("TIMELINE");
       setStatusMessage("Timeline View");
     } else if (
+      keyName === "3" ||
+      str === "3" ||
       keyName === config.keymaps.view_reflections ||
       str === config.keymaps.view_reflections
     ) {
       setCurrentTab("REFLECTIONS");
       setStatusMessage("Reflections View");
-    } else if (keyName === config.keymaps.view_projects || str === config.keymaps.view_projects) {
+    } else if (
+      keyName === "4" ||
+      str === "4" ||
+      keyName === config.keymaps.view_projects ||
+      str === config.keymaps.view_projects
+    ) {
       setCurrentTab("PROJECTS");
       setStatusMessage("Projects View");
+    } else if (keyName === "tab") {
+      setCurrentTab((prev) =>
+        prev === "DASHBOARD"
+          ? "TIMELINE"
+          : prev === "TIMELINE"
+            ? "REFLECTIONS"
+            : prev === "REFLECTIONS"
+              ? "PROJECTS"
+              : "DASHBOARD",
+      );
     } else if (currentTab === "REFLECTIONS" && (str === "w" || str === "W")) {
       setReflectionPeriodType("WEEK");
       setSelectedPeriodIdx(0);
@@ -223,12 +308,17 @@ export function App() {
       setReflectionPeriodType("YEAR");
       setSelectedPeriodIdx(0);
       setStatusMessage("Yearly Reflections");
+    } else if (keyName === "return" && currentTab === "DASHBOARD" && dashboard) {
+      const day = dashboard.days[focusedDayIdx];
+      if (day) {
+        navigateToDate(day.date);
+      }
     } else if (keyName === config.keymaps.down || str === config.keymaps.down) {
       if (currentTab === "TIMELINE") {
         setSelectedEntryIdx((prev) => Math.min(prev + 1, Math.max(0, filteredEntries.length - 1)));
       } else if (currentTab === "REFLECTIONS") {
         setSelectedPeriodIdx((prev) => prev + 1);
-      } else {
+      } else if (currentTab === "PROJECTS") {
         setSelectedProjectIdx((prev) =>
           Math.min(prev + 1, Math.max(0, filteredProjects.length - 1)),
         );
@@ -238,8 +328,24 @@ export function App() {
         setSelectedEntryIdx((prev) => Math.max(0, prev - 1));
       } else if (currentTab === "REFLECTIONS") {
         setSelectedPeriodIdx((prev) => Math.max(0, prev - 1));
-      } else {
+      } else if (currentTab === "PROJECTS") {
         setSelectedProjectIdx((prev) => Math.max(0, prev - 1));
+      }
+    } else if (
+      keyName === "left" ||
+      keyName === "h" ||
+      (currentTab === "DASHBOARD" && str === "h")
+    ) {
+      if (currentTab === "DASHBOARD") {
+        setFocusedDayIdx((prev) => Math.max(0, prev - 1));
+      }
+    } else if (
+      keyName === "right" ||
+      keyName === "l" ||
+      (currentTab === "DASHBOARD" && str === "l")
+    ) {
+      if (currentTab === "DASHBOARD") {
+        setFocusedDayIdx((prev) => Math.min(59, prev + 1));
       }
     } else if (keyName === config.keymaps.quick_capture || str === config.keymaps.quick_capture) {
       setInputMode("CAPTURE");
@@ -338,9 +444,34 @@ export function App() {
         setStatusMessage("Captured new journal entry!");
       }
     } else if (inputMode === "NEW_PROJECT") {
-      const name = inputBuffer.trim();
-      if (name) {
-        await createProject(name);
+      const raw = inputBuffer.trim();
+      if (raw) {
+        // Parse name, recurrence, and policy
+        const tokens = raw.split(/\s+/);
+        let name = tokens[0];
+        let recurrence: string | null = null;
+        let missedPolicy: "accumulate" | "spike" | "mark_done" = "spike";
+
+        const recurIdx = tokens.findIndex((t) => t.startsWith("/every") || t.startsWith("/recur"));
+        if (recurIdx !== -1) {
+          name = tokens.slice(0, recurIdx).join(" ");
+          const recurPart = tokens
+            .slice(recurIdx)
+            .filter((t) => !t.startsWith("/policy"))
+            .join(" ")
+            .replace(/^\/(every|recur:?)\s*/, "");
+          recurrence = normalizeRecurrenceRule(recurPart);
+        }
+
+        const policyToken = tokens.find((t) => t.startsWith("/policy:"));
+        if (policyToken) {
+          const val = policyToken.replace("/policy:", "").toLowerCase();
+          if (val === "accumulate" || val === "spike" || val === "mark_done") {
+            missedPolicy = val;
+          }
+        }
+
+        await createProject(name, recurrence, missedPolicy);
         setStatusMessage(`Created project @${name}`);
       }
     } else if (inputMode === "FILTER") {
@@ -401,7 +532,17 @@ export function App() {
 
       {/* Main View Area */}
       <box flexGrow={1} flexDirection="column">
-        {currentTab === "TIMELINE" ? (
+        {currentTab === "DASHBOARD" ? (
+          <DashboardView
+            dashboard={dashboard}
+            projects={projects}
+            loading={loading}
+            focusedDayIdx={focusedDayIdx}
+            onNavigateDate={navigateToDate}
+            theme={theme}
+            quickCaptureKey={config.keymaps.quick_capture}
+          />
+        ) : currentTab === "TIMELINE" ? (
           <TimelineView
             entries={filteredEntries}
             selectedEntryIdx={selectedEntryIdx}
