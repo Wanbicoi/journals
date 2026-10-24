@@ -1,6 +1,9 @@
 import type { ScrollBoxRenderable } from "@opentui/core";
+import { useKeyboard } from "@opentui/react";
 import { useEffect, useRef } from "react";
+import { config } from "../../api/client.js";
 import { HighlightText } from "../../components/HighlightText.js";
+import { openExternalEditor } from "../../editor.js";
 import type { Entry, Project } from "../../hooks/useJournalData.js";
 import { useMarkdownSyntaxStyle } from "../../hooks/useMarkdownSyntaxStyle.js";
 import type { ThemePalette } from "../../theme.js";
@@ -14,6 +17,12 @@ interface ProjectsViewProps {
   width: number;
   icons: Record<string, string>;
   theme: ThemePalette;
+  isActive?: boolean;
+  onStatusMessage?: (msg: string) => void;
+  onNewProject?: () => void;
+  onEditProjectSettings?: (project: Project) => void;
+  onOpenEditor?: (project: Project) => void;
+  onUpdateProjectContent?: (id: string, content: string) => Promise<void> | void;
 }
 
 const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto", style: "narrow" });
@@ -42,6 +51,12 @@ export function ProjectsView({
   width: _width,
   icons,
   theme,
+  isActive = true,
+  onStatusMessage,
+  onNewProject,
+  onEditProjectSettings,
+  onOpenEditor,
+  onUpdateProjectContent,
 }: ProjectsViewProps) {
   const scrollBoxRef = useRef<ScrollBoxRenderable | null>(null);
   const syntaxStyle = useMarkdownSyntaxStyle(theme);
@@ -52,6 +67,67 @@ export function ProjectsView({
       scrollBoxRef.current.scrollChildIntoView(selectedId);
     }
   }, [selectedProjectIdx, projects]);
+
+  useKeyboard(async (key) => {
+    if (!isActive) return;
+    const keyName = key.name;
+    const str = key.sequence || key.name;
+
+    // Navigation: j/k, down/up
+    if (
+      keyName === "j" ||
+      str === "j" ||
+      keyName === "down" ||
+      keyName === config.keymaps.down ||
+      str === config.keymaps.down
+    ) {
+      onSelectProject?.(Math.min(selectedProjectIdx + 1, Math.max(0, projects.length - 1)));
+    } else if (
+      keyName === "k" ||
+      str === "k" ||
+      keyName === "up" ||
+      keyName === config.keymaps.up ||
+      str === config.keymaps.up
+    ) {
+      onSelectProject?.(Math.max(0, selectedProjectIdx - 1));
+    } else if (
+      keyName === "n" ||
+      str === "n" ||
+      keyName === config.keymaps.new_project ||
+      str === config.keymaps.new_project
+    ) {
+      onNewProject?.();
+    } else if (
+      keyName === "P" ||
+      str === "P" ||
+      (key.shift && (keyName === "p" || keyName === "P"))
+    ) {
+      const proj = projects[selectedProjectIdx];
+      if (proj) {
+        onEditProjectSettings?.(proj);
+      }
+    } else if (
+      keyName === "o" ||
+      str === "o" ||
+      keyName === "e" ||
+      str === "e" ||
+      keyName === config.keymaps.edit_project_content ||
+      str === config.keymaps.edit_project_content
+    ) {
+      const proj = projects[selectedProjectIdx];
+      if (proj) {
+        if (onOpenEditor) {
+          onOpenEditor(proj);
+        } else if (onUpdateProjectContent) {
+          const updated = openExternalEditor(proj.content);
+          if (updated !== proj.content) {
+            await onUpdateProjectContent(proj.id, updated);
+            onStatusMessage?.(`Updated content for @${proj.name}`);
+          }
+        }
+      }
+    }
+  });
 
   const selProj = projects[selectedProjectIdx] || {
     name: "None",
