@@ -1,20 +1,17 @@
 import { describe, expect, it } from "bun:test";
-import { PLAIN_ICONS, type ReflectionPeriodType } from "@journals/core";
+import type { ReflectionPeriodType } from "@journals/core";
 import { testRender } from "@opentui/react/test-utils";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { act, useState } from "react";
 import type { DashboardData, Entry, Project } from "../../hooks/useJournalData.js";
 import { createQueryClient } from "../../queryClient.js";
-import { getTheme } from "../../theme.js";
+import { TestProviders } from "../../test-support/TestProviders.js";
 import { DashboardView } from "../dashboard/DashboardView.js";
 import { ProjectsView } from "../projects/ProjectsView.js";
 import { ReflectionsView } from "../reflections/ReflectionsView.js";
 import { TimelineView } from "../timeline/TimelineView.js";
 
 type TestSetup = Awaited<ReturnType<typeof testRender>>;
-
-const theme = getTheme("default");
-const icons = PLAIN_ICONS;
 
 const sampleEntries: Entry[] = [
   {
@@ -123,9 +120,6 @@ describe("Collocated View Keymaps", () => {
               setIdx(newIdx);
             }}
             filterQuery=""
-            quickCaptureKey="c"
-            icons={icons}
-            theme={theme}
             isActive={true}
             onStatusMessage={(m) => {
               statusMsg = m;
@@ -136,7 +130,12 @@ describe("Collocated View Keymaps", () => {
 
       let testSetup!: TestSetup;
       await act(async () => {
-        testSetup = await testRender(<Wrapper />, { onDestroy: () => {} });
+        testSetup = await testRender(
+          <TestProviders>
+            <Wrapper />
+          </TestProviders>,
+          { onDestroy: () => {} },
+        );
       });
 
       // Press j -> move down
@@ -201,9 +200,6 @@ describe("Collocated View Keymaps", () => {
             entries={sampleEntries}
             selectedEntryIdx={1}
             filterQuery=""
-            quickCaptureKey="c"
-            icons={icons}
-            theme={theme}
             isActive={true}
             onQuickCapture={() => {
               captureTriggered = true;
@@ -229,7 +225,12 @@ describe("Collocated View Keymaps", () => {
 
       let testSetup!: TestSetup;
       await act(async () => {
-        testSetup = await testRender(<Wrapper />, { onDestroy: () => {} });
+        testSetup = await testRender(
+          <TestProviders>
+            <Wrapper />
+          </TestProviders>,
+          { onDestroy: () => {} },
+        );
       });
 
       await act(async () => {
@@ -274,9 +275,6 @@ describe("Collocated View Keymaps", () => {
             entries={sampleEntries}
             selectedEntryIdx={0}
             filterQuery=""
-            quickCaptureKey="c"
-            icons={icons}
-            theme={theme}
             isActive={false}
             onQuickCapture={() => {
               actionFired = true;
@@ -290,7 +288,12 @@ describe("Collocated View Keymaps", () => {
 
       let testSetup!: TestSetup;
       await act(async () => {
-        testSetup = await testRender(<Wrapper />, { onDestroy: () => {} });
+        testSetup = await testRender(
+          <TestProviders>
+            <Wrapper />
+          </TestProviders>,
+          { onDestroy: () => {} },
+        );
       });
 
       await act(async () => {
@@ -322,9 +325,6 @@ describe("Collocated View Keymaps", () => {
               setIdx(newIdx);
             }}
             entries={[]}
-            width={80}
-            icons={icons}
-            theme={theme}
             isActive={true}
             onNewProject={() => {
               newProjectTriggered = true;
@@ -341,7 +341,12 @@ describe("Collocated View Keymaps", () => {
 
       let testSetup!: TestSetup;
       await act(async () => {
-        testSetup = await testRender(<Wrapper />, { onDestroy: () => {} });
+        testSetup = await testRender(
+          <TestProviders>
+            <Wrapper />
+          </TestProviders>,
+          { onDestroy: () => {} },
+        );
       });
 
       // Press j -> select next project
@@ -386,9 +391,6 @@ describe("Collocated View Keymaps", () => {
             projects={sampleProjects}
             selectedProjectIdx={0}
             entries={[]}
-            width={80}
-            icons={icons}
-            theme={theme}
             isActive={false}
             onNewProject={() => {
               newProj = true;
@@ -399,7 +401,12 @@ describe("Collocated View Keymaps", () => {
 
       let testSetup!: TestSetup;
       await act(async () => {
-        testSetup = await testRender(<Wrapper />, { onDestroy: () => {} });
+        testSetup = await testRender(
+          <TestProviders>
+            <Wrapper />
+          </TestProviders>,
+          { onDestroy: () => {} },
+        );
       });
 
       await act(async () => {
@@ -435,9 +442,6 @@ describe("Collocated View Keymaps", () => {
             onQuickCapture={async () => {
               completedRoutine = true;
             }}
-            icons={icons}
-            theme={theme}
-            quickCaptureKey="c"
             isActive={true}
           />
         );
@@ -445,7 +449,12 @@ describe("Collocated View Keymaps", () => {
 
       let testSetup!: TestSetup;
       await act(async () => {
-        testSetup = await testRender(<Wrapper />, { onDestroy: () => {} });
+        testSetup = await testRender(
+          <TestProviders>
+            <Wrapper />
+          </TestProviders>,
+          { onDestroy: () => {} },
+        );
       });
 
       // Press h -> move focus left
@@ -488,9 +497,6 @@ describe("Collocated View Keymaps", () => {
             onQuickCapture={async () => {
               completed = true;
             }}
-            icons={icons}
-            theme={theme}
-            quickCaptureKey="c"
             isActive={false}
           />
         );
@@ -498,7 +504,12 @@ describe("Collocated View Keymaps", () => {
 
       let testSetup!: TestSetup;
       await act(async () => {
-        testSetup = await testRender(<Wrapper />, { onDestroy: () => {} });
+        testSetup = await testRender(
+          <TestProviders>
+            <Wrapper />
+          </TestProviders>,
+          { onDestroy: () => {} },
+        );
       });
 
       await act(async () => {
@@ -530,9 +541,6 @@ describe("Collocated View Keymaps", () => {
               }}
               selectedPeriodIdx={0}
               onSelectPeriodIdx={() => {}}
-              width={80}
-              icons={icons}
-              theme={theme}
               isActive={true}
               onStatusMessage={(m) => {
                 status = m;
@@ -547,7 +555,12 @@ describe("Collocated View Keymaps", () => {
 
       let testSetup!: TestSetup;
       await act(async () => {
-        testSetup = await testRender(<Wrapper />, { onDestroy: () => {} });
+        testSetup = await testRender(
+          <TestProviders>
+            <Wrapper />
+          </TestProviders>,
+          { onDestroy: () => {} },
+        );
       });
 
       // Press m -> Monthly

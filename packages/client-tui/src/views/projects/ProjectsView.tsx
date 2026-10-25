@@ -1,14 +1,14 @@
-import type { IconSet } from "@journals/core";
 import type { ScrollBoxRenderable } from "@opentui/core";
 import { useKeyboard } from "@opentui/react";
 import { useEffect, useRef } from "react";
-import { config } from "../../api/client.js";
 import { HighlightText } from "../../components/HighlightText.js";
+import { useIcons } from "../../contexts/icons.js";
+import { useKeymaps } from "../../contexts/keymaps.js";
+import { useTheme } from "../../contexts/theme.js";
 import { openExternalEditor } from "../../editor.js";
 import type { Entry, Project } from "../../hooks/useJournalData.js";
 import { useMarkdownSyntaxStyle } from "../../hooks/useMarkdownSyntaxStyle.js";
 import { matchesAnyBinding, matchesBinding } from "../../keymap.js";
-import type { ThemePalette } from "../../theme.js";
 
 interface ProjectsViewProps {
   projects: Project[];
@@ -16,9 +16,6 @@ interface ProjectsViewProps {
   onSelectProject?: (idx: number) => void;
   entries: Entry[];
   filterQuery?: string;
-  width: number;
-  icons: IconSet;
-  theme: ThemePalette;
   isActive?: boolean;
   onStatusMessage?: (msg: string) => void;
   onNewProject?: () => void;
@@ -50,9 +47,6 @@ export function ProjectsView({
   onSelectProject,
   entries,
   filterQuery = "",
-  width: _width,
-  icons,
-  theme,
   isActive = true,
   onStatusMessage,
   onNewProject,
@@ -61,6 +55,9 @@ export function ProjectsView({
   onUpdateProjectContent,
 }: ProjectsViewProps) {
   const scrollBoxRef = useRef<ScrollBoxRenderable | null>(null);
+  const icons = useIcons();
+  const theme = useTheme();
+  const keymaps = useKeymaps();
   const syntaxStyle = useMarkdownSyntaxStyle(theme);
 
   useEffect(() => {
@@ -72,7 +69,6 @@ export function ProjectsView({
 
   useKeyboard(async (key) => {
     if (!isActive) return;
-    const keymaps = config.keymaps;
 
     // Navigation: j/k, down/up
     if (matchesAnyBinding(key, "j", "down", keymaps.down)) {

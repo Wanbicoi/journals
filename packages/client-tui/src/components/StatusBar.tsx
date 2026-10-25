@@ -1,5 +1,5 @@
-import type { IconSet } from "@journals/core";
-import type { ThemePalette } from "../theme.js";
+import { useIcons } from "../contexts/icons.js";
+import { useTheme } from "../contexts/theme.js";
 
 export type TabType = "DASHBOARD" | "TIMELINE" | "REFLECTIONS" | "PROJECTS";
 
@@ -7,8 +7,6 @@ interface StatusBarProps {
   width: number;
   filterQuery: string;
   statusMessage: string;
-  icons: IconSet;
-  theme: ThemePalette;
   currentTab?: TabType;
 }
 
@@ -23,10 +21,11 @@ export function StatusBar({
   width,
   filterQuery,
   statusMessage,
-  icons,
-  theme,
   currentTab = "TIMELINE",
 }: StatusBarProps) {
+  const theme = useTheme();
+  const icons = useIcons();
+
   // Truncate or fit status info cleanly
   const leftMsg = filterQuery ? `[Filter: "${filterQuery}"] ${statusMessage}` : statusMessage;
 

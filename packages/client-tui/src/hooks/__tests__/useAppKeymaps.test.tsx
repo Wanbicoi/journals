@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { testRender } from "@opentui/react/test-utils";
 import { act, useState } from "react";
+import { TestProviders } from "../../test-support/TestProviders.js";
 import { type Tab, useAppKeymaps } from "../useAppKeymaps.js";
 
 type TestSetup = Awaited<ReturnType<typeof testRender>>;
@@ -46,7 +47,12 @@ describe("useAppKeymaps", () => {
 
     let testSetup!: TestSetup;
     await act(async () => {
-      testSetup = await testRender(<Probe />, { onDestroy: () => {} });
+      testSetup = await testRender(
+        <TestProviders>
+          <Probe />
+        </TestProviders>,
+        { onDestroy: () => {} },
+      );
     });
 
     await act(async () => {
@@ -114,7 +120,12 @@ describe("useAppKeymaps", () => {
 
     let testSetup!: TestSetup;
     await act(async () => {
-      testSetup = await testRender(<Probe />, { onDestroy: () => {} });
+      testSetup = await testRender(
+        <TestProviders>
+          <Probe />
+        </TestProviders>,
+        { onDestroy: () => {} },
+      );
     });
 
     await act(async () => {

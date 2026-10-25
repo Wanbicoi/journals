@@ -1,9 +1,11 @@
-import { type IconSet, formatRecurrenceRule } from "@journals/core";
+import { formatRecurrenceRule } from "@journals/core";
 import { useKeyboard } from "@opentui/react";
 import { BiDirectionalBarChart } from "../../components/BiDirectionalBarChart.js";
+import { useIcons } from "../../contexts/icons.js";
+import { useKeymaps } from "../../contexts/keymaps.js";
+import { useTheme } from "../../contexts/theme.js";
 import type { DashboardData, Project } from "../../hooks/useJournalData.js";
 import { matchesAnyBinding, matchesBinding } from "../../keymap.js";
-import type { ThemePalette } from "../../theme.js";
 
 function truncate(text: string, max: number): string {
   const clean = text.replace(/\s+/g, " ").trim();
@@ -16,9 +18,6 @@ interface DashboardViewProps {
   loading?: boolean;
   focusedDayIdx: number;
   onNavigateDate: (dateStr: string) => void;
-  icons: IconSet;
-  theme: ThemePalette;
-  quickCaptureKey: string;
   isActive?: boolean;
   onFocusDayIdx?: (idx: number) => void;
   onStatusMessage?: (msg: string) => void;
@@ -34,15 +33,15 @@ export function DashboardView({
   loading = false,
   focusedDayIdx,
   onNavigateDate,
-  icons,
-  theme,
-  quickCaptureKey,
   isActive = true,
   onFocusDayIdx,
   onStatusMessage,
   onQuickCapture,
   onToggleRoutine,
 }: DashboardViewProps) {
+  const icons = useIcons();
+  const theme = useTheme();
+  const keymaps = useKeymaps();
   const dayCount = dashboard?.days.length || 60;
 
   // Mark a routine done, either through the toggle callback or a quick note.
@@ -165,7 +164,7 @@ export function DashboardView({
         })}
         {dueRoutines.length === 0 && (
           <text fg={theme.muted}>
-            {`${icons.checked} Nothing due today ${icons.bullet} press '${quickCaptureKey}' to log a note`}
+            {`${icons.checked} Nothing due today ${icons.bullet} press '${keymaps.quick_capture}' to log a note`}
           </text>
         )}
       </box>

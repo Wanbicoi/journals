@@ -1,14 +1,15 @@
-import type { ThemePalette } from "../theme.js";
+import { useIcons } from "../contexts/icons.js";
+import { useTheme } from "../contexts/theme.js";
 
 interface HeaderProps {
   width: number;
   currentTab: "DASHBOARD" | "TIMELINE" | "REFLECTIONS" | "PROJECTS";
   onSelectTab?: (tab: "DASHBOARD" | "TIMELINE" | "REFLECTIONS" | "PROJECTS") => void;
-  journalIcon: string;
-  theme: ThemePalette;
 }
 
-export function Header({ width, currentTab, onSelectTab, journalIcon, theme }: HeaderProps) {
+export function Header({ width, currentTab, onSelectTab }: HeaderProps) {
+  const theme = useTheme();
+  const icons = useIcons();
   const tabs: { id: "DASHBOARD" | "TIMELINE" | "REFLECTIONS" | "PROJECTS"; label: string }[] = [
     { id: "DASHBOARD", label: "[1] Dashboard" },
     { id: "TIMELINE", label: "[2] Timeline" },
@@ -20,7 +21,7 @@ export function Header({ width, currentTab, onSelectTab, journalIcon, theme }: H
     <box height={2} flexDirection="column">
       <box flexDirection="row" justifyContent="space-between">
         <box flexDirection="row">
-          <text fg={theme.primary}>{`${journalIcon} JOURNALS  `}</text>
+          <text fg={theme.primary}>{`${icons.journal} JOURNALS  `}</text>
           {tabs.map((tab) => {
             const isActive = currentTab === tab.id;
             return (

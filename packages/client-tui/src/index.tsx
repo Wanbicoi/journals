@@ -4,7 +4,11 @@ import { createRoot } from "@opentui/react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { runAgentCli } from "./cli/agent.js";
 import { runDaemonCli } from "./cli/daemon.js";
+import { IconProvider } from "./contexts/icons.js";
+import { KeymapProvider } from "./contexts/keymaps.js";
+import { ThemeProvider } from "./contexts/theme.js";
 import { queryClient } from "./queryClient.js";
+import { getTheme } from "./theme.js";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -23,7 +27,7 @@ async function main() {
 
   // Ensure server is started in-process if not running, avoiding detached background daemon
   const { startServer } = await import("@journals/server");
-  const { serverUrl } = await import("./api/client.js");
+  const { config, serverUrl } = await import("./api/client.js");
 
   let serverInstance: { server: { stop: () => void } } | null = null;
   try {
@@ -76,10 +80,18 @@ async function main() {
     cleanupServer();
     process.exit(0);
   };
+  const theme = getTheme(config.appearance.theme);
+  const icons = config.appearance.use_nerd_font ? config.icons.nerd : config.icons.plain;
   root.render(
-    <QueryClientProvider client={queryClient}>
-      <App onQuit={quit} />
-    </QueryClientProvider>,
+    <ThemeProvider theme={theme} dayStartHour={config.appearance.day_start_hour ?? 0}>
+      <IconProvider value={icons}>
+        <KeymapProvider value={config.keymaps}>
+          <QueryClientProvider client={queryClient}>
+            <App onQuit={quit} />
+          </QueryClientProvider>
+        </KeymapProvider>
+      </IconProvider>
+    </ThemeProvider>,
   );
 }
 

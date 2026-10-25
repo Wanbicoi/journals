@@ -1,7 +1,7 @@
-import type { Config, IconSet } from "@journals/core";
-import { config } from "../../api/client.js";
+import { useIcons } from "../../contexts/icons.js";
+import { useKeymaps } from "../../contexts/keymaps.js";
+import { useTheme } from "../../contexts/theme.js";
 import type { Entry, Project } from "../../hooks/useJournalData.js";
-import type { ThemePalette } from "../../theme.js";
 import { DeleteConfirmModal } from "./DeleteConfirmModal.js";
 import { EditContentModal } from "./EditContentModal.js";
 import { EditProjectModal } from "./EditProjectModal.js";
@@ -17,25 +17,22 @@ export interface ActiveModalProps {
   modal: ModalManager;
   width: number;
   height: number;
-  theme: ThemePalette;
-  icons: IconSet;
   selectedEntry?: Entry;
   selectedProject?: Project;
   currentTab: "DASHBOARD" | "TIMELINE" | "REFLECTIONS" | "PROJECTS";
-  keymaps?: Config["keymaps"];
 }
 
 export function ActiveModal({
   modal,
   width,
   height,
-  theme,
-  icons,
   selectedEntry,
   selectedProject,
   currentTab,
-  keymaps = config.keymaps,
 }: ActiveModalProps) {
+  const theme = useTheme();
+  const icons = useIcons();
+  const keymaps = useKeymaps();
   const {
     inputMode,
     inputBuffer,

@@ -1,16 +1,12 @@
 import { describe, expect, it } from "bun:test";
-import { PLAIN_ICONS } from "@journals/core";
 import { testRender } from "@opentui/react/test-utils";
 import { act } from "react";
 import type { Entry, Project, TagInfo } from "../../../hooks/useJournalData.js";
-import { getTheme } from "../../../theme.js";
+import { TestProviders } from "../../../test-support/TestProviders.js";
 import { ActiveModal } from "../ActiveModal.js";
 import { useModalManager } from "../useModalManager.js";
 
 type TestSetup = Awaited<ReturnType<typeof testRender>>;
-const theme = getTheme("default");
-const dummyIcons = PLAIN_ICONS;
-
 const dummyProjects: Project[] = [
   {
     id: "p1",
@@ -59,21 +55,17 @@ describe("ActiveModal Dispatcher & useModalManager", () => {
       });
       managerInstance = modal;
 
-      return (
-        <ActiveModal
-          modal={modal}
-          width={80}
-          height={24}
-          theme={theme}
-          icons={dummyIcons}
-          currentTab="TIMELINE"
-        />
-      );
+      return <ActiveModal modal={modal} width={80} height={24} currentTab="TIMELINE" />;
     }
 
     let testSetup!: TestSetup;
     await act(async () => {
-      testSetup = await testRender(<TestWrapper />, { onDestroy: () => {} });
+      testSetup = await testRender(
+        <TestProviders>
+          <TestWrapper />
+        </TestProviders>,
+        { onDestroy: () => {} },
+      );
     });
 
     expect(managerInstance.isOpen).toBe(false);
@@ -93,21 +85,17 @@ describe("ActiveModal Dispatcher & useModalManager", () => {
       });
 
       managerInstance = modal;
-      return (
-        <ActiveModal
-          modal={modal}
-          width={80}
-          height={24}
-          theme={theme}
-          icons={dummyIcons}
-          currentTab="TIMELINE"
-        />
-      );
+      return <ActiveModal modal={modal} width={80} height={24} currentTab="TIMELINE" />;
     }
 
     let testSetup!: TestSetup;
     await act(async () => {
-      testSetup = await testRender(<TestWrapper />, { onDestroy: () => {} });
+      testSetup = await testRender(
+        <TestProviders>
+          <TestWrapper />
+        </TestProviders>,
+        { onDestroy: () => {} },
+      );
     });
 
     await act(async () => {
@@ -142,8 +130,6 @@ describe("ActiveModal Dispatcher & useModalManager", () => {
           modal={modal}
           width={80}
           height={24}
-          theme={theme}
-          icons={dummyIcons}
           selectedEntry={dummyEntry}
           currentTab="TIMELINE"
         />
@@ -152,7 +138,12 @@ describe("ActiveModal Dispatcher & useModalManager", () => {
 
     let testSetup!: TestSetup;
     await act(async () => {
-      testSetup = await testRender(<TestWrapper />, { onDestroy: () => {} });
+      testSetup = await testRender(
+        <TestProviders>
+          <TestWrapper />
+        </TestProviders>,
+        { onDestroy: () => {} },
+      );
     });
 
     await act(async () => {
@@ -194,21 +185,17 @@ describe("ActiveModal Dispatcher & useModalManager", () => {
       });
 
       managerInstance = modal;
-      return (
-        <ActiveModal
-          modal={modal}
-          width={80}
-          height={24}
-          theme={theme}
-          icons={dummyIcons}
-          currentTab="PROJECTS"
-        />
-      );
+      return <ActiveModal modal={modal} width={80} height={24} currentTab="PROJECTS" />;
     }
 
     let testSetup!: TestSetup;
     await act(async () => {
-      testSetup = await testRender(<TestWrapper />, { onDestroy: () => {} });
+      testSetup = await testRender(
+        <TestProviders>
+          <TestWrapper />
+        </TestProviders>,
+        { onDestroy: () => {} },
+      );
     });
 
     await act(async () => {
@@ -251,21 +238,17 @@ describe("ActiveModal Dispatcher & useModalManager", () => {
       });
 
       managerInstance = modal;
-      return (
-        <ActiveModal
-          modal={modal}
-          width={80}
-          height={24}
-          theme={theme}
-          icons={dummyIcons}
-          currentTab={currentTab}
-        />
-      );
+      return <ActiveModal modal={modal} width={80} height={24} currentTab={currentTab} />;
     }
 
     let testSetup!: TestSetup;
     await act(async () => {
-      testSetup = await testRender(<TestWrapper />, { onDestroy: () => {} });
+      testSetup = await testRender(
+        <TestProviders>
+          <TestWrapper />
+        </TestProviders>,
+        { onDestroy: () => {} },
+      );
     });
 
     await act(async () => {
@@ -302,21 +285,17 @@ describe("ActiveModal Dispatcher & useModalManager", () => {
       });
 
       managerInstance = modal;
-      return (
-        <ActiveModal
-          modal={modal}
-          width={80}
-          height={24}
-          theme={theme}
-          icons={dummyIcons}
-          currentTab="TIMELINE"
-        />
-      );
+      return <ActiveModal modal={modal} width={80} height={24} currentTab="TIMELINE" />;
     }
 
     let testSetup!: TestSetup;
     await act(async () => {
-      testSetup = await testRender(<TestWrapper />, { onDestroy: () => {} });
+      testSetup = await testRender(
+        <TestProviders>
+          <TestWrapper />
+        </TestProviders>,
+        { onDestroy: () => {} },
+      );
     });
 
     await act(async () => {

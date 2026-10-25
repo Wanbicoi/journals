@@ -1,7 +1,6 @@
 import type { ReflectionPeriodType } from "@journals/core";
 import { useTerminalDimensions } from "@opentui/react";
 import { useCallback, useState } from "react";
-import { config } from "../api/client.js";
 import { ErrorState } from "../components/ErrorState.js";
 import { Header } from "../components/Header.js";
 import { StatusBar } from "../components/StatusBar.js";
@@ -12,7 +11,6 @@ import { useMouseClick } from "../hooks/useMouseClick.js";
 import { useSelectionById } from "../hooks/useSelection.js";
 import { useSelectionClipboard } from "../hooks/useSelectionClipboard.js";
 import { useUndoDelete } from "../hooks/useUndoDelete.js";
-import { getTheme } from "../theme.js";
 import { DashboardView } from "./dashboard/DashboardView.js";
 import { ActiveModal } from "./modals/ActiveModal.js";
 import { useModalManager } from "./modals/useModalManager.js";
@@ -26,8 +24,6 @@ export interface AppProps {
 
 export function App({ onQuit }: AppProps) {
   const { width = 100, height = 30 } = useTerminalDimensions();
-  const icons = config.appearance.use_nerd_font ? config.icons.nerd : config.icons.plain;
-  const theme = getTheme(config.appearance.theme);
 
   const [currentTab, setCurrentTab] = useState<Tab>("DASHBOARD");
   const journalData = useJournalData({ isDashboardActive: currentTab === "DASHBOARD" });
@@ -86,7 +82,13 @@ export function App({ onQuit }: AppProps) {
     selectedProject,
     timelineFilterQuery,
     projectsFilterQuery,
-    journal: journalData,
+    quickCapture: journalData.quickCapture,
+    createProject: journalData.createProject,
+    updateProject: journalData.updateProject,
+    updateEntryProject: journalData.updateEntryProject,
+    updateEntryTags: journalData.updateEntryTags,
+    updateEntryContent: journalData.updateEntryContent,
+    deleteEntry: journalData.deleteEntry,
     onStatusMessage: setStatusMessage,
     onTimelineFilterChange: (q) => {
       setTimelineFilterQuery(q);
@@ -149,17 +151,11 @@ export function App({ onQuit }: AppProps) {
 
   return (
     <box flexDirection="column" width={width} height={height}>
-      <Header
-        width={width}
-        currentTab={currentTab}
-        onSelectTab={selectTab}
-        journalIcon={icons.journal}
-        theme={theme}
-      />
+      <Header width={width} currentTab={currentTab} onSelectTab={selectTab} />
 
       <box flexGrow={1} flexDirection="column">
         {isError ? (
-          <ErrorState error={error} theme={theme} />
+          <ErrorState error={error} />
         ) : currentTab === "DASHBOARD" ? (
           <DashboardView
             dashboard={dashboard}
@@ -170,9 +166,6 @@ export function App({ onQuit }: AppProps) {
             onNavigateDate={navigateToDate}
             onQuickCapture={journalData.quickCapture}
             onStatusMessage={setStatusMessage}
-            icons={icons}
-            theme={theme}
-            quickCaptureKey={config.keymaps.quick_capture}
             isActive={!modal.isOpen}
           />
         ) : currentTab === "TIMELINE" ? (
@@ -181,10 +174,7 @@ export function App({ onQuit }: AppProps) {
             selectedEntryIdx={Math.max(0, entrySelection.selectedIndex)}
             onSelectEntry={entrySelection.selectIndex}
             filterQuery={timelineFilterQuery}
-            quickCaptureKey={config.keymaps.quick_capture}
             loading={loading}
-            icons={icons}
-            theme={theme}
             isActive={!modal.isOpen}
             onStatusMessage={setStatusMessage}
             onQuickCapture={modal.openCapture}
@@ -207,9 +197,6 @@ export function App({ onQuit }: AppProps) {
             }}
             selectedPeriodIdx={selectedPeriodIdx}
             onSelectPeriodIdx={setSelectedPeriodIdx}
-            width={width}
-            icons={icons}
-            theme={theme}
             isActive={!modal.isOpen}
             onStatusMessage={setStatusMessage}
           />
@@ -220,9 +207,6 @@ export function App({ onQuit }: AppProps) {
             onSelectProject={projectSelection.selectIndex}
             entries={entries}
             filterQuery={projectsFilterQuery}
-            width={width}
-            icons={icons}
-            theme={theme}
             isActive={!modal.isOpen}
             onStatusMessage={setStatusMessage}
             onNewProject={modal.openNewProject}
@@ -240,20 +224,15 @@ export function App({ onQuit }: AppProps) {
         modal={modal}
         width={width}
         height={height}
-        theme={theme}
-        icons={icons}
         selectedEntry={selectedEntry}
         selectedProject={selectedProject}
         currentTab={currentTab}
-        keymaps={config.keymaps}
       />
 
       <StatusBar
         width={width}
         filterQuery={currentTab === "TIMELINE" ? timelineFilterQuery : projectsFilterQuery}
         statusMessage={statusMessage}
-        icons={icons}
-        theme={theme}
         currentTab={currentTab}
       />
     </box>

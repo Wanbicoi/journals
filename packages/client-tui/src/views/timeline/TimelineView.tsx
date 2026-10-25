@@ -1,23 +1,21 @@
-import { type IconSet, getEffectiveDateStr } from "@journals/core";
+import { getEffectiveDateStr } from "@journals/core";
 import type { ScrollBoxRenderable } from "@opentui/core";
 import { useKeyboard } from "@opentui/react";
 import { useEffect, useRef } from "react";
-import { config } from "../../api/client.js";
 import { HighlightText } from "../../components/HighlightText.js";
+import { useIcons } from "../../contexts/icons.js";
+import { useKeymaps } from "../../contexts/keymaps.js";
+import { useDayStartHour, useTheme } from "../../contexts/theme.js";
 import { openExternalEditor } from "../../editor.js";
 import type { Entry } from "../../hooks/useJournalData.js";
 import { matchesAnyBinding, matchesBinding } from "../../keymap.js";
-import type { ThemePalette } from "../../theme.js";
 
 interface TimelineViewProps {
   entries: Entry[];
   selectedEntryIdx: number;
   onSelectEntry?: (idx: number) => void;
   filterQuery: string;
-  quickCaptureKey: string;
   loading?: boolean;
-  icons: IconSet;
-  theme: ThemePalette;
   isActive?: boolean;
   onStatusMessage?: (msg: string) => void;
   onQuickCapture?: () => void;
@@ -40,10 +38,7 @@ export function TimelineView({
   selectedEntryIdx,
   onSelectEntry,
   filterQuery,
-  quickCaptureKey,
   loading = false,
-  icons,
-  theme,
   isActive = true,
   onStatusMessage,
   onQuickCapture,
@@ -56,6 +51,10 @@ export function TimelineView({
   onUpdateEntryContent,
 }: TimelineViewProps) {
   const scrollBoxRef = useRef<ScrollBoxRenderable | null>(null);
+  const icons = useIcons();
+  const theme = useTheme();
+  const keymaps = useKeymaps();
+  const dayStartHour = useDayStartHour();
 
   useEffect(() => {
     if (scrollBoxRef.current && entries[selectedEntryIdx]) {
@@ -66,7 +65,6 @@ export function TimelineView({
 
   useKeyboard(async (key) => {
     if (!isActive) return;
-    const keymaps = config.keymaps;
 
     // Navigation: j/k, down/up, g/G
     if (matchesAnyBinding(key, "j", "down", keymaps.down)) {
@@ -79,7 +77,6 @@ export function TimelineView({
       onSelectEntry?.(Math.max(0, entries.length - 1));
     } else if (matchesBinding(key, "T") || (key.shift && (key.name === "t" || key.name === "T"))) {
       // Date jump: Today (Shift+T or uppercase T)
-      const dayStartHour = config.appearance.day_start_hour ?? 0;
       const todayStr = getEffectiveDateStr(Date.now(), dayStartHour);
       const todayIdx = entries.findIndex(
         (e) => getEffectiveDateStr(e.createdAt, dayStartHour) === todayStr,
@@ -94,7 +91,6 @@ export function TimelineView({
       // Date jump: Next day
       const currentEntry = entries[selectedEntryIdx];
       if (currentEntry) {
-        const dayStartHour = config.appearance.day_start_hour ?? 0;
         const curDate = getEffectiveDateStr(currentEntry.createdAt, dayStartHour);
         const nextIdx = entries.findIndex(
           (e, i) =>
@@ -110,7 +106,6 @@ export function TimelineView({
       // Date jump: Prev day
       const currentEntry = entries[selectedEntryIdx];
       if (currentEntry) {
-        const dayStartHour = config.appearance.day_start_hour ?? 0;
         const curDate = getEffectiveDateStr(currentEntry.createdAt, dayStartHour);
         for (let i = selectedEntryIdx - 1; i >= 0; i--) {
           const thatDate = getEffectiveDateStr(entries[i].createdAt, dayStartHour);
@@ -148,7 +143,6 @@ export function TimelineView({
       if (entry && onEditTags) {
         onEditTags(entry);
       } else {
-        const dayStartHour = config.appearance.day_start_hour ?? 0;
         const todayStr = getEffectiveDateStr(Date.now(), dayStartHour);
         const todayIdx = entries.findIndex(
           (e) => getEffectiveDateStr(e.createdAt, dayStartHour) === todayStr,
@@ -197,7 +191,7 @@ export function TimelineView({
         <text fg={theme.muted}>
           {filterQuery
             ? `No notes matching filter "${filterQuery}". Press '/' or Esc to clear.`
-            : `No journal notes yet. Press '${quickCaptureKey}' to create one!`}
+            : `No journal notes yet. Press '${keymaps.quick_capture}' to create one!`}
         </text>
       </box>
     );
@@ -208,7 +202,6 @@ export function TimelineView({
   let currentGroup: DateGroup | null = null;
 
   entries.forEach((entry, idx) => {
-    const dayStartHour = config.appearance.day_start_hour ?? 0;
     const dateStr = getEffectiveDateStr(entry.createdAt, dayStartHour);
 
     if (!currentGroup || currentGroup.dateStr !== dateStr) {

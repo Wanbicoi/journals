@@ -1,21 +1,23 @@
 import { useKeyboard } from "@opentui/react";
-import { config } from "../api/client.js";
+import { useKeymaps } from "../contexts/keymaps.js";
 import { matchesAnyBinding, matchesBinding, normalizeKey } from "../keymap.js";
 
 export type Tab = "DASHBOARD" | "TIMELINE" | "REFLECTIONS" | "PROJECTS";
 
 const TABS: Tab[] = ["DASHBOARD", "TIMELINE", "REFLECTIONS", "PROJECTS"];
 
-const TAB_KEY_MAP: Record<string, Tab> = {
-  "1": "DASHBOARD",
-  [config.keymaps.view_dashboard]: "DASHBOARD",
-  "2": "TIMELINE",
-  [config.keymaps.view_timeline]: "TIMELINE",
-  "3": "REFLECTIONS",
-  [config.keymaps.view_reflections]: "REFLECTIONS",
-  "4": "PROJECTS",
-  [config.keymaps.view_projects]: "PROJECTS",
-};
+function buildTabKeyMap(keymaps: ReturnType<typeof useKeymaps>): Record<string, Tab> {
+  return {
+    "1": "DASHBOARD",
+    [keymaps.view_dashboard]: "DASHBOARD",
+    "2": "TIMELINE",
+    [keymaps.view_timeline]: "TIMELINE",
+    "3": "REFLECTIONS",
+    [keymaps.view_reflections]: "REFLECTIONS",
+    "4": "PROJECTS",
+    [keymaps.view_projects]: "PROJECTS",
+  };
+}
 
 export interface UseAppKeymapsOptions {
   currentTab: Tab;
@@ -42,8 +44,10 @@ export function useAppKeymaps({
   onClearFilter,
   onQuit,
 }: UseAppKeymapsOptions) {
+  const keymaps = useKeymaps();
+  const tabKeyMap = buildTabKeyMap(keymaps);
+
   useKeyboard(async (key) => {
-    const keymaps = config.keymaps;
     if (key.ctrl && matchesBinding(key, "c")) {
       onQuit();
       return;
@@ -55,7 +59,7 @@ export function useAppKeymaps({
       return;
     }
 
-    const tab = TAB_KEY_MAP[normalizeKey(key)];
+    const tab = tabKeyMap[normalizeKey(key)];
     if (tab) {
       onSelectTab(tab);
       return;

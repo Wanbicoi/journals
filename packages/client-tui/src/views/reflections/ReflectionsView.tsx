@@ -1,23 +1,21 @@
-import type { IconSet, ReflectionPeriodType } from "@journals/core";
+import type { ReflectionPeriodType } from "@journals/core";
 import type { ScrollBoxRenderable } from "@opentui/core";
 import { useKeyboard } from "@opentui/react";
 import { useEffect, useRef } from "react";
-import { config } from "../../api/client.js";
+import { useIcons } from "../../contexts/icons.js";
+import { useKeymaps } from "../../contexts/keymaps.js";
+import { useTheme } from "../../contexts/theme.js";
 import { openExternalEditor } from "../../editor.js";
 import { useReflectionDetail, useReflectionPeriods } from "../../hooks/queries.js";
 import { useMarkdownSyntaxStyle } from "../../hooks/useMarkdownSyntaxStyle.js";
 import { useSaveReflection } from "../../hooks/useSaveReflection.js";
 import { matchesAnyBinding } from "../../keymap.js";
-import type { ThemePalette } from "../../theme.js";
 
 interface ReflectionsViewProps {
   periodType: ReflectionPeriodType;
   onChangePeriodType: (type: ReflectionPeriodType) => void;
   selectedPeriodIdx: number;
   onSelectPeriodIdx: (idx: number) => void;
-  width: number;
-  icons: IconSet;
-  theme: ThemePalette;
   isActive?: boolean;
   onStatusMessage?: (msg: string) => void;
   onOpenEditor?: () => void;
@@ -28,14 +26,14 @@ export function ReflectionsView({
   onChangePeriodType,
   selectedPeriodIdx,
   onSelectPeriodIdx,
-  width: _width,
-  icons,
-  theme,
   isActive = true,
   onStatusMessage,
   onOpenEditor,
 }: ReflectionsViewProps) {
   const scrollBoxRef = useRef<ScrollBoxRenderable | null>(null);
+  const icons = useIcons();
+  const theme = useTheme();
+  const keymaps = useKeymaps();
   const syntaxStyle = useMarkdownSyntaxStyle(theme);
   const saveReflection = useSaveReflection();
 
@@ -49,7 +47,6 @@ export function ReflectionsView({
 
   useKeyboard(async (key) => {
     if (!isActive) return;
-    const keymaps = config.keymaps;
 
     // Cadence switching: w, m, q, y
     if (matchesAnyBinding(key, "w", "W")) {

@@ -1,8 +1,7 @@
-import type { ThemePalette } from "../theme.js";
+import { useTheme } from "../contexts/theme.js";
 
 interface ErrorStateProps {
   error: unknown;
-  theme: ThemePalette;
 }
 
 function messageOf(error: unknown): string {
@@ -14,7 +13,9 @@ function messageOf(error: unknown): string {
 /**
  * A failed fetch is a render, not an empty screen: say what failed and how to retry.
  */
-export function ErrorState({ error, theme }: ErrorStateProps) {
+export function ErrorState({ error }: ErrorStateProps) {
+  const theme = useTheme();
+
   return (
     <box flexDirection="column" padding={1}>
       <text fg={theme.error || "red"}>{`Could not load journals: ${messageOf(error)}`}</text>

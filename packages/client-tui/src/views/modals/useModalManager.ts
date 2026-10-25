@@ -18,27 +18,6 @@ export type ModalMode =
   | "HELP"
   | "EDIT_PROJECT_SETTINGS";
 
-export interface ModalJournalActions {
-  quickCapture: (raw: string) => Promise<unknown>;
-  createProject: (
-    name: string,
-    recurrence?: string | null,
-    missedPolicy?: "accumulate" | "spike" | "mark_done",
-  ) => Promise<unknown>;
-  updateProject: (
-    id: string,
-    data: {
-      name?: string;
-      recurrence?: string | null;
-      missedPolicy?: "accumulate" | "spike" | "mark_done";
-    },
-  ) => Promise<unknown>;
-  updateEntryProject: (id: string, projectName: string) => Promise<unknown>;
-  updateEntryTags: (id: string, tags: string[]) => Promise<unknown>;
-  updateEntryContent: (id: string, content: string) => Promise<unknown>;
-  deleteEntry: (id: string) => Promise<unknown>;
-}
-
 export interface UseModalManagerOptions {
   projects: Project[];
   tags: TagInfo[];
@@ -51,7 +30,6 @@ export interface UseModalManagerOptions {
   onTimelineFilterChange?: (query: string) => void;
   onProjectsFilterChange?: (query: string) => void;
   onEntryDeleted?: (entry: Entry) => void;
-  journal?: ModalJournalActions;
   quickCapture?: (raw: string) => Promise<unknown>;
   createProject?: (
     name: string,
@@ -106,15 +84,14 @@ export function useModalManager(options: UseModalManagerOptions): ModalManager {
     onTimelineFilterChange,
     onProjectsFilterChange,
     onEntryDeleted,
+    quickCapture,
+    createProject,
+    updateProject,
+    updateEntryProject,
+    updateEntryTags,
+    updateEntryContent,
+    deleteEntry,
   } = options;
-
-  const quickCapture = options.journal?.quickCapture ?? options.quickCapture;
-  const createProject = options.journal?.createProject ?? options.createProject;
-  const updateProject = options.journal?.updateProject ?? options.updateProject;
-  const updateEntryProject = options.journal?.updateEntryProject ?? options.updateEntryProject;
-  const updateEntryTags = options.journal?.updateEntryTags ?? options.updateEntryTags;
-  const updateEntryContent = options.journal?.updateEntryContent ?? options.updateEntryContent;
-  const deleteEntry = options.journal?.deleteEntry ?? options.deleteEntry;
 
   const [inputMode, setInputMode] = useState<ModalMode>("NONE");
   const [inputBuffer, setInputBuffer] = useState("");
