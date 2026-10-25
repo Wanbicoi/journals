@@ -13,7 +13,7 @@ interface StatusBarProps {
 }
 
 const TAB_HINTS: Record<TabType, string> = {
-  DASHBOARD: "[Space] Toggle  [Enter] Timeline  [h/l] Day  [n] Note  [q] Quit",
+  DASHBOARD: "[Space] Complete  [Enter] Open day  [h/l] Day  [n] Note  [q] Quit",
   TIMELINE: "[j/k] Move  [e] Edit  [n] Note  [d] Del  [/] Filter  [q] Quit",
   REFLECTIONS: "[w/m/Q/y] Cadence  [j/k] Move  [e/Enter] Write  [q] Quit",
   PROJECTS: "[j/k] Move  [n] New  [P] Routine  [e/o] Edit  [q] Quit",

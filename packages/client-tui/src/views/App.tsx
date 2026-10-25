@@ -114,20 +114,8 @@ export function App() {
     setStatusMessage(`Navigated to timeline for date: ${dateStr}`);
   }, []);
 
-  useMouseClick(({ x, y, type }) => {
+  useMouseClick(({ type }) => {
     if (type !== "down") return;
-    if (currentTab === "DASHBOARD" && dashboard && y >= 3 && y <= 21) {
-      if (y >= 19 && y <= 21 && dashboard.days[focusedDayIdx]) {
-        navigateToDate(dashboard.days[focusedDayIdx].date);
-        return;
-      }
-      const col = Math.max(0, Math.min(dashboard.days.length - 1, x - 8));
-      if (x >= 7 && x <= 8 + dashboard.days.length && dashboard.days[col]) {
-        setFocusedDayIdx(col);
-        navigateToDate(dashboard.days[col].date);
-        return;
-      }
-    }
     if (modal.inputMode === "HELP") modal.closeModal();
   });
 

@@ -4,6 +4,11 @@ import { BiDirectionalBarChart } from "../../components/BiDirectionalBarChart.js
 import type { DashboardData, Project } from "../../hooks/useJournalData.js";
 import type { ThemePalette } from "../../theme.js";
 
+function truncate(text: string, max: number): string {
+  const clean = text.replace(/\s+/g, " ").trim();
+  return clean.length > max ? `${clean.slice(0, max - 1)}...` : clean;
+}
+
 interface DashboardViewProps {
   dashboard: DashboardData | null;
   projects: Project[];
@@ -37,6 +42,18 @@ export function DashboardView({
   onQuickCapture,
   onToggleRoutine,
 }: DashboardViewProps) {
+  const dayCount = dashboard?.days.length || 60;
+
+  // Mark a routine done, either through the toggle callback or a quick note.
+  const completeRoutine = async (routine: NonNullable<DashboardData["todayRoutines"]>[number]) => {
+    if (onToggleRoutine) {
+      await onToggleRoutine(routine);
+    } else if (onQuickCapture) {
+      await onQuickCapture(`Completed @${routine.projectName} routine`);
+      onStatusMessage?.(`Completed today's routine for @${routine.projectName}!`);
+    }
+  };
+
   useKeyboard(async (key) => {
     if (!isActive) return;
     const keyName = key.name;
@@ -46,17 +63,12 @@ export function DashboardView({
     if (keyName === "h" || str === "h" || keyName === "left") {
       onFocusDayIdx?.(Math.max(0, focusedDayIdx - 1));
     } else if (keyName === "l" || str === "l" || keyName === "right") {
-      onFocusDayIdx?.(Math.min(59, focusedDayIdx + 1));
+      onFocusDayIdx?.(Math.min(dayCount - 1, focusedDayIdx + 1));
     } else if (keyName === "space" || str === " ") {
       // Today checklist routine completion toggle: Space
       const pending = dashboard?.todayRoutines?.find((r) => r.isDueToday && !r.isCompletedToday);
       if (pending) {
-        if (onToggleRoutine) {
-          await onToggleRoutine(pending);
-        } else if (onQuickCapture) {
-          await onQuickCapture(`Completed @${pending.projectName} routine`);
-          onStatusMessage?.(`Completed today's routine for @${pending.projectName}!`);
-        }
+        await completeRoutine(pending);
       }
     } else if (keyName === "return" && dashboard) {
       // Date jump: Enter
@@ -70,13 +82,13 @@ export function DashboardView({
   if (loading || !dashboard) {
     return (
       <box padding={1}>
-        <text fg={theme.primary}>{"Loading dashboard telemetry..."}</text>
+        <text fg={theme.muted}>{"Loading your dashboard..."}</text>
       </box>
     );
   }
 
   // Map 60-day metrics to bar data points
-  // Spikes (+Y) = projects that didn't have any journal on that day
+  // Missed (+Y) = routines with no journal that day
   // Breaks (-Y) = break days
   const chartData = (dashboard.days || []).map((day) => ({
     label: day.date.slice(5), // "MM-DD"
@@ -86,7 +98,6 @@ export function DashboardView({
     missedProjectNames: day.missedProjectNames || [],
   }));
 
-  // Status color
   const statusColor =
     dashboard.status === "NORMAL"
       ? theme.success || "green"
@@ -94,213 +105,134 @@ export function DashboardView({
         ? theme.warning || "yellow"
         : theme.error || "red";
 
-  const totalSpikes = (dashboard.days || []).reduce((s, d) => s + (d.missedProjectsCount || 0), 0);
+  const statusLabel =
+    dashboard.status === "NORMAL"
+      ? "On track"
+      : dashboard.status === "DEGRADED"
+        ? "Behind on routines"
+        : "No entries in 3 days";
+
+  const dueRoutines = (dashboard.todayRoutines ?? []).filter((r) => r.isDueToday);
+  const doneCount = dueRoutines.filter((r) => r.isCompletedToday).length;
+  const overdueCount = dashboard.activeDebts.length;
+  const breakCount = dashboard.activeBreaks.length;
+  const recurringCount = projects.filter((p) => p.recurrence).length;
 
   return (
-    <scrollbox flexGrow={1} paddingLeft={1} paddingRight={1}>
-      {/* Telemetry Header */}
-      <box
-        flexDirection="row"
-        justifyContent="space-between"
-        borderStyle="single"
-        borderColor={theme.border}
-        paddingLeft={1}
-        paddingRight={1}
-        marginTop={0}
-      >
-        <box flexDirection="row">
-          <text fg={theme.primary}>{"DAILY ROUTINE MONITOR  "}</text>
-          <text fg={theme.muted}>{"State: "}</text>
-          <text fg={statusColor}>{`${icons.status} ${dashboard.status}`}</text>
-        </box>
-        <box flexDirection="row">
-          <text fg={theme.muted}>{"Last 60 Days: "}</text>
-          <text fg={totalSpikes > 0 ? theme.error || "red" : theme.muted}>
-            {`${totalSpikes} missed spikes  `}
-          </text>
-          <text fg={theme.warning || "yellow"}>{`${dashboard.totalBreakDays}d breaks`}</text>
-        </box>
-      </box>
-
-      {/* Today's Agenda & Routine Checklist */}
-      {dashboard.todayRoutines && dashboard.todayRoutines.length > 0 && (
-        <box
-          flexDirection="column"
-          borderStyle="single"
-          borderColor={
-            dashboard.todayRoutines.some((r) => r.isDueToday && !r.isCompletedToday)
-              ? theme.warning || "yellow"
-              : theme.success || "green"
-          }
-          paddingLeft={1}
-          paddingRight={1}
-          marginTop={1}
-        >
-          <box flexDirection="row" justifyContent="space-between">
-            <box flexDirection="row">
-              <text fg={theme.primary}>{`${icons.target} TODAY'S ROUTINE AGENDA  `}</text>
-              <text fg={theme.muted}>{"(Press [Space] to complete)"}</text>
-            </box>
-            <text fg={theme.muted}>
-              {`${dashboard.todayRoutines.filter((r) => r.isCompletedToday).length}/${dashboard.todayRoutines.length} completed`}
-            </text>
-          </box>
-          <box flexDirection="column" marginTop={1}>
-            {dashboard.todayRoutines.map((routine) => {
-              const ruleDesc = formatRecurrenceRule(routine.recurrence) || routine.recurrence;
-              const isDone = routine.isCompletedToday;
-              return (
-                <box key={routine.projectId} flexDirection="row" justifyContent="space-between">
-                  <box flexDirection="row">
-                    <text fg={isDone ? theme.success || "green" : theme.warning || "yellow"}>
-                      {isDone ? `${icons.checked} ` : `${icons.unchecked} `}
-                    </text>
-                    <text
-                      fg={isDone ? theme.fg : theme.secondary}
-                    >{`@${routine.projectName} `}</text>
-                    <text fg={theme.muted}>{`(${ruleDesc})`}</text>
-                  </box>
-                  <text fg={isDone ? theme.success || "green" : theme.warning || "yellow"}>
-                    {isDone ? "completed" : "due today"}
-                  </text>
-                </box>
-              );
-            })}
-          </box>
-        </box>
-      )}
-
-      {/* 60-Day Bi-directional Monitor Chart */}
+    <scrollbox flexGrow={1} paddingLeft={1} paddingRight={1} paddingTop={1}>
+      {/* Today's routines */}
       <box
         flexDirection="column"
         borderStyle="single"
         borderColor={theme.border}
+        title={
+          dueRoutines.length > 0
+            ? `Today ${icons.bullet} ${doneCount} of ${dueRoutines.length} done`
+            : "Today"
+        }
+        titleColor={theme.primary}
+        paddingLeft={1}
+        paddingRight={1}
+      >
+        {/* At-a-glance status */}
+        <box flexDirection="row">
+          <text fg={statusColor}>{`${icons.status} ${statusLabel}`}</text>
+          <text fg={theme.muted}>
+            {`  ${icons.bullet}  ${overdueCount} overdue  ${icons.bullet}  ${breakCount} on break`}
+          </text>
+        </box>
+        {dueRoutines.map((routine) => {
+          const ruleDesc = formatRecurrenceRule(routine.recurrence) || routine.recurrence;
+          const isDone = routine.isCompletedToday;
+          return (
+            <box
+              key={routine.projectId}
+              flexDirection="row"
+              justifyContent="space-between"
+              onMouseDown={async () => {
+                if (isDone) return;
+                await completeRoutine(routine);
+              }}
+            >
+              <box flexDirection="row">
+                <text
+                  fg={isDone ? theme.success || "green" : theme.muted}
+                >{`${isDone ? icons.checked : icons.unchecked} `}</text>
+                <text fg={isDone ? theme.muted : theme.secondary}>{`@${routine.projectName}`}</text>
+              </box>
+              <text fg={theme.muted}>{ruleDesc}</text>
+            </box>
+          );
+        })}
+        {dueRoutines.length === 0 && (
+          <text fg={theme.muted}>
+            {`${icons.checked} Nothing due today ${icons.bullet} press '${quickCaptureKey}' to log a note`}
+          </text>
+        )}
+      </box>
+
+      {/* 60-day activity chart */}
+      <box
+        flexDirection="column"
+        borderStyle="single"
+        borderColor={theme.border}
+        title="Last 60 days"
+        titleColor={theme.primary}
         paddingLeft={1}
         paddingRight={1}
         marginTop={1}
       >
         <BiDirectionalBarChart
           data={chartData}
-          height={9}
+          height={5}
           focusedIdx={focusedDayIdx}
+          onFocusIdx={onFocusDayIdx}
           onNavigateDate={onNavigateDate}
           icons={icons}
           theme={theme}
-          title="Routine Anomaly Monitor (60 Days)"
         />
       </box>
 
-      {/* Lower Dashboard Grid: Active Debts & Active Breaks & Recurrences */}
-      <box flexDirection="row" marginTop={1}>
-        {/* Left Column: Overdue Debt Queue */}
+      {/* Only surface what needs attention */}
+      {(overdueCount > 0 || breakCount > 0) && (
         <box
           flexDirection="column"
-          flexGrow={1}
-          borderStyle="single"
-          borderColor={dashboard.activeDebts.length > 0 ? theme.warning || "yellow" : theme.border}
-          paddingLeft={1}
-          paddingRight={1}
-          marginRight={1}
-        >
-          <box flexDirection="row" justifyContent="space-between">
-            <text fg={theme.accent}>{`${icons.overdue} Overdue Backlog / Make-up Debt`}</text>
-            <text fg={theme.muted}>{`${dashboard.activeDebts.length} projects`}</text>
-          </box>
-          {dashboard.activeDebts.length === 0 ? (
-            <box marginTop={1} marginBottom={1}>
-              <text
-                fg={theme.muted}
-              >{`${icons.checked} No routine debt. You are completely caught up!`}</text>
-            </box>
-          ) : (
-            <box flexDirection="column" marginTop={1}>
-              {dashboard.activeDebts.map((debt) => (
-                <box key={debt.projectId} flexDirection="row" justifyContent="space-between">
-                  <text fg={theme.secondary}>{`@${debt.projectName}`}</text>
-                  <text fg={theme.error || "red"}>{`${debt.accumulatedDebt} entries owed`}</text>
-                </box>
-              ))}
-            </box>
-          )}
-        </box>
-
-        {/* Right Column: Active Breaks & Recurring Projects */}
-        <box
-          flexDirection="column"
-          flexGrow={1}
           borderStyle="single"
           borderColor={theme.border}
+          title="Needs attention"
+          titleColor={theme.accent}
           paddingLeft={1}
           paddingRight={1}
+          marginTop={1}
         >
-          <box flexDirection="row" justifyContent="space-between">
-            <text fg={theme.accent}>{`${icons.break} Active Breaks & Status`}</text>
-            <text fg={theme.muted}>{`${dashboard.activeBreaks.length} active`}</text>
-          </box>
-          {dashboard.activeBreaks.length === 0 ? (
-            <box marginTop={1} marginBottom={1}>
-              <text fg={theme.muted}>
-                {`No active break today. Use '${quickCaptureKey}' with '/break 3d' to pause.`}
-              </text>
+          {dashboard.activeDebts.map((debt) => (
+            <box key={debt.projectId} flexDirection="row" justifyContent="space-between">
+              <text fg={theme.secondary}>{`${icons.overdue} @${debt.projectName}`}</text>
+              <text fg={theme.error || "red"}>{`${debt.accumulatedDebt} to catch up`}</text>
             </box>
-          ) : (
-            <box flexDirection="column" marginTop={1}>
-              {dashboard.activeBreaks.map((b, i) => (
-                <box key={`${b.startDate}-${i}`} flexDirection="column" marginBottom={1}>
-                  <box flexDirection="row" justifyContent="space-between">
-                    <text fg={theme.warning || "yellow"}>
-                      {b.projectName
-                        ? `@${b.projectName}`
-                        : `${icons.global} Global (All Projects)`}
-                    </text>
-                    <text fg={theme.muted}>{`${b.remainingDays}d remaining`}</text>
-                  </box>
-                  <text fg={theme.fg}>{`  "${b.content}"`}</text>
-                </box>
-              ))}
-            </box>
-          )}
-        </box>
-      </box>
-
-      {/* Routine Schedules Summary */}
-      <box
-        flexDirection="column"
-        borderStyle="single"
-        borderColor={theme.border}
-        paddingLeft={1}
-        paddingRight={1}
-        marginTop={1}
-        marginBottom={1}
-      >
-        <box flexDirection="row" justifyContent="space-between">
-          <text fg={theme.primary}>{`${icons.calendar} Configured Project Routines`}</text>
-        </box>
-        <box flexDirection="column" marginTop={1}>
-          {projects
-            .filter((p) => p.recurrence)
-            .map((p) => (
-              <box key={p.id} flexDirection="row" justifyContent="space-between">
-                <box flexDirection="row">
-                  <text fg={theme.secondary}>{`@${p.name} `}</text>
-                  <text fg={theme.muted}>
-                    {`(${formatRecurrenceRule(p.recurrence) || p.recurrence})`}
-                  </text>
-                </box>
-                <text
-                  fg={p.missedPolicy === "accumulate" ? theme.warning || "yellow" : theme.muted}
-                >
-                  {`policy: ${p.missedPolicy || "spike"}`}
+          ))}
+          {dashboard.activeBreaks.map((b, i) => (
+            <box key={`${b.startDate}-${i}`} flexDirection="row" justifyContent="space-between">
+              <box flexDirection="row">
+                <text fg={theme.secondary}>
+                  {`${icons.break} ${b.projectName ? `@${b.projectName}` : "All projects"}  `}
                 </text>
+                <text fg={theme.muted}>{truncate(b.content, 32)}</text>
               </box>
-            ))}
-          {projects.filter((p) => p.recurrence).length === 0 && (
-            <text fg={theme.muted}>
-              {"No project recurrence configured yet. Press 'n' to create one with recurrence!"}
-            </text>
-          )}
+              <text fg={theme.warning || "yellow"}>{`${b.remainingDays}d left`}</text>
+            </box>
+          ))}
         </box>
-      </box>
+      )}
+
+      {/* Quiet footer when there is nothing to catch up on */}
+      {overdueCount === 0 && breakCount === 0 && recurringCount > 0 && (
+        <box marginTop={1}>
+          <text fg={theme.muted}>
+            {`${icons.checked} All caught up ${icons.bullet} ${recurringCount} routine${recurringCount === 1 ? "" : "s"} configured`}
+          </text>
+        </box>
+      )}
     </scrollbox>
   );
 }
