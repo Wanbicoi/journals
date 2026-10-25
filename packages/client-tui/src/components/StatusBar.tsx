@@ -13,10 +13,10 @@ interface StatusBarProps {
 }
 
 const TAB_HINTS: Record<TabType, string> = {
-  DASHBOARD: "[Space] Toggle  [Enter] Timeline  [h/l] Day  [n] Note  [?] Help",
-  TIMELINE: "[j/k] Move  [e] Edit  [n] Note  [d] Del  [o] $EDITOR  [/] Filter  [?] Help",
-  REFLECTIONS: "[w/m/q/y] Cadence  [j/k] Move  [e/Enter] Write  [?] Help",
-  PROJECTS: "[j/k] Move  [n] New  [P] Routine  [e/o] Edit  [/] Filter  [?] Help",
+  DASHBOARD: "[Space] Toggle  [Enter] Timeline  [h/l] Day  [n] Note  [q] Quit",
+  TIMELINE: "[j/k] Move  [e] Edit  [n] Note  [d] Del  [/] Filter  [q] Quit",
+  REFLECTIONS: "[w/m/Q/y] Cadence  [j/k] Move  [e/Enter] Write  [q] Quit",
+  PROJECTS: "[j/k] Move  [n] New  [P] Routine  [e/o] Edit  [q] Quit",
 };
 
 export function StatusBar({

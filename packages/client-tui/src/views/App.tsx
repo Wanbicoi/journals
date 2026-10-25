@@ -147,6 +147,15 @@ export function App() {
     if (key.ctrl && key.name === "c") process.exit(0);
     if (modal.isOpen) return;
 
+    if (
+      key.name === config.keymaps.quit ||
+      k === config.keymaps.quit ||
+      key.name === "q" ||
+      k === "q"
+    ) {
+      process.exit(0);
+    }
+
     const tab = TAB_KEY_MAP[key.name] || (k ? TAB_KEY_MAP[k] : undefined);
     if (tab) {
       setCurrentTab(tab);
