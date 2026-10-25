@@ -1,12 +1,12 @@
 import type { IconSet, ReflectionPeriodType } from "@journals/core";
 import type { ScrollBoxRenderable } from "@opentui/core";
 import { useKeyboard } from "@opentui/react";
-import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
-import { config, fetchPeriodDetailApi, saveReflectionApi } from "../../api/client.js";
+import { config } from "../../api/client.js";
 import { openExternalEditor } from "../../editor.js";
-import { queryKeys, useReflectionDetail, useReflectionPeriods } from "../../hooks/queries.js";
+import { useReflectionDetail, useReflectionPeriods } from "../../hooks/queries.js";
 import { useMarkdownSyntaxStyle } from "../../hooks/useMarkdownSyntaxStyle.js";
+import { useSaveReflection } from "../../hooks/useSaveReflection.js";
 import type { ThemePalette } from "../../theme.js";
 
 interface ReflectionsViewProps {
@@ -36,14 +36,15 @@ export function ReflectionsView({
 }: ReflectionsViewProps) {
   const scrollBoxRef = useRef<ScrollBoxRenderable | null>(null);
   const syntaxStyle = useMarkdownSyntaxStyle(theme);
-  const queryClient = useQueryClient();
+  const saveReflection = useSaveReflection();
 
   const { data: periods = [] } = useReflectionPeriods(periodType);
   const selectedPeriod = periods[selectedPeriodIdx];
-  const { data: currentDetail = null, isLoading: loadingDetail } = useReflectionDetail(
-    selectedPeriod?.periodType,
-    selectedPeriod?.periodKey,
-  );
+  const {
+    data: currentDetail = null,
+    isLoading: loadingDetail,
+    refetch: refetchDetail,
+  } = useReflectionDetail(selectedPeriod?.periodType, selectedPeriod?.periodKey);
 
   useKeyboard(async (key) => {
     if (!isActive) return;
@@ -97,13 +98,17 @@ export function ReflectionsView({
         try {
           const currentP = periods[selectedPeriodIdx];
           if (currentP) {
-            const pDetail = await fetchPeriodDetailApi(periodType, currentP.periodKey);
+            const { data: freshDetail } = await refetchDetail();
+            const detail = freshDetail ?? currentDetail;
             const initialContent =
-              pDetail?.reflection?.content || `# Reflection: ${currentP.label}\n\n`;
+              detail?.reflection?.content || `# Reflection: ${currentP.label}\n\n`;
             const updated = openExternalEditor(initialContent);
             if (updated !== initialContent) {
-              await saveReflectionApi(periodType, currentP.periodKey, updated);
-              await queryClient.invalidateQueries({ queryKey: queryKeys.reflections.all });
+              await saveReflection.mutateAsync({
+                periodType,
+                periodKey: currentP.periodKey,
+                content: updated,
+              });
               onStatusMessage?.(`Saved reflection for ${currentP.periodKey}`);
             }
           }
