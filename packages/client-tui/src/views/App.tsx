@@ -8,6 +8,7 @@ import {
 import { useCallback, useState } from "react";
 import { config } from "../api/client.js";
 import { copyToClipboard } from "../clipboard.js";
+import { ErrorState } from "../components/ErrorState.js";
 import { Header } from "../components/Header.js";
 import { StatusBar } from "../components/StatusBar.js";
 import type { Entry } from "../hooks/useJournalData.js";
@@ -48,6 +49,8 @@ export function App() {
     tags,
     dashboard,
     loading,
+    isError,
+    error,
     reloadData,
     restoreEntry,
     updateEntryContent,
@@ -185,7 +188,9 @@ export function App() {
       />
 
       <box flexGrow={1} flexDirection="column">
-        {currentTab === "DASHBOARD" ? (
+        {isError ? (
+          <ErrorState error={error} theme={theme} />
+        ) : currentTab === "DASHBOARD" ? (
           <DashboardView
             dashboard={dashboard}
             projects={projects}

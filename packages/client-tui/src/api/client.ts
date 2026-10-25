@@ -26,7 +26,9 @@ export async function fetchTags() {
 }
 
 export async function fetchDashboardAnalytics(days = 60) {
-  const res = await fetch(`${serverUrl}/analytics/dashboard?days=${days}`);
+  const res = await client.analytics.dashboard.$get({
+    query: { days: String(days) },
+  });
   if (!res.ok) {
     throw new Error(`Failed to fetch dashboard: ${res.statusText}`);
   }
@@ -87,7 +89,7 @@ export async function fetchPeriodsApi(periodType: "WEEK" | "MONTH" | "QUARTER" |
   });
   if (!res.ok) return [];
   const data = await res.json();
-  return (data as { periods: import("@journals/core").PeriodItemStatus[] }).periods;
+  return data.periods;
 }
 
 export async function fetchPeriodDetailApi(
@@ -98,7 +100,7 @@ export async function fetchPeriodDetailApi(
     param: { periodType, periodKey },
   });
   if (!res.ok) return null;
-  return (await res.json()) as import("@journals/core").PeriodDetail;
+  return await res.json();
 }
 
 export async function saveReflectionApi(

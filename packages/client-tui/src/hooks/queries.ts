@@ -1,4 +1,5 @@
 import type { PeriodDetail, PeriodItemStatus, ReflectionPeriodType } from "@journals/core";
+import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
 import {
   fetchDashboardAnalytics,
@@ -76,6 +77,7 @@ export const queryKeys = {
   projects: ["projects"] as const,
   tags: ["tags"] as const,
   dashboard: (days = 60) => ["dashboard", days] as const,
+  dashboardAll: ["dashboard"] as const,
   reflections: {
     all: ["reflections"] as const,
     periods: (periodType: ReflectionPeriodType) => ["reflections", "periods", periodType] as const,
@@ -84,11 +86,57 @@ export const queryKeys = {
   },
 };
 
+/**
+ * Every mutation declares the cache scopes it invalidates. Keeping the lists here means a new
+ * queried key only has to be added once instead of at all 27 call sites.
+ */
+export const invalidationKeys = {
+  capture: [
+    queryKeys.entries,
+    queryKeys.projects,
+    queryKeys.tags,
+    queryKeys.dashboardAll,
+    queryKeys.reflections.all,
+  ],
+  projectCreated: [queryKeys.projects, queryKeys.dashboardAll],
+  projectUpdated: [queryKeys.projects, queryKeys.dashboardAll],
+  projectContent: [queryKeys.projects],
+  entryProject: [
+    queryKeys.entries,
+    queryKeys.projects,
+    queryKeys.dashboardAll,
+    queryKeys.reflections.all,
+  ],
+  entryTags: [queryKeys.entries, queryKeys.tags],
+  entryContent: [queryKeys.entries, queryKeys.reflections.all],
+  entryDeleted: [
+    queryKeys.entries,
+    queryKeys.tags,
+    queryKeys.dashboardAll,
+    queryKeys.reflections.all,
+  ],
+  reflectionSaved: [queryKeys.reflections.all],
+  everything: [
+    queryKeys.entries,
+    queryKeys.projects,
+    queryKeys.tags,
+    queryKeys.dashboardAll,
+    queryKeys.reflections.all,
+  ],
+} satisfies Record<string, readonly QueryKey[]>;
+
+export async function invalidateAfterMutation(
+  queryClient: QueryClient,
+  keys: readonly QueryKey[],
+): Promise<void> {
+  await Promise.all(keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
+}
+
 export function useEntries(options?: { refetchInterval?: number | false; enabled?: boolean }) {
   return useQuery<Entry[]>({
     queryKey: queryKeys.entries,
-    queryFn: async () => ((await fetchEntries()) as Entry[]) || [],
-    refetchInterval: options?.refetchInterval ?? 5000,
+    queryFn: async () => (await fetchEntries()) ?? [],
+    refetchInterval: options?.refetchInterval ?? false,
     enabled: options?.enabled ?? true,
   });
 }
@@ -96,8 +144,8 @@ export function useEntries(options?: { refetchInterval?: number | false; enabled
 export function useProjects(options?: { refetchInterval?: number | false; enabled?: boolean }) {
   return useQuery<Project[]>({
     queryKey: queryKeys.projects,
-    queryFn: async () => ((await fetchProjects()) as Project[]) || [],
-    refetchInterval: options?.refetchInterval ?? 5000,
+    queryFn: async () => (await fetchProjects()) ?? [],
+    refetchInterval: options?.refetchInterval ?? false,
     enabled: options?.enabled ?? true,
   });
 }
@@ -105,8 +153,8 @@ export function useProjects(options?: { refetchInterval?: number | false; enable
 export function useTags(options?: { refetchInterval?: number | false; enabled?: boolean }) {
   return useQuery<TagInfo[]>({
     queryKey: queryKeys.tags,
-    queryFn: async () => ((await fetchTags()) as TagInfo[]) || [],
-    refetchInterval: options?.refetchInterval ?? 5000,
+    queryFn: async () => (await fetchTags()) ?? [],
+    refetchInterval: options?.refetchInterval ?? false,
     enabled: options?.enabled ?? true,
   });
 }
@@ -116,17 +164,11 @@ export function useDashboardAnalytics(
   options?: { enabled?: boolean; refetchInterval?: number | false },
 ) {
   const isEnabled = options?.enabled ?? true;
-  return useQuery<DashboardData | null>({
+  return useQuery<DashboardData>({
     queryKey: queryKeys.dashboard(days),
-    queryFn: async () => {
-      try {
-        return (await fetchDashboardAnalytics(days)) as DashboardData;
-      } catch {
-        return null;
-      }
-    },
+    queryFn: async () => await fetchDashboardAnalytics(days),
     enabled: isEnabled,
-    refetchInterval: isEnabled ? (options?.refetchInterval ?? 5000) : false,
+    refetchInterval: isEnabled ? (options?.refetchInterval ?? false) : false,
   });
 }
 
@@ -136,7 +178,7 @@ export function useReflectionPeriods(
 ) {
   return useQuery<PeriodItemStatus[]>({
     queryKey: queryKeys.reflections.periods(periodType),
-    queryFn: async () => (await fetchPeriodsApi(periodType)) || [],
+    queryFn: async () => (await fetchPeriodsApi(periodType)) ?? [],
     enabled: options?.enabled ?? true,
   });
 }

@@ -1,7 +1,14 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { client, config, restoreEntryApi, updateProjectApi } from "../api/client.js";
 import type { DashboardData, Entry, Project, TagInfo } from "./queries.js";
-import { queryKeys, useDashboardAnalytics, useEntries, useProjects, useTags } from "./queries.js";
+import {
+  invalidateAfterMutation,
+  invalidationKeys,
+  useDashboardAnalytics,
+  useEntries,
+  useProjects,
+  useTags,
+} from "./queries.js";
 
 export type { Entry, Project, TagInfo, DashboardData };
 
@@ -24,9 +31,22 @@ export function useJournalData(options: UseJournalDataOptions = {}) {
   const dashboard = dashboardQuery.data ?? null;
 
   const loading = entriesQuery.isLoading || projectsQuery.isLoading || tagsQuery.isLoading;
+  const isError =
+    entriesQuery.isError || projectsQuery.isError || tagsQuery.isError || dashboardQuery.isError;
+  const error =
+    entriesQuery.error ?? projectsQuery.error ?? tagsQuery.error ?? dashboardQuery.error ?? null;
 
   async function reloadData() {
     await queryClient.invalidateQueries();
+  }
+
+  async function refetch() {
+    await Promise.all([
+      entriesQuery.refetch(),
+      projectsQuery.refetch(),
+      tagsQuery.refetch(),
+      isDashboardActive ? dashboardQuery.refetch() : Promise.resolve(),
+    ]);
   }
 
   async function quickCapture(content: string) {
@@ -36,13 +56,7 @@ export function useJournalData(options: UseJournalDataOptions = {}) {
         defaultProject: config.quick_add.default_project,
       },
     });
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.entries }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.projects }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.tags }),
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.reflections.all }),
-    ]);
+    await invalidateAfterMutation(queryClient, invalidationKeys.capture);
   }
 
   async function createProject(
@@ -58,10 +72,7 @@ export function useJournalData(options: UseJournalDataOptions = {}) {
         missedPolicy,
       },
     });
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.projects }),
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
-    ]);
+    await invalidateAfterMutation(queryClient, invalidationKeys.projectCreated);
   }
 
   async function updateProject(
@@ -74,10 +85,7 @@ export function useJournalData(options: UseJournalDataOptions = {}) {
     },
   ) {
     await updateProjectApi(id, data);
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.projects }),
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
-    ]);
+    await invalidateAfterMutation(queryClient, invalidationKeys.projectUpdated);
   }
 
   async function updateProjectContent(id: string, content: string) {
@@ -85,7 +93,7 @@ export function useJournalData(options: UseJournalDataOptions = {}) {
       param: { id },
       json: { content },
     });
-    await queryClient.invalidateQueries({ queryKey: queryKeys.projects });
+    await invalidateAfterMutation(queryClient, invalidationKeys.projectContent);
   }
 
   async function updateEntryProject(entryId: string, projectName: string) {
@@ -93,12 +101,7 @@ export function useJournalData(options: UseJournalDataOptions = {}) {
       param: { id: entryId },
       json: { projectName },
     });
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.entries }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.projects }),
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.reflections.all }),
-    ]);
+    await invalidateAfterMutation(queryClient, invalidationKeys.entryProject);
   }
 
   async function updateEntryTags(entryId: string, newTags: string[]) {
@@ -106,10 +109,7 @@ export function useJournalData(options: UseJournalDataOptions = {}) {
       param: { id: entryId },
       json: { tags: newTags },
     });
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.entries }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.tags }),
-    ]);
+    await invalidateAfterMutation(queryClient, invalidationKeys.entryTags);
   }
 
   async function updateEntryContent(entryId: string, content: string) {
@@ -117,32 +117,19 @@ export function useJournalData(options: UseJournalDataOptions = {}) {
       param: { id: entryId },
       json: { content },
     });
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.entries }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.reflections.all }),
-    ]);
+    await invalidateAfterMutation(queryClient, invalidationKeys.entryContent);
   }
 
   async function deleteEntry(entryId: string) {
     await client.entries[":id"].$delete({
       param: { id: entryId },
     });
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.entries }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.tags }),
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.reflections.all }),
-    ]);
+    await invalidateAfterMutation(queryClient, invalidationKeys.entryDeleted);
   }
 
   async function restoreEntry(entryId: string) {
     await restoreEntryApi(entryId);
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.entries }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.tags }),
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.reflections.all }),
-    ]);
+    await invalidateAfterMutation(queryClient, invalidationKeys.entryDeleted);
   }
 
   return {
@@ -151,7 +138,10 @@ export function useJournalData(options: UseJournalDataOptions = {}) {
     tags,
     dashboard,
     loading,
+    isError,
+    error,
     reloadData,
+    refetch,
     quickCapture,
     createProject,
     updateProject,
