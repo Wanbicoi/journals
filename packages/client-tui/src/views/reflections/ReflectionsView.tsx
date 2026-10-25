@@ -7,6 +7,7 @@ import { openExternalEditor } from "../../editor.js";
 import { useReflectionDetail, useReflectionPeriods } from "../../hooks/queries.js";
 import { useMarkdownSyntaxStyle } from "../../hooks/useMarkdownSyntaxStyle.js";
 import { useSaveReflection } from "../../hooks/useSaveReflection.js";
+import { matchesAnyBinding } from "../../keymap.js";
 import type { ThemePalette } from "../../theme.js";
 
 interface ReflectionsViewProps {
@@ -48,49 +49,30 @@ export function ReflectionsView({
 
   useKeyboard(async (key) => {
     if (!isActive) return;
-    const keyName = key.name;
-    const str = key.sequence || key.name;
+    const keymaps = config.keymaps;
 
     // Cadence switching: w, m, q, y
-    if (str === "w" || str === "W" || keyName === "w") {
+    if (matchesAnyBinding(key, "w", "W")) {
       onChangePeriodType("WEEK");
       onSelectPeriodIdx(0);
       onStatusMessage?.("Weekly Reflections");
-    } else if (str === "m" || str === "M" || keyName === "m") {
+    } else if (matchesAnyBinding(key, "m", "M")) {
       onChangePeriodType("MONTH");
       onSelectPeriodIdx(0);
       onStatusMessage?.("Monthly Reflections");
-    } else if (str === "q" || str === "Q" || keyName === "q") {
+    } else if (matchesAnyBinding(key, "q", "Q")) {
       onChangePeriodType("QUARTER");
       onSelectPeriodIdx(0);
       onStatusMessage?.("Quarterly Reflections");
-    } else if (str === "y" || str === "Y" || keyName === "y") {
+    } else if (matchesAnyBinding(key, "y", "Y")) {
       onChangePeriodType("YEAR");
       onSelectPeriodIdx(0);
       onStatusMessage?.("Yearly Reflections");
-    } else if (
-      keyName === "j" ||
-      str === "j" ||
-      keyName === "down" ||
-      keyName === config.keymaps.down ||
-      str === config.keymaps.down
-    ) {
+    } else if (matchesAnyBinding(key, "j", "down", keymaps.down)) {
       onSelectPeriodIdx(Math.min(selectedPeriodIdx + 1, Math.max(0, periods.length - 1)));
-    } else if (
-      keyName === "k" ||
-      str === "k" ||
-      keyName === "up" ||
-      keyName === config.keymaps.up ||
-      str === config.keymaps.up
-    ) {
+    } else if (matchesAnyBinding(key, "k", "up", keymaps.up)) {
       onSelectPeriodIdx(Math.max(0, selectedPeriodIdx - 1));
-    } else if (
-      keyName === "e" ||
-      str === "e" ||
-      keyName === "return" ||
-      keyName === config.keymaps.edit_project_content ||
-      str === config.keymaps.edit_project_content
-    ) {
+    } else if (matchesAnyBinding(key, "e", "return", keymaps.edit_project_content)) {
       // External editor spawn: e, Enter
       if (onOpenEditor) {
         onOpenEditor();

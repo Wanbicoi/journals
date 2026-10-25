@@ -2,6 +2,7 @@ import { type IconSet, formatRecurrenceRule } from "@journals/core";
 import { useKeyboard } from "@opentui/react";
 import { BiDirectionalBarChart } from "../../components/BiDirectionalBarChart.js";
 import type { DashboardData, Project } from "../../hooks/useJournalData.js";
+import { matchesAnyBinding, matchesBinding } from "../../keymap.js";
 import type { ThemePalette } from "../../theme.js";
 
 function truncate(text: string, max: number): string {
@@ -56,21 +57,19 @@ export function DashboardView({
 
   useKeyboard(async (key) => {
     if (!isActive) return;
-    const keyName = key.name;
-    const str = key.sequence || key.name;
 
     // Focus navigation: h/l and left/right
-    if (keyName === "h" || str === "h" || keyName === "left") {
+    if (matchesAnyBinding(key, "h", "left")) {
       onFocusDayIdx?.(Math.max(0, focusedDayIdx - 1));
-    } else if (keyName === "l" || str === "l" || keyName === "right") {
+    } else if (matchesAnyBinding(key, "l", "right")) {
       onFocusDayIdx?.(Math.min(dayCount - 1, focusedDayIdx + 1));
-    } else if (keyName === "space" || str === " ") {
+    } else if (matchesAnyBinding(key, "space", " ")) {
       // Today checklist routine completion toggle: Space
       const pending = dashboard?.todayRoutines?.find((r) => r.isDueToday && !r.isCompletedToday);
       if (pending) {
         await completeRoutine(pending);
       }
-    } else if (keyName === "return" && dashboard) {
+    } else if (matchesBinding(key, "return") && dashboard) {
       // Date jump: Enter
       const day = dashboard.days[focusedDayIdx];
       if (day) {

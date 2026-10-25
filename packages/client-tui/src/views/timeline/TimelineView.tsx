@@ -6,6 +6,7 @@ import { config } from "../../api/client.js";
 import { HighlightText } from "../../components/HighlightText.js";
 import { openExternalEditor } from "../../editor.js";
 import type { Entry } from "../../hooks/useJournalData.js";
+import { matchesAnyBinding, matchesBinding } from "../../keymap.js";
 import type { ThemePalette } from "../../theme.js";
 
 interface TimelineViewProps {
@@ -65,31 +66,18 @@ export function TimelineView({
 
   useKeyboard(async (key) => {
     if (!isActive) return;
-    const keyName = key.name;
-    const str = key.sequence || key.name;
+    const keymaps = config.keymaps;
 
     // Navigation: j/k, down/up, g/G
-    if (
-      keyName === "j" ||
-      str === "j" ||
-      keyName === "down" ||
-      keyName === config.keymaps.down ||
-      str === config.keymaps.down
-    ) {
+    if (matchesAnyBinding(key, "j", "down", keymaps.down)) {
       onSelectEntry?.(Math.min(selectedEntryIdx + 1, Math.max(0, entries.length - 1)));
-    } else if (
-      keyName === "k" ||
-      str === "k" ||
-      keyName === "up" ||
-      keyName === config.keymaps.up ||
-      str === config.keymaps.up
-    ) {
+    } else if (matchesAnyBinding(key, "k", "up", keymaps.up)) {
       onSelectEntry?.(Math.max(0, selectedEntryIdx - 1));
-    } else if (str === "g") {
+    } else if (matchesBinding(key, "g")) {
       onSelectEntry?.(0);
-    } else if (str === "G" || (key.shift && (keyName === "g" || keyName === "G"))) {
+    } else if (matchesBinding(key, "G")) {
       onSelectEntry?.(Math.max(0, entries.length - 1));
-    } else if (str === "T" || (key.shift && (keyName === "t" || keyName === "T"))) {
+    } else if (matchesBinding(key, "T") || (key.shift && (key.name === "t" || key.name === "T"))) {
       // Date jump: Today (Shift+T or uppercase T)
       const dayStartHour = config.appearance.day_start_hour ?? 0;
       const todayStr = getEffectiveDateStr(Date.now(), dayStartHour);
@@ -102,7 +90,7 @@ export function TimelineView({
       } else {
         onStatusMessage?.(`No entries logged yet for Today (${todayStr})`);
       }
-    } else if (str === "]" || keyName === "]") {
+    } else if (matchesBinding(key, "]")) {
       // Date jump: Next day
       const currentEntry = entries[selectedEntryIdx];
       if (currentEntry) {
@@ -118,7 +106,7 @@ export function TimelineView({
           onStatusMessage?.(`Jumped to ${nextDate}`);
         }
       }
-    } else if (str === "[" || keyName === "[") {
+    } else if (matchesBinding(key, "[")) {
       // Date jump: Prev day
       const currentEntry = entries[selectedEntryIdx];
       if (currentEntry) {
@@ -136,35 +124,25 @@ export function TimelineView({
           }
         }
       }
-    } else if (str === "u" || str === "U" || keyName === "u") {
+    } else if (matchesAnyBinding(key, "u", "U")) {
       // Undo soft delete: u
       onUndoDelete?.();
-    } else if (
-      keyName === "c" ||
-      str === "c" ||
-      keyName === config.keymaps.quick_capture ||
-      str === config.keymaps.quick_capture
-    ) {
+    } else if (matchesAnyBinding(key, "c", keymaps.quick_capture)) {
       // Action modal triggers: c (quick capture)
       onQuickCapture?.();
-    } else if (keyName === "e" || str === "e") {
+    } else if (matchesBinding(key, "e")) {
       // Action modal triggers: e (edit content)
       const entry = entries[selectedEntryIdx];
       if (entry) {
         onEditContent?.(entry);
       }
-    } else if (
-      keyName === "p" ||
-      str === "p" ||
-      keyName === config.keymaps.edit_project ||
-      str === config.keymaps.edit_project
-    ) {
+    } else if (matchesAnyBinding(key, "p", keymaps.edit_project)) {
       // Action modal triggers: p (reassign project)
       const entry = entries[selectedEntryIdx];
       if (entry) {
         onEditProject?.(entry);
       }
-    } else if (keyName === "t" || str === "t") {
+    } else if (matchesBinding(key, "t")) {
       // Action modal triggers: t (edit tags)
       const entry = entries[selectedEntryIdx];
       if (entry && onEditTags) {
@@ -182,18 +160,13 @@ export function TimelineView({
           onStatusMessage?.(`No entries logged yet for Today (${todayStr})`);
         }
       }
-    } else if (
-      keyName === "d" ||
-      str === "d" ||
-      keyName === config.keymaps.delete_entry ||
-      str === config.keymaps.delete_entry
-    ) {
+    } else if (matchesAnyBinding(key, "d", keymaps.delete_entry)) {
       // Action modal triggers: d (delete confirm)
       const entry = entries[selectedEntryIdx];
       if (entry) {
         onDeleteEntry?.(entry);
       }
-    } else if (keyName === "o" || str === "o") {
+    } else if (matchesBinding(key, "o")) {
       // Action modal triggers: o (open in $EDITOR)
       const entry = entries[selectedEntryIdx];
       if (entry) {

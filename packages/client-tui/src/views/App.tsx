@@ -15,6 +15,7 @@ import type { Entry } from "../hooks/useJournalData.js";
 import { useJournalData } from "../hooks/useJournalData.js";
 import { useMouseClick } from "../hooks/useMouseClick.js";
 import { useSelectionById } from "../hooks/useSelection.js";
+import { matchesAnyBinding, matchesBinding, normalizeKey } from "../keymap.js";
 import { getTheme } from "../theme.js";
 import { DashboardView } from "./dashboard/DashboardView.js";
 import { ActiveModal } from "./modals/ActiveModal.js";
@@ -139,36 +140,31 @@ export function App() {
   });
 
   useKeyboard(async (key) => {
-    const k = key.sequence || key.name;
-    if (key.ctrl && key.name === "c") process.exit(0);
+    const keymaps = config.keymaps;
+    if (key.ctrl && matchesBinding(key, "c")) process.exit(0);
     if (modal.isOpen) return;
 
-    if (
-      key.name === config.keymaps.quit ||
-      k === config.keymaps.quit ||
-      key.name === "q" ||
-      k === "q"
-    ) {
+    if (matchesAnyBinding(key, keymaps.quit, "q")) {
       process.exit(0);
     }
 
-    const tab = TAB_KEY_MAP[key.name] || (k ? TAB_KEY_MAP[k] : undefined);
+    const tab = TAB_KEY_MAP[normalizeKey(key)];
     if (tab) {
       setCurrentTab(tab);
       setStatusMessage(`${tab.charAt(0) + tab.slice(1).toLowerCase()} View`);
       return;
     }
 
-    if (key.name === "tab") {
+    if (matchesBinding(key, "tab")) {
       setCurrentTab((prev) => TABS[(TABS.indexOf(prev) + 1) % TABS.length]);
-    } else if (key.name === config.keymaps.search_filter || k === config.keymaps.search_filter) {
+    } else if (matchesBinding(key, keymaps.search_filter)) {
       modal.openFilter();
-    } else if (key.name === config.keymaps.help || k === config.keymaps.help) {
+    } else if (matchesBinding(key, keymaps.help)) {
       modal.openHelp();
-    } else if (key.name === config.keymaps.refresh || k === config.keymaps.refresh) {
+    } else if (matchesBinding(key, keymaps.refresh)) {
       await reloadData();
       setStatusMessage("Refreshed data");
-    } else if (key.name === config.keymaps.cancel || k === config.keymaps.cancel) {
+    } else if (matchesBinding(key, keymaps.cancel)) {
       if (currentTab === "TIMELINE" && timelineFilterQuery) {
         setTimelineFilterQuery("");
         setStatusMessage("Timeline filter cleared");

@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { openExternalEditor } from "../../editor.js";
 import type { Entry, Project, TagInfo } from "../../hooks/useJournalData.js";
 import { useSuggestions } from "../../hooks/useSuggestions.js";
+import { matchesAnyBinding, matchesBinding } from "../../keymap.js";
 
 export type ModalMode =
   | "NONE"
@@ -351,23 +352,20 @@ export function useModalManager(options: UseModalManagerOptions): ModalManager {
   useKeyboard(async (key) => {
     if (inputMode === "NONE") return;
 
-    const keyName = key.name;
-    const str = key.sequence || key.name;
-
     if (inputMode === "HELP") {
       closeModal();
       return;
     }
 
     if (inputMode === "DELETE_CONFIRM") {
-      if (keyName === "y" || str === "y") {
+      if (matchesBinding(key, "y")) {
         if (selectedEntry && deleteEntry) {
           onEntryDeleted?.(selectedEntry);
           await deleteEntry(selectedEntry.id);
           onStatusMessage?.("Deleted entry. Press 'u' to undo.");
         }
         closeModal();
-      } else if (keyName === "n" || str === "n" || keyName === "escape") {
+      } else if (matchesAnyBinding(key, "n", "escape")) {
         closeModal("Delete cancelled");
       }
       return;
@@ -378,12 +376,12 @@ export function useModalManager(options: UseModalManagerOptions): ModalManager {
       return;
     }
 
-    if (keyName === "return") {
+    if (matchesBinding(key, "return")) {
       await commitModalInput();
       return;
     }
 
-    if (keyName === "escape") {
+    if (matchesBinding(key, "escape")) {
       if (inputMode === "FILTER") {
         if (currentTab === "TIMELINE") {
           onTimelineFilterChange?.("");
@@ -396,11 +394,11 @@ export function useModalManager(options: UseModalManagerOptions): ModalManager {
     }
 
     if (suggestions && suggestions.matches.length > 1) {
-      if (keyName === "down") {
+      if (matchesBinding(key, "down")) {
         setActiveSuggestionIdx((prev) => (prev + 1) % suggestions.matches.length);
         return;
       }
-      if (keyName === "up") {
+      if (matchesBinding(key, "up")) {
         setActiveSuggestionIdx(
           (prev) => (prev - 1 + suggestions.matches.length) % suggestions.matches.length,
         );
@@ -408,14 +406,14 @@ export function useModalManager(options: UseModalManagerOptions): ModalManager {
       }
     }
 
-    if (inputMode === "CAPTURE" && key.ctrl && (keyName === "e" || str === "e")) {
+    if (inputMode === "CAPTURE" && key.ctrl && matchesBinding(key, "e")) {
       const edited = openExternalEditor(inputBuffer);
       setInputBuffer(edited);
       onStatusMessage?.("Drafted capture in external editor");
       return;
     }
 
-    if (keyName === "tab") {
+    if (matchesBinding(key, "tab")) {
       setInputBuffer((prev) => applySuggestion(prev, suggestions));
     }
   });

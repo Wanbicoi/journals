@@ -7,6 +7,7 @@ import { HighlightText } from "../../components/HighlightText.js";
 import { openExternalEditor } from "../../editor.js";
 import type { Entry, Project } from "../../hooks/useJournalData.js";
 import { useMarkdownSyntaxStyle } from "../../hooks/useMarkdownSyntaxStyle.js";
+import { matchesAnyBinding, matchesBinding } from "../../keymap.js";
 import type { ThemePalette } from "../../theme.js";
 
 interface ProjectsViewProps {
@@ -71,50 +72,21 @@ export function ProjectsView({
 
   useKeyboard(async (key) => {
     if (!isActive) return;
-    const keyName = key.name;
-    const str = key.sequence || key.name;
+    const keymaps = config.keymaps;
 
     // Navigation: j/k, down/up
-    if (
-      keyName === "j" ||
-      str === "j" ||
-      keyName === "down" ||
-      keyName === config.keymaps.down ||
-      str === config.keymaps.down
-    ) {
+    if (matchesAnyBinding(key, "j", "down", keymaps.down)) {
       onSelectProject?.(Math.min(selectedProjectIdx + 1, Math.max(0, projects.length - 1)));
-    } else if (
-      keyName === "k" ||
-      str === "k" ||
-      keyName === "up" ||
-      keyName === config.keymaps.up ||
-      str === config.keymaps.up
-    ) {
+    } else if (matchesAnyBinding(key, "k", "up", keymaps.up)) {
       onSelectProject?.(Math.max(0, selectedProjectIdx - 1));
-    } else if (
-      keyName === "n" ||
-      str === "n" ||
-      keyName === config.keymaps.new_project ||
-      str === config.keymaps.new_project
-    ) {
+    } else if (matchesAnyBinding(key, "n", keymaps.new_project)) {
       onNewProject?.();
-    } else if (
-      keyName === "P" ||
-      str === "P" ||
-      (key.shift && (keyName === "p" || keyName === "P"))
-    ) {
+    } else if (matchesBinding(key, "P") || (key.shift && (key.name === "p" || key.name === "P"))) {
       const proj = projects[selectedProjectIdx];
       if (proj) {
         onEditProjectSettings?.(proj);
       }
-    } else if (
-      keyName === "o" ||
-      str === "o" ||
-      keyName === "e" ||
-      str === "e" ||
-      keyName === config.keymaps.edit_project_content ||
-      str === config.keymaps.edit_project_content
-    ) {
+    } else if (matchesAnyBinding(key, "o", "e", keymaps.edit_project_content)) {
       const proj = projects[selectedProjectIdx];
       if (proj) {
         if (onOpenEditor) {
