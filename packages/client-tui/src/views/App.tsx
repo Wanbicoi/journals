@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { ErrorState } from "../components/ErrorState.js";
 import { Header } from "../components/Header.js";
 import { StatusBar } from "../components/StatusBar.js";
+import { ViewErrorBoundary } from "../components/ViewErrorBoundary.js";
 import type { Tab } from "../hooks/useAppKeymaps.js";
 import { useAppKeymaps } from "../hooks/useAppKeymaps.js";
 import { useJournalData } from "../hooks/useJournalData.js";
@@ -156,67 +157,74 @@ export function App({ onQuit }: AppProps) {
       <box flexGrow={1} flexDirection="column">
         {isError ? (
           <ErrorState error={error} />
-        ) : currentTab === "DASHBOARD" ? (
-          <DashboardView
-            dashboard={dashboard}
-            projects={projects}
-            loading={loading}
-            focusedDayIdx={focusedDayIdx}
-            onFocusDayIdx={setFocusedDayIdx}
-            onNavigateDate={navigateToDate}
-            onQuickCapture={journalData.quickCapture}
-            onStatusMessage={setStatusMessage}
-            isActive={!modal.isOpen}
-          />
-        ) : currentTab === "TIMELINE" ? (
-          <TimelineView
-            entries={filteredEntries}
-            selectedEntryIdx={Math.max(0, entrySelection.selectedIndex)}
-            onSelectEntry={entrySelection.selectIndex}
-            filterQuery={timelineFilterQuery}
-            loading={loading}
-            isActive={!modal.isOpen}
-            onStatusMessage={setStatusMessage}
-            onQuickCapture={modal.openCapture}
-            onEditContent={modal.openEditContent}
-            onEditProject={modal.openEditProject}
-            onEditTags={modal.openEditTags}
-            onDeleteEntry={modal.openDeleteConfirm}
-            onUndoDelete={undoDelete}
-            onUpdateEntryContent={async (id, content) => {
-              await updateEntryContent(id, content);
-              setStatusMessage("Updated note content via editor!");
-            }}
-          />
-        ) : currentTab === "REFLECTIONS" ? (
-          <ReflectionsView
-            periodType={reflectionPeriodType}
-            onChangePeriodType={(pt) => {
-              setReflectionPeriodType(pt);
-              setSelectedPeriodIdx(0);
-            }}
-            selectedPeriodIdx={selectedPeriodIdx}
-            onSelectPeriodIdx={setSelectedPeriodIdx}
-            isActive={!modal.isOpen}
-            onStatusMessage={setStatusMessage}
-          />
         ) : (
-          <ProjectsView
-            projects={filteredProjects}
-            selectedProjectIdx={Math.max(0, projectSelection.selectedIndex)}
-            onSelectProject={projectSelection.selectIndex}
-            entries={entries}
-            filterQuery={projectsFilterQuery}
-            isActive={!modal.isOpen}
-            onStatusMessage={setStatusMessage}
-            onNewProject={modal.openNewProject}
-            onEditProjectSettings={modal.openEditProjectSettings}
-            onUpdateProjectContent={async (id, content) => {
-              await updateProjectContent(id, content);
-              const targetProj = filteredProjects.find((p) => p.id === id);
-              setStatusMessage(`Updated content for @${targetProj?.name || "project"}`);
-            }}
-          />
+          <ViewErrorBoundary
+            key={currentTab}
+            viewName={currentTab.charAt(0) + currentTab.slice(1).toLowerCase()}
+          >
+            {currentTab === "DASHBOARD" ? (
+              <DashboardView
+                dashboard={dashboard}
+                projects={projects}
+                loading={loading}
+                focusedDayIdx={focusedDayIdx}
+                onFocusDayIdx={setFocusedDayIdx}
+                onNavigateDate={navigateToDate}
+                onQuickCapture={journalData.quickCapture}
+                onStatusMessage={setStatusMessage}
+                isActive={!modal.isOpen}
+              />
+            ) : currentTab === "TIMELINE" ? (
+              <TimelineView
+                entries={filteredEntries}
+                selectedEntryIdx={Math.max(0, entrySelection.selectedIndex)}
+                onSelectEntry={entrySelection.selectIndex}
+                filterQuery={timelineFilterQuery}
+                loading={loading}
+                isActive={!modal.isOpen}
+                onStatusMessage={setStatusMessage}
+                onQuickCapture={modal.openCapture}
+                onEditContent={modal.openEditContent}
+                onEditProject={modal.openEditProject}
+                onEditTags={modal.openEditTags}
+                onDeleteEntry={modal.openDeleteConfirm}
+                onUndoDelete={undoDelete}
+                onUpdateEntryContent={async (id, content) => {
+                  await updateEntryContent(id, content);
+                  setStatusMessage("Updated note content via editor!");
+                }}
+              />
+            ) : currentTab === "REFLECTIONS" ? (
+              <ReflectionsView
+                periodType={reflectionPeriodType}
+                onChangePeriodType={(pt) => {
+                  setReflectionPeriodType(pt);
+                  setSelectedPeriodIdx(0);
+                }}
+                selectedPeriodIdx={selectedPeriodIdx}
+                onSelectPeriodIdx={setSelectedPeriodIdx}
+                isActive={!modal.isOpen}
+                onStatusMessage={setStatusMessage}
+              />
+            ) : (
+              <ProjectsView
+                projects={filteredProjects}
+                selectedProjectIdx={Math.max(0, projectSelection.selectedIndex)}
+                onSelectProject={projectSelection.selectIndex}
+                entries={entries}
+                filterQuery={projectsFilterQuery}
+                isActive={!modal.isOpen}
+                onStatusMessage={setStatusMessage}
+                onNewProject={modal.openNewProject}
+                onEditProjectSettings={modal.openEditProjectSettings}
+                onUpdateProjectContent={async (id, content) => {
+                  await updateProjectContent(id, content);
+                  const targetProj = filteredProjects.find((p) => p.id === id);
+                  setStatusMessage(`Updated content for @${targetProj?.name || "project"}`);
+                }}
+              />
+            )}
+          </ViewErrorBoundary>
         )}
       </box>
 
