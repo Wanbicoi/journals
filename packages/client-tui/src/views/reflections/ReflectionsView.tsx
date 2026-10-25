@@ -9,13 +9,14 @@ import { openExternalEditor } from "../../editor.js";
 import { useReflectionDetail, useReflectionPeriods } from "../../hooks/queries.js";
 import { useMarkdownSyntaxStyle } from "../../hooks/useMarkdownSyntaxStyle.js";
 import { useSaveReflection } from "../../hooks/useSaveReflection.js";
+import { resolveSelectedIndexBy } from "../../hooks/useSelection.js";
 import { matchesAnyBinding } from "../../keymap.js";
 
 interface ReflectionsViewProps {
   periodType: ReflectionPeriodType;
   onChangePeriodType: (type: ReflectionPeriodType) => void;
-  selectedPeriodIdx: number;
-  onSelectPeriodIdx: (idx: number) => void;
+  selectedPeriodKey: string | null;
+  onSelectPeriodKey: (key: string) => void;
   isActive?: boolean;
   onStatusMessage?: (msg: string) => void;
   onOpenEditor?: () => void;
@@ -24,8 +25,8 @@ interface ReflectionsViewProps {
 export function ReflectionsView({
   periodType,
   onChangePeriodType,
-  selectedPeriodIdx,
-  onSelectPeriodIdx,
+  selectedPeriodKey,
+  onSelectPeriodKey,
   isActive = true,
   onStatusMessage,
   onOpenEditor,
@@ -38,7 +39,12 @@ export function ReflectionsView({
   const saveReflection = useSaveReflection();
 
   const { data: periods = [] } = useReflectionPeriods(periodType);
-  const selectedPeriod = periods[selectedPeriodIdx];
+  const selectedPeriodIdx = resolveSelectedIndexBy(
+    periods,
+    selectedPeriodKey,
+    (period) => period.periodKey,
+  );
+  const selectedPeriod = selectedPeriodIdx === -1 ? undefined : periods[selectedPeriodIdx];
   const {
     data: currentDetail = null,
     isLoading: loadingDetail,
@@ -51,24 +57,22 @@ export function ReflectionsView({
     // Cadence switching: w, m, q, y
     if (matchesAnyBinding(key, "w", "W")) {
       onChangePeriodType("WEEK");
-      onSelectPeriodIdx(0);
       onStatusMessage?.("Weekly Reflections");
     } else if (matchesAnyBinding(key, "m", "M")) {
       onChangePeriodType("MONTH");
-      onSelectPeriodIdx(0);
       onStatusMessage?.("Monthly Reflections");
     } else if (matchesAnyBinding(key, "q", "Q")) {
       onChangePeriodType("QUARTER");
-      onSelectPeriodIdx(0);
       onStatusMessage?.("Quarterly Reflections");
     } else if (matchesAnyBinding(key, "y", "Y")) {
       onChangePeriodType("YEAR");
-      onSelectPeriodIdx(0);
       onStatusMessage?.("Yearly Reflections");
     } else if (matchesAnyBinding(key, "j", "down", keymaps.down)) {
-      onSelectPeriodIdx(Math.min(selectedPeriodIdx + 1, Math.max(0, periods.length - 1)));
+      const nextPeriod = periods[Math.min(selectedPeriodIdx + 1, Math.max(0, periods.length - 1))];
+      if (nextPeriod) onSelectPeriodKey(nextPeriod.periodKey);
     } else if (matchesAnyBinding(key, "k", "up", keymaps.up)) {
-      onSelectPeriodIdx(Math.max(0, selectedPeriodIdx - 1));
+      const previousPeriod = periods[Math.max(0, selectedPeriodIdx - 1)];
+      if (previousPeriod) onSelectPeriodKey(previousPeriod.periodKey);
     } else if (matchesAnyBinding(key, "e", "return", keymaps.edit_project_content)) {
       // External editor spawn: e, Enter
       if (onOpenEditor) {
@@ -97,13 +101,6 @@ export function ReflectionsView({
       }
     }
   });
-
-  // If index out of bounds after changing periodType or filter, reset to 0
-  useEffect(() => {
-    if (periods.length > 0 && selectedPeriodIdx >= periods.length) {
-      onSelectPeriodIdx(0);
-    }
-  }, [periods.length, selectedPeriodIdx, onSelectPeriodIdx]);
 
   // Scroll into view
   useEffect(() => {
@@ -175,7 +172,7 @@ export function ReflectionsView({
                   backgroundColor={isSel ? theme.border : undefined}
                   paddingLeft={1}
                   paddingRight={1}
-                  onMouseDown={() => onSelectPeriodIdx(idx)}
+                  onMouseDown={() => onSelectPeriodKey(p.periodKey)}
                 >
                   <box flexDirection="row">
                     <text fg={isSel ? theme.primary : theme.fg}>

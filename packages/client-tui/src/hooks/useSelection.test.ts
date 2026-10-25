@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { resolveSelectedIndex } from "./useSelection.js";
+import { resolveSelectedIndex, resolveSelectedIndexBy } from "./useSelection.js";
 
 const items = [{ id: "a" }, { id: "b" }, { id: "c" }];
 
@@ -19,5 +19,11 @@ describe("resolveSelectedIndex", () => {
   it("returns -1 for an empty list so callers can render the empty state", () => {
     expect(resolveSelectedIndex([], "a")).toBe(-1);
     expect(resolveSelectedIndex([], null)).toBe(-1);
+  });
+
+  it("resolves selection by any stable key, such as a reflection period key", () => {
+    const periods = [{ periodKey: "2026-W42" }, { periodKey: "2026-W43" }];
+    expect(resolveSelectedIndexBy(periods, "2026-W43", (period) => period.periodKey)).toBe(1);
+    expect(resolveSelectedIndexBy(periods, "missing", (period) => period.periodKey)).toBe(0);
   });
 });

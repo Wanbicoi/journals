@@ -25,6 +25,12 @@ export function matchesBinding(key: KeyEventLike, binding: string): boolean {
   return normalizeKey(key) === binding;
 }
 
+export function matchesShiftedBinding(key: KeyEventLike, binding: string): boolean {
+  const normalized = normalizeKey(key);
+  if (normalized === binding) return true;
+  return key.shift === true && normalized.toLowerCase() === binding.toLowerCase();
+}
+
 export function matchesAnyBinding(key: KeyEventLike, ...bindings: string[]): boolean {
   const normalized = normalizeKey(key);
   return bindings.includes(normalized);

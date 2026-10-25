@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import type { Tab } from "./useAppKeymaps.js";
 import { useGlobalCommands } from "./useGlobalCommands.js";
 import type { useJournalFilters } from "./useJournalFilters.js";
@@ -5,31 +6,40 @@ import type { ModalManager } from "./useModalManager.js";
 
 interface UseAppCommandsOptions {
   currentTab: Tab;
+  setCurrentTab: (tab: Tab) => void;
   modal: ModalManager;
   filters: ReturnType<typeof useJournalFilters>;
-  onSelectTab: (tab: Tab) => void;
   onQuit: () => void;
   reloadData: () => Promise<void>;
   onStatusMessage: (message: string) => void;
 }
 
 /**
- * Wires the global input surface to the screen's state and reports the outcome of each command.
+ * Wires the global input surface to the screen's state, reports the outcome of each command, and
+ * owns the tab label transition. Returns the tab selector the header uses.
  */
 export function useAppCommands({
   currentTab,
+  setCurrentTab,
   modal,
   filters,
-  onSelectTab,
   onQuit,
   reloadData,
   onStatusMessage,
 }: UseAppCommandsOptions) {
+  const selectTab = useCallback(
+    (tab: Tab) => {
+      setCurrentTab(tab);
+      onStatusMessage(`${tab.charAt(0) + tab.slice(1).toLowerCase()} View`);
+    },
+    [onStatusMessage, setCurrentTab],
+  );
+
   useGlobalCommands({
     currentTab,
     modalOpen: modal.isOpen,
     helpOpen: modal.inputMode === "HELP",
-    onSelectTab,
+    onSelectTab: selectTab,
     onOpenFilter: modal.openFilter,
     onOpenHelp: modal.openHelp,
     onCloseHelp: () => modal.closeModal(),
@@ -46,4 +56,6 @@ export function useAppCommands({
     onQuit,
     onStatusMessage,
   });
+
+  return selectTab;
 }

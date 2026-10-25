@@ -3,20 +3,21 @@ import { useCallback, useState } from "react";
 
 /**
  * A cadence change and its selection reset are one transition, never two independent states.
+ * Selection is a period key, not an index, so it survives refetches and cadence changes.
  */
 export function useReflectionSelection() {
   const [periodType, setPeriodType] = useState<ReflectionPeriodType>("WEEK");
-  const [selectedPeriodIdx, setSelectedPeriodIdx] = useState(0);
+  const [selectedPeriodKey, setSelectedPeriodKey] = useState<string | null>(null);
 
   const changePeriodType = useCallback((next: ReflectionPeriodType) => {
     setPeriodType(next);
-    setSelectedPeriodIdx(0);
+    setSelectedPeriodKey(null);
   }, []);
 
   return {
     periodType,
-    selectedPeriodIdx,
-    selectPeriodIdx: setSelectedPeriodIdx,
+    selectedPeriodKey,
+    selectPeriodKey: setSelectedPeriodKey,
     changePeriodType,
   };
 }

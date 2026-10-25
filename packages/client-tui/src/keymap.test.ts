@@ -1,5 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import { matchesAnyBinding, matchesBinding, normalizeKey } from "./keymap.js";
+import {
+  matchesAnyBinding,
+  matchesBinding,
+  matchesShiftedBinding,
+  normalizeKey,
+} from "./keymap.js";
 
 describe("key normalization", () => {
   it("matches plain letters by name and sequence", () => {
@@ -30,5 +35,10 @@ describe("key normalization", () => {
 
   it("matches configured multi-character key names", () => {
     expect(matchesBinding({ name: "tab", sequence: "\t" }, "tab")).toBe(true);
+  });
+
+  it("matches a shifted letter even when the terminal omits the uppercase sequence", () => {
+    expect(matchesShiftedBinding({ name: "t", sequence: "t", shift: true }, "T")).toBe(true);
+    expect(matchesShiftedBinding({ name: "t", sequence: "t" }, "T")).toBe(false);
   });
 });

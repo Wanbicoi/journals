@@ -2,7 +2,7 @@ import { useKeyboard } from "@opentui/react";
 import { useKeymaps } from "../../contexts/keymaps.js";
 import { openExternalEditor } from "../../editor.js";
 import type { Project } from "../../hooks/useJournalData.js";
-import { matchesAnyBinding, matchesBinding } from "../../keymap.js";
+import { matchesAnyBinding, matchesShiftedBinding } from "../../keymap.js";
 
 interface UseProjectsKeymapsOptions {
   projects: Project[];
@@ -39,7 +39,7 @@ export function useProjectsKeymaps({
       onSelectProject?.(Math.max(0, selectedProjectIdx - 1));
     } else if (matchesAnyBinding(key, "n", keymaps.new_project)) {
       onNewProject?.();
-    } else if (matchesBinding(key, "P") || (key.shift && (key.name === "p" || key.name === "P"))) {
+    } else if (matchesShiftedBinding(key, "P")) {
       const project = projects[selectedProjectIdx];
       if (project) {
         onEditProjectSettings?.(project);

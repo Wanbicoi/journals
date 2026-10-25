@@ -539,8 +539,8 @@ describe("Collocated View Keymaps", () => {
                 currentPeriodType = newPt;
                 setPt(newPt);
               }}
-              selectedPeriodIdx={0}
-              onSelectPeriodIdx={() => {}}
+              selectedPeriodKey={null}
+              onSelectPeriodKey={() => {}}
               isActive={true}
               onStatusMessage={(m) => {
                 status = m;

@@ -4,7 +4,7 @@ import { useKeymaps } from "../../contexts/keymaps.js";
 import { useDayStartHour } from "../../contexts/theme.js";
 import { openExternalEditor } from "../../editor.js";
 import type { Entry } from "../../hooks/useJournalData.js";
-import { matchesAnyBinding, matchesBinding } from "../../keymap.js";
+import { matchesAnyBinding, matchesBinding, matchesShiftedBinding } from "../../keymap.js";
 
 interface UseTimelineKeymapsOptions {
   entries: Entry[];
@@ -52,7 +52,7 @@ export function useTimelineKeymaps({
       onSelectEntry?.(0);
     } else if (matchesBinding(key, "G")) {
       onSelectEntry?.(Math.max(0, entries.length - 1));
-    } else if (matchesBinding(key, "T") || (key.shift && (key.name === "t" || key.name === "T"))) {
+    } else if (matchesShiftedBinding(key, "T")) {
       // Date jump: Today (Shift+T or uppercase T)
       const todayStr = getEffectiveDateStr(Date.now(), dayStartHour);
       const todayIdx = entries.findIndex(

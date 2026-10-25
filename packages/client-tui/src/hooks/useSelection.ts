@@ -12,9 +12,21 @@ export function resolveSelectedIndex<T extends Identifiable>(
   items: T[],
   selectedId: string | null,
 ): number {
+  return resolveSelectedIndexBy(items, selectedId, (item) => item.id);
+}
+
+/**
+ * Resolve a selected key to an index using any stable key extractor. Missing keys fall back to the
+ * first row so callers never index past the end.
+ */
+export function resolveSelectedIndexBy<T>(
+  items: T[],
+  selectedValue: string | null,
+  keyOf: (item: T) => string,
+): number {
   if (items.length === 0) return -1;
-  if (selectedId === null) return 0;
-  const index = items.findIndex((item) => item.id === selectedId);
+  if (selectedValue === null) return 0;
+  const index = items.findIndex((item) => keyOf(item) === selectedValue);
   return index === -1 ? 0 : index;
 }
 

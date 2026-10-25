@@ -1,5 +1,5 @@
 import { useTerminalDimensions } from "@opentui/react";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { ErrorState } from "../components/ErrorState.js";
 import { ViewErrorBoundary } from "../components/ViewErrorBoundary.js";
 import { useAppCommands } from "../hooks/useAppCommands.js";
@@ -18,7 +18,6 @@ import { TimelineView } from "./timeline/TimelineView.js";
 export interface AppProps {
   onQuit: () => void;
 }
-
 export function App({ onQuit }: AppProps) {
   const { width = 100, height = 30 } = useTerminalDimensions();
   const [currentTab, setCurrentTab] = useState<Tab>("DASHBOARD");
@@ -40,7 +39,13 @@ export function App({ onQuit }: AppProps) {
     onStatusMessage: setStatusMessage,
   });
   const modal = useAppModals({
-    journalActions: journalData,
+    quickCapture: journalData.quickCapture,
+    createProject: journalData.createProject,
+    updateProject: journalData.updateProject,
+    updateEntryProject: journalData.updateEntryProject,
+    updateEntryTags: journalData.updateEntryTags,
+    updateEntryContent: journalData.updateEntryContent,
+    deleteEntry: journalData.deleteEntry,
     projects,
     tags,
     currentTab,
@@ -56,15 +61,11 @@ export function App({ onQuit }: AppProps) {
       navigation.selectPreviousEntry();
     },
   });
-  const selectTab = useCallback((tab: Tab) => {
-    setCurrentTab(tab);
-    setStatusMessage(`${tab.charAt(0) + tab.slice(1).toLowerCase()} View`);
-  }, []);
-  useAppCommands({
+  const selectTab = useAppCommands({
     currentTab,
+    setCurrentTab,
     modal,
     filters,
-    onSelectTab: selectTab,
     onQuit,
     reloadData: journalData.reloadData,
     onStatusMessage: setStatusMessage,
@@ -84,7 +85,7 @@ export function App({ onQuit }: AppProps) {
       onSelectTab={selectTab}
     >
       {isError ? (
-        <ErrorState error={error} />
+        <ErrorState error={error} onRetry={journalData.refetch} />
       ) : (
         <ViewErrorBoundary
           key={currentTab}
@@ -123,8 +124,8 @@ export function App({ onQuit }: AppProps) {
             <ReflectionsView
               periodType={reflection.periodType}
               onChangePeriodType={reflection.changePeriodType}
-              selectedPeriodIdx={reflection.selectedPeriodIdx}
-              onSelectPeriodIdx={reflection.selectPeriodIdx}
+              selectedPeriodKey={reflection.selectedPeriodKey}
+              onSelectPeriodKey={reflection.selectPeriodKey}
               isActive={!modal.isOpen}
               onStatusMessage={setStatusMessage}
             />

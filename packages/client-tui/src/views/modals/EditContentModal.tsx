@@ -5,6 +5,7 @@ import {
 } from "@opentui/core";
 import { useEffect, useMemo, useRef } from "react";
 import { Modal } from "../../components/Modal.js";
+import { matchesBinding } from "../../keymap.js";
 import type { ThemePalette } from "../../theme.js";
 
 interface EditContentModalProps {
@@ -75,7 +76,7 @@ export function EditContentModal({
             onSave(text);
           }}
           onKeyDown={(key) => {
-            if (key.name === "escape") {
+            if (matchesBinding(key, "escape")) {
               onCancel();
             }
           }}

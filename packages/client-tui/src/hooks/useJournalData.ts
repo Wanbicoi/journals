@@ -32,9 +32,16 @@ export function useJournalData(options: UseJournalDataOptions = {}) {
 
   const loading = entriesQuery.isLoading || projectsQuery.isLoading || tagsQuery.isLoading;
   const isError =
-    entriesQuery.isError || projectsQuery.isError || tagsQuery.isError || dashboardQuery.isError;
+    entriesQuery.isError ||
+    projectsQuery.isError ||
+    tagsQuery.isError ||
+    (isDashboardActive && dashboardQuery.isError);
   const error =
-    entriesQuery.error ?? projectsQuery.error ?? tagsQuery.error ?? dashboardQuery.error ?? null;
+    entriesQuery.error ??
+    projectsQuery.error ??
+    tagsQuery.error ??
+    (isDashboardActive ? dashboardQuery.error : null) ??
+    null;
 
   async function reloadData() {
     await queryClient.invalidateQueries();

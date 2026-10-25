@@ -1,21 +1,26 @@
 import type { Entry, Project, TagInfo } from "./queries.js";
 import type { Tab } from "./useAppKeymaps.js";
-import type { useJournalData } from "./useJournalData.js";
 import { useModalManager } from "./useModalManager.js";
 
-type JournalActions = Pick<
-  ReturnType<typeof useJournalData>,
-  | "quickCapture"
-  | "createProject"
-  | "updateProject"
-  | "updateEntryProject"
-  | "updateEntryTags"
-  | "updateEntryContent"
-  | "deleteEntry"
->;
-
 interface UseAppModalsOptions {
-  journalActions: JournalActions;
+  quickCapture: (raw: string) => Promise<unknown>;
+  createProject: (
+    name: string,
+    recurrence?: string | null,
+    missedPolicy?: "accumulate" | "spike" | "mark_done",
+  ) => Promise<unknown>;
+  updateProject: (
+    id: string,
+    data: {
+      name?: string;
+      recurrence?: string | null;
+      missedPolicy?: "accumulate" | "spike" | "mark_done";
+    },
+  ) => Promise<unknown>;
+  updateEntryProject: (id: string, projectName: string) => Promise<unknown>;
+  updateEntryTags: (id: string, tags: string[]) => Promise<unknown>;
+  updateEntryContent: (id: string, content: string) => Promise<unknown>;
+  deleteEntry: (id: string) => Promise<unknown>;
   projects: Project[];
   tags: TagInfo[];
   currentTab: Tab;
@@ -30,11 +35,17 @@ interface UseAppModalsOptions {
 }
 
 /**
- * Modal state plus the exact mutations each modal commits. Callers pass the action slice, never the
+ * Modal state plus the exact mutations each modal commits. Callers pass the actions, never the
  * whole journal container.
  */
 export function useAppModals({
-  journalActions,
+  quickCapture,
+  createProject,
+  updateProject,
+  updateEntryProject,
+  updateEntryTags,
+  updateEntryContent,
+  deleteEntry,
   projects,
   tags,
   currentTab,
@@ -55,13 +66,13 @@ export function useAppModals({
     selectedProject,
     timelineFilterQuery,
     projectsFilterQuery,
-    quickCapture: journalActions.quickCapture,
-    createProject: journalActions.createProject,
-    updateProject: journalActions.updateProject,
-    updateEntryProject: journalActions.updateEntryProject,
-    updateEntryTags: journalActions.updateEntryTags,
-    updateEntryContent: journalActions.updateEntryContent,
-    deleteEntry: journalActions.deleteEntry,
+    quickCapture,
+    createProject,
+    updateProject,
+    updateEntryProject,
+    updateEntryTags,
+    updateEntryContent,
+    deleteEntry,
     onStatusMessage,
     onTimelineFilterChange,
     onProjectsFilterChange,
