@@ -14,6 +14,7 @@ import { StatusBar } from "../components/StatusBar.js";
 import type { Entry } from "../hooks/useJournalData.js";
 import { useJournalData } from "../hooks/useJournalData.js";
 import { useMouseClick } from "../hooks/useMouseClick.js";
+import { useSelectionById } from "../hooks/useSelection.js";
 import { getTheme } from "../theme.js";
 import { DashboardView } from "./dashboard/DashboardView.js";
 import { ActiveModal } from "./modals/ActiveModal.js";
@@ -62,8 +63,6 @@ export function App() {
   const [timelineFilterQuery, setTimelineFilterQuery] = useState("");
   const [projectsFilterQuery, setProjectsFilterQuery] = useState("");
   const [lastDeletedEntry, setLastDeletedEntry] = useState<Entry | null>(null);
-  const [selectedEntryIdx, setSelectedEntryIdx] = useState(0);
-  const [selectedProjectIdx, setSelectedProjectIdx] = useState(0);
   const [focusedDayIdx, setFocusedDayIdx] = useState(59);
   const [statusMessage, setStatusMessage] = useState("Ready");
 
@@ -83,8 +82,10 @@ export function App() {
     return p.name.toLowerCase().includes(q) || p.content.toLowerCase().includes(q);
   });
 
-  const selectedEntry = filteredEntries[selectedEntryIdx];
-  const selectedProject = filteredProjects[selectedProjectIdx];
+  const entrySelection = useSelectionById(filteredEntries);
+  const projectSelection = useSelectionById(filteredProjects);
+  const selectedEntry = entrySelection.selected;
+  const selectedProject = projectSelection.selected;
 
   const modal = useModalManager({
     projects,
@@ -98,24 +99,28 @@ export function App() {
     onStatusMessage: setStatusMessage,
     onTimelineFilterChange: (q) => {
       setTimelineFilterQuery(q);
-      setSelectedEntryIdx(0);
+      entrySelection.clear();
     },
     onProjectsFilterChange: (q) => {
       setProjectsFilterQuery(q);
-      setSelectedProjectIdx(0);
+      projectSelection.clear();
     },
     onEntryDeleted: (entry) => {
       setLastDeletedEntry(entry);
-      setSelectedEntryIdx((prev) => Math.max(0, prev - 1));
+      const previous = filteredEntries[Math.max(0, entrySelection.selectedIndex - 1)];
+      entrySelection.select(previous);
     },
   });
 
-  const navigateToDate = useCallback((dateStr: string) => {
-    setTimelineFilterQuery(dateStr);
-    setCurrentTab("TIMELINE");
-    setSelectedEntryIdx(0);
-    setStatusMessage(`Navigated to timeline for date: ${dateStr}`);
-  }, []);
+  const navigateToDate = useCallback(
+    (dateStr: string) => {
+      setTimelineFilterQuery(dateStr);
+      setCurrentTab("TIMELINE");
+      entrySelection.clear();
+      setStatusMessage(`Navigated to timeline for date: ${dateStr}`);
+    },
+    [entrySelection.clear],
+  );
 
   useMouseClick(({ type }) => {
     if (type !== "down") return;
@@ -208,8 +213,8 @@ export function App() {
         ) : currentTab === "TIMELINE" ? (
           <TimelineView
             entries={filteredEntries}
-            selectedEntryIdx={selectedEntryIdx}
-            onSelectEntry={setSelectedEntryIdx}
+            selectedEntryIdx={Math.max(0, entrySelection.selectedIndex)}
+            onSelectEntry={entrySelection.selectIndex}
             filterQuery={timelineFilterQuery}
             quickCaptureKey={config.keymaps.quick_capture}
             loading={loading}
@@ -254,8 +259,8 @@ export function App() {
         ) : (
           <ProjectsView
             projects={filteredProjects}
-            selectedProjectIdx={selectedProjectIdx}
-            onSelectProject={setSelectedProjectIdx}
+            selectedProjectIdx={Math.max(0, projectSelection.selectedIndex)}
+            onSelectProject={projectSelection.selectIndex}
             entries={entries}
             filterQuery={projectsFilterQuery}
             width={width}
