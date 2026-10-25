@@ -152,7 +152,7 @@ export function ReflectionsView({
               onMouseDown={() => onChangePeriodType(st.type)}
             >
               {isActive ? (
-                <text bg={theme.primary} fg={theme.selectedFg}>
+                <text bg={theme.selectedBg} fg={theme.selectedFg}>
                   {` [${st.key}] ${st.label} `}
                 </text>
               ) : (
@@ -199,11 +199,9 @@ export function ReflectionsView({
                   </box>
 
                   {p.hasReflection ? (
-                    <text fg={theme.secondary}>{" [Done] "}</text>
+                    <text fg={theme.success || theme.secondary}>{"● done"}</text>
                   ) : (
-                    <text bg={theme.accent} fg={theme.selectedFg}>
-                      {" [Missing / Needs Reflection] "}
-                    </text>
+                    <text fg={theme.muted}>{"○ todo"}</text>
                   )}
                 </box>
               );

@@ -247,72 +247,72 @@ export function TimelineView({
 
   return (
     <scrollbox ref={scrollBoxRef} flexGrow={1} paddingLeft={1} paddingRight={1}>
-      {groups.map((group) => (
-        <box key={group.dateStr} flexDirection="column">
-          {/* Daily Group Date Header */}
-          <box flexDirection="row" marginTop={1}>
-            <text fg={theme.accent}>{`${icons.calendar || "📅"} ─── ${group.dateStr} ───`}</text>
-          </box>
+      {groups.map((group) => {
+        const d = new Date(`${group.dateStr}T12:00:00`);
+        const weekday = d.toLocaleDateString("en-US", { weekday: "short" });
+        const count = group.items.length;
 
-          {/* Entries for this Day */}
-          {group.items.map(({ entry, globalIdx }) => {
-            const isSel = globalIdx === selectedEntryIdx;
-            const time = new Date(entry.createdAt).toTimeString().slice(0, 5);
-            const borderColor = isSel ? theme.primary : theme.border;
+        return (
+          <box key={group.dateStr} flexDirection="column" marginTop={1}>
+            {/* Daily Group Date Header */}
+            <box flexDirection="row" marginBottom={1}>
+              <text
+                fg={theme.accent}
+              >{`${icons.calendar || "📅"} ${group.dateStr}  ${weekday}  `}</text>
+              <text fg={theme.muted}>{`(${count} ${count === 1 ? "entry" : "entries"})`}</text>
+            </box>
 
-            return (
-              <box
-                key={entry.id}
-                id={`entry-${entry.id}`}
-                flexDirection="column"
-                borderStyle="single"
-                borderColor={borderColor}
-                backgroundColor={isSel ? theme.border : undefined}
-                paddingLeft={1}
-                paddingRight={1}
-                onMouseDown={() => {
-                  onSelectEntry?.(globalIdx);
-                }}
-              >
-                {/* Header row inside clean border box */}
-                <box flexDirection="row" justifyContent="space-between">
+            {/* Entries for this Day */}
+            {group.items.map(({ entry, globalIdx }) => {
+              const isSel = globalIdx === selectedEntryIdx;
+              const time = new Date(entry.createdAt).toTimeString().slice(0, 5);
+
+              return (
+                <box
+                  key={entry.id}
+                  id={`entry-${entry.id}`}
+                  flexDirection="column"
+                  marginBottom={1}
+                  onMouseDown={() => {
+                    onSelectEntry?.(globalIdx);
+                  }}
+                >
+                  {/* Header row: Left gutter indicator + Time + Project + Tags */}
                   <box flexDirection="row">
-                    {isSel && (
-                      <text bg={theme.primary} fg={theme.selectedFg}>
-                        {" SELECTED "}
-                      </text>
-                    )}
-                    <text fg={theme.muted}>{` ${time} `}</text>
-                    <text fg={theme.secondary}>
-                      {entry.projectName ? `${icons.project} @${entry.projectName} ` : "🌐 GLOBAL "}
+                    <text fg={isSel ? theme.primary : theme.muted}>{isSel ? "▎ " : "  "}</text>
+                    <text fg={isSel ? theme.primary : theme.muted}>{`${time}  `}</text>
+                    <text fg={isSel ? theme.primary : theme.secondary}>
+                      {entry.projectName
+                        ? `${icons.project || "󰄲"} @${entry.projectName} `
+                        : "🌐 GLOBAL "}
                     </text>
                     {entry.breakDays > 0 && (
                       <text fg={theme.warning || "yellow"}>{`⏸ ${entry.breakDays}d break `}</text>
                     )}
                     {entry.tags.map((t) => (
-                      <text key={t} fg={theme.tag}>{`${icons.tag} #${t} `}</text>
+                      <text key={t} fg={theme.tag}>{`${icons.tag || "󰌕"} #${t} `}</text>
+                    ))}
+                  </box>
+
+                  {/* Content lines: cleanly indented under metadata */}
+                  <box flexDirection="column" paddingLeft={4}>
+                    {entry.content.split("\n").map((line, lIdx) => (
+                      <HighlightText
+                        key={`${entry.id}-line-${lIdx}`}
+                        text={line || " "}
+                        query={filterQuery}
+                        theme={theme}
+                        defaultFg={theme.fg}
+                        selectable
+                      />
                     ))}
                   </box>
                 </box>
-
-                {/* Content lines */}
-                <box flexDirection="column" marginTop={0}>
-                  {entry.content.split("\n").map((line, lIdx) => (
-                    <HighlightText
-                      key={`${entry.id}-line-${lIdx}`}
-                      text={line || " "}
-                      query={filterQuery}
-                      theme={theme}
-                      defaultFg={theme.fg}
-                      selectable
-                    />
-                  ))}
-                </box>
-              </box>
-            );
-          })}
-        </box>
-      ))}
+              );
+            })}
+          </box>
+        );
+      })}
     </scrollbox>
   );
 }

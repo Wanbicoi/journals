@@ -107,8 +107,8 @@ export function BiDirectionalBarChart({
         <box flexDirection="row" justifyContent="space-between" marginBottom={0}>
           <text fg={theme.primary}>{title}</text>
           <box flexDirection="row">
-            <text fg={theme.error || "red"}>{"▲ +Missed Projects (Spike) "}</text>
-            <text fg={theme.warning || "yellow"}>{"▼ -Breaks (Pause)"}</text>
+            <text fg={theme.error || "red"}>{"▲ Missed  "}</text>
+            <text fg={theme.warning || "yellow"}>{"▼ Break"}</text>
           </box>
         </box>
       )}

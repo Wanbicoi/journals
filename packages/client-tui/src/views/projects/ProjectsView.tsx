@@ -227,27 +227,20 @@ export function ProjectsView({
             <text fg={theme.muted}>{"  No notes logged under this project yet."}</text>
           ) : (
             projectNotes.map((e) => (
-              <box
-                key={e.id}
-                flexDirection="column"
-                borderStyle="single"
-                borderColor={theme.border}
-                paddingLeft={1}
-                paddingRight={1}
-              >
-                <box flexDirection="row" justifyContent="space-between">
-                  <box flexDirection="row">
-                    <text
-                      fg={theme.muted}
-                    >{`${formatRelativeTime(e.createdAt)} • ${new Date(e.createdAt).toISOString().slice(0, 10)} ${new Date(e.createdAt).toTimeString().slice(0, 5)} `}</text>
-                    {e.tags.map((t) => (
-                      <text key={t} fg={theme.tag}>{`#${t} `}</text>
-                    ))}
-                  </box>
+              <box key={e.id} flexDirection="column" marginBottom={1} paddingLeft={1}>
+                <box flexDirection="row">
+                  <text
+                    fg={theme.muted}
+                  >{`${formatRelativeTime(e.createdAt)} • ${new Date(e.createdAt).toISOString().slice(0, 10)} ${new Date(e.createdAt).toTimeString().slice(0, 5)} `}</text>
+                  {e.tags.map((t) => (
+                    <text key={t} fg={theme.tag}>{`${icons.tag || "󰌕"} #${t} `}</text>
+                  ))}
                 </box>
-                <text fg={theme.fg} selectable>
-                  {e.content}
-                </text>
+                <box paddingLeft={2} marginTop={0}>
+                  <text fg={theme.fg} selectable>
+                    {e.content}
+                  </text>
+                </box>
               </box>
             ))
           )}

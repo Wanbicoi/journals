@@ -9,49 +9,35 @@ interface HeaderProps {
 }
 
 export function Header({ width, currentTab, onSelectTab, journalIcon, theme }: HeaderProps) {
+  const tabs: { id: "DASHBOARD" | "TIMELINE" | "REFLECTIONS" | "PROJECTS"; label: string }[] = [
+    { id: "DASHBOARD", label: "[1] Dashboard" },
+    { id: "TIMELINE", label: "[2] Timeline" },
+    { id: "REFLECTIONS", label: "[3] Reflections" },
+    { id: "PROJECTS", label: "[4] Projects" },
+  ];
+
   return (
     <box height={2} flexDirection="column">
-      <box flexDirection="row">
-        <text fg={theme.primary}>{`${journalIcon} JOURNALS`}</text>
-        <text> </text>
-        <box onMouseDown={() => onSelectTab?.("DASHBOARD")}>
-          {currentTab === "DASHBOARD" ? (
-            <text bg={theme.primary} fg={theme.selectedFg}>
-              {" [1] Dashboard "}
-            </text>
-          ) : (
-            <text fg={theme.muted}>{" [1] Dashboard "}</text>
-          )}
+      <box flexDirection="row" justifyContent="space-between">
+        <box flexDirection="row">
+          <text fg={theme.primary}>{`${journalIcon} JOURNALS  `}</text>
+          {tabs.map((tab) => {
+            const isActive = currentTab === tab.id;
+            return (
+              <box key={tab.id} marginRight={1} onMouseDown={() => onSelectTab?.(tab.id)}>
+                {isActive ? (
+                  <text bg={theme.selectedBg} fg={theme.selectedFg}>
+                    {` ${tab.label} `}
+                  </text>
+                ) : (
+                  <text fg={theme.muted}>{` ${tab.label} `}</text>
+                )}
+              </box>
+            );
+          })}
         </box>
-        <text> </text>
-        <box onMouseDown={() => onSelectTab?.("TIMELINE")}>
-          {currentTab === "TIMELINE" ? (
-            <text bg={theme.secondary} fg={theme.selectedFg}>
-              {" [2] Timeline "}
-            </text>
-          ) : (
-            <text fg={theme.muted}>{" [2] Timeline "}</text>
-          )}
-        </box>
-        <text> </text>
-        <box onMouseDown={() => onSelectTab?.("REFLECTIONS")}>
-          {currentTab === "REFLECTIONS" ? (
-            <text bg={theme.primary} fg={theme.selectedFg}>
-              {" [3] Reflections "}
-            </text>
-          ) : (
-            <text fg={theme.muted}>{" [3] Reflections "}</text>
-          )}
-        </box>
-        <text> </text>
-        <box onMouseDown={() => onSelectTab?.("PROJECTS")}>
-          {currentTab === "PROJECTS" ? (
-            <text bg={theme.accent} fg={theme.selectedFg}>
-              {" [4] Projects "}
-            </text>
-          ) : (
-            <text fg={theme.muted}>{" [4] Projects "}</text>
-          )}
+        <box flexDirection="row">
+          <text fg={theme.muted}>{"[?] Help"}</text>
         </box>
       </box>
       <text fg={theme.border}>{"─".repeat(width)}</text>

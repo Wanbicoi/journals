@@ -107,16 +107,16 @@ export function DashboardView({
         marginTop={0}
       >
         <box flexDirection="row">
-          <text fg={theme.primary}>{"[ DAILY ROUTINE MONITOR ] "}</text>
-          <text fg={theme.muted}>{"System State: "}</text>
+          <text fg={theme.primary}>{"DAILY ROUTINE MONITOR  "}</text>
+          <text fg={theme.muted}>{"State: "}</text>
           <text fg={statusColor}>{`● ${dashboard.status}`}</text>
         </box>
         <box flexDirection="row">
-          <text fg={theme.muted}>{"Last 60 Days | "}</text>
+          <text fg={theme.muted}>{"Last 60 Days: "}</text>
           <text fg={totalSpikes > 0 ? theme.error || "red" : theme.muted}>
-            {`Routine Spikes (Missed): ${totalSpikes}  `}
+            {`${totalSpikes} missed spikes  `}
           </text>
-          <text fg={theme.warning || "yellow"}>{`Breaks: ${dashboard.totalBreakDays}d`}</text>
+          <text fg={theme.warning || "yellow"}>{`${dashboard.totalBreakDays}d breaks`}</text>
         </box>
       </box>
 
@@ -135,7 +135,10 @@ export function DashboardView({
           marginTop={1}
         >
           <box flexDirection="row" justifyContent="space-between">
-            <text fg={theme.primary}>{"🎯 TODAY'S ROUTINE AGENDA"}</text>
+            <box flexDirection="row">
+              <text fg={theme.primary}>{"🎯 TODAY'S ROUTINE AGENDA  "}</text>
+              <text fg={theme.muted}>{"(Press [Space] to complete)"}</text>
+            </box>
             <text fg={theme.muted}>
               {`${dashboard.todayRoutines.filter((r) => r.isCompletedToday).length}/${dashboard.todayRoutines.length} completed`}
             </text>
@@ -156,7 +159,7 @@ export function DashboardView({
                     <text fg={theme.muted}>{`(${ruleDesc})`}</text>
                   </box>
                   <text fg={isDone ? theme.success || "green" : theme.warning || "yellow"}>
-                    {isDone ? "COMPLETED" : "DUE TODAY (Space to complete)"}
+                    {isDone ? "completed" : "due today"}
                   </text>
                 </box>
               );
@@ -180,7 +183,7 @@ export function DashboardView({
           focusedIdx={focusedDayIdx}
           onNavigateDate={onNavigateDate}
           theme={theme}
-          title="Routine Anomaly Monitor (Spikes = Missed Work, Breaks = Pause)"
+          title="Routine Anomaly Monitor (60 Days)"
         />
       </box>
 

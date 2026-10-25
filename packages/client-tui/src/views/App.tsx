@@ -288,6 +288,7 @@ export function App() {
         filterQuery={currentTab === "TIMELINE" ? timelineFilterQuery : projectsFilterQuery}
         statusMessage={statusMessage}
         theme={theme}
+        currentTab={currentTab}
       />
     </box>
   );

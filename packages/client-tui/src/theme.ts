@@ -34,6 +34,9 @@ export const themes: Record<string, ThemePalette> = {
     highlight: "#b4637a", // Love
     tag: "#907aa9", // Iris
     project: "#d7827e", // Rose
+    success: "#56949f", // Foam
+    warning: "#ea9d34", // Gold
+    error: "#b4637a", // Love
   },
   "rose-pine": {
     name: "Rosé Pine",
@@ -50,6 +53,9 @@ export const themes: Record<string, ThemePalette> = {
     highlight: "#eb6f92", // Love
     tag: "#c4a7e7", // Iris
     project: "#ebbcba", // Rose
+    success: "#9ccfd8", // Foam
+    warning: "#f6c177", // Gold
+    error: "#eb6f92", // Love
   },
   "rose-pine-moon": {
     name: "Rosé Pine Moon",
@@ -66,6 +72,9 @@ export const themes: Record<string, ThemePalette> = {
     highlight: "#eb6f92", // Love
     tag: "#c4a7e7", // Iris
     project: "#ea9a97", // Rose
+    success: "#9ccfd8", // Foam
+    warning: "#f6c177", // Gold
+    error: "#eb6f92", // Love
   },
   nord: {
     name: "Nord",
@@ -82,6 +91,9 @@ export const themes: Record<string, ThemePalette> = {
     highlight: "#bf616a",
     tag: "#b48ead",
     project: "#88c0d0",
+    success: "#a3be8c",
+    warning: "#ebcb8b",
+    error: "#bf616a",
   },
   catppuccin: {
     name: "Catppuccin Mocha",
@@ -98,6 +110,9 @@ export const themes: Record<string, ThemePalette> = {
     highlight: "#f38ba8",
     tag: "#cba6f7",
     project: "#89b4fa",
+    success: "#a6e3a1",
+    warning: "#f9e2af",
+    error: "#f38ba8",
   },
   dracula: {
     name: "Dracula",
@@ -114,6 +129,9 @@ export const themes: Record<string, ThemePalette> = {
     highlight: "#ff5555",
     tag: "#ff79c6",
     project: "#bd93f9",
+    success: "#50fa7b",
+    warning: "#f1fa8c",
+    error: "#ff5555",
   },
   gruvbox: {
     name: "Gruvbox Dark",
@@ -130,6 +148,9 @@ export const themes: Record<string, ThemePalette> = {
     highlight: "#fb4934",
     tag: "#d3869b",
     project: "#fe8019",
+    success: "#b8bb26",
+    warning: "#fabd2f",
+    error: "#fb4934",
   },
 };
 

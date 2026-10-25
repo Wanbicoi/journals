@@ -13,47 +13,42 @@ export function HelpModal({ width, height, keymaps, theme }: HelpModalProps) {
   const cancelKey = keymaps.cancel === "escape" ? "Esc" : keymaps.cancel;
 
   return (
-    <Modal width={width} height={height} theme={theme} borderColor={theme.primary} maxWidth={72}>
-      <text bg={theme.primary} fg={theme.selectedFg}>
-        {" KEYBOARD & MOUSE SHORTCUTS "}
-      </text>
-      <text fg={theme.border}>{"─".repeat(Math.min(68, width - 12))}</text>
-      <text
-        fg={theme.fg}
-      >{`[${keymaps.view_dashboard ?? "1"}] or Click Header : 60-Day Routine Dashboard`}</text>
-      <text fg={theme.fg}>{`[${keymaps.view_timeline}] or Click Header : Timeline Stream`}</text>
-      <text
-        fg={theme.fg}
-      >{`[${keymaps.view_reflections}] or Click Header : Periodic Reflections`}</text>
-      <text
-        fg={theme.fg}
-      >{`[${keymaps.view_projects}] or Click Header : Projects & Markdown Preview`}</text>
-      <text
-        fg={theme.fg}
-      >{`[${keymaps.down}] / [${keymaps.up}] or [Down]/[Up] : Navigate entries / periods / projects`}</text>
-      <text fg={theme.fg}>
-        {"[w] / [m] / [q] / [y] : Toggle Weekly/Monthly/Quarterly/Yearly (Reflections)"}
-      </text>
-      <text
-        fg={theme.fg}
-      >{`[${keymaps.quick_capture}] : Quick capture note (@project #tags /date /break)`}</text>
-      <text fg={theme.fg}>{"[Ctrl+E] : Open $EDITOR inside quick capture modal"}</text>
-      <text
-        fg={theme.fg}
-      >{`[${keymaps.edit_project_content}] / [Enter] : Edit note or $EDITOR (Reflection / Project)`}</text>
-      <text fg={theme.fg}>{"[P] : Edit routine rule & missed policy (Projects view)"}</text>
-      <text fg={theme.fg}>{"[Space] : Check-off routine due today (Dashboard view)"}</text>
-      <text fg={theme.fg}>
-        {"[t] / [[] / []] : Jump to Today / Prev Day / Next Day (Timeline)"}
-      </text>
-      <text fg={theme.fg}>{`[${keymaps.delete_entry}] : Delete note (Press [u] to Undo)`}</text>
-      <text fg={theme.fg}>{`[${keymaps.edit_project}] : Reassign note project`}</text>
-      <text fg={theme.fg}>{`[${keymaps.edit_tags}] : Edit note tags`}</text>
-      <text fg={theme.fg}>{`[${keymaps.new_project}] : Create new project`}</text>
-      <text fg={theme.fg}>{`[${keymaps.search_filter}] : Filter / Search stream`}</text>
-      <text fg={theme.fg}>{`[${keymaps.refresh}] : Refresh timeline & projects`}</text>
-      <text fg={theme.fg}>{`[${cancelKey}] : Dismiss modal / Clear filter`}</text>
-      <text fg={theme.fg}>{`[${keymaps.quit}] / [Ctrl+C] : Quit application`}</text>
+    <Modal width={width} height={height} theme={theme} borderColor={theme.primary} maxWidth={74}>
+      <box flexDirection="row" justifyContent="space-between" marginBottom={1}>
+        <text fg={theme.primary}>{"KEYBOARD SHORTCUTS"}</text>
+        <text fg={theme.muted}>{"[Esc to close]"}</text>
+      </box>
+      <text fg={theme.border}>{"─".repeat(Math.min(70, width - 12))}</text>
+
+      <box flexDirection="column" marginTop={1}>
+        <box flexDirection="row">
+          <text fg={theme.accent}>{"VIEWS        "}</text>
+          <text fg={theme.fg}>{"[1] Dashboard  [2] Timeline  [3] Reflections  [4] Projects"}</text>
+        </box>
+        <box flexDirection="row">
+          <text fg={theme.accent}>{"NAVIGATION   "}</text>
+          <text fg={theme.fg}>{"[j/k] Move  [w/m/q/y] Cadence  [t] Today  [[/]] Day jumps"}</text>
+        </box>
+        <box flexDirection="row">
+          <text fg={theme.accent}>{"ACTIONS      "}</text>
+          <text fg={theme.fg}>
+            {"[n] Note  [e/Enter] Edit  [d] Delete  [u] Undo  [Space] Check"}
+          </text>
+        </box>
+        <box flexDirection="row">
+          <text fg={theme.accent}>{"PROJECTS     "}</text>
+          <text fg={theme.fg}>
+            {"[p] Reassign  [t] Tags  [P] Routine settings  [N] New project"}
+          </text>
+        </box>
+        <box flexDirection="row">
+          <text fg={theme.accent}>{"GLOBAL       "}</text>
+          <text
+            fg={theme.fg}
+          >{`[/] Search/filter  [r] Refresh  [${cancelKey}] Back  [q] Quit`}</text>
+        </box>
+      </box>
+
       <text fg={theme.muted} marginTop={1}>
         {"Press any key or click to dismiss"}
       </text>
