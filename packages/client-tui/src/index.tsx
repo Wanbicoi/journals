@@ -72,9 +72,13 @@ async function main() {
   });
 
   const root = createRoot(renderer);
+  const quit = () => {
+    cleanupServer();
+    process.exit(0);
+  };
   root.render(
     <QueryClientProvider client={queryClient}>
-      <App />
+      <App onQuit={quit} />
     </QueryClientProvider>,
   );
 }

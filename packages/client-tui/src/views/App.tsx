@@ -1,21 +1,17 @@
 import type { ReflectionPeriodType } from "@journals/core";
-import {
-  useKeyboard,
-  useRenderer,
-  useSelectionHandler,
-  useTerminalDimensions,
-} from "@opentui/react";
+import { useTerminalDimensions } from "@opentui/react";
 import { useCallback, useState } from "react";
 import { config } from "../api/client.js";
-import { copyToClipboard } from "../clipboard.js";
 import { ErrorState } from "../components/ErrorState.js";
 import { Header } from "../components/Header.js";
 import { StatusBar } from "../components/StatusBar.js";
-import type { Entry } from "../hooks/useJournalData.js";
+import type { Tab } from "../hooks/useAppKeymaps.js";
+import { useAppKeymaps } from "../hooks/useAppKeymaps.js";
 import { useJournalData } from "../hooks/useJournalData.js";
 import { useMouseClick } from "../hooks/useMouseClick.js";
 import { useSelectionById } from "../hooks/useSelection.js";
-import { matchesAnyBinding, matchesBinding, normalizeKey } from "../keymap.js";
+import { useSelectionClipboard } from "../hooks/useSelectionClipboard.js";
+import { useUndoDelete } from "../hooks/useUndoDelete.js";
 import { getTheme } from "../theme.js";
 import { DashboardView } from "./dashboard/DashboardView.js";
 import { ActiveModal } from "./modals/ActiveModal.js";
@@ -24,21 +20,11 @@ import { ProjectsView } from "./projects/ProjectsView.js";
 import { ReflectionsView } from "./reflections/ReflectionsView.js";
 import { TimelineView } from "./timeline/TimelineView.js";
 
-type Tab = "DASHBOARD" | "TIMELINE" | "REFLECTIONS" | "PROJECTS";
-const TABS: Tab[] = ["DASHBOARD", "TIMELINE", "REFLECTIONS", "PROJECTS"];
+export interface AppProps {
+  onQuit: () => void;
+}
 
-const TAB_KEY_MAP: Record<string, Tab> = {
-  "1": "DASHBOARD",
-  [config.keymaps.view_dashboard]: "DASHBOARD",
-  "2": "TIMELINE",
-  [config.keymaps.view_timeline]: "TIMELINE",
-  "3": "REFLECTIONS",
-  [config.keymaps.view_reflections]: "REFLECTIONS",
-  "4": "PROJECTS",
-  [config.keymaps.view_projects]: "PROJECTS",
-};
-
-export function App() {
+export function App({ onQuit }: AppProps) {
   const { width = 100, height = 30 } = useTerminalDimensions();
   const icons = config.appearance.use_nerd_font ? config.icons.nerd : config.icons.plain;
   const theme = getTheme(config.appearance.theme);
@@ -63,7 +49,6 @@ export function App() {
   const [selectedPeriodIdx, setSelectedPeriodIdx] = useState(0);
   const [timelineFilterQuery, setTimelineFilterQuery] = useState("");
   const [projectsFilterQuery, setProjectsFilterQuery] = useState("");
-  const [lastDeletedEntry, setLastDeletedEntry] = useState<Entry | null>(null);
   const [focusedDayIdx, setFocusedDayIdx] = useState(59);
   const [statusMessage, setStatusMessage] = useState("Ready");
 
@@ -88,6 +73,11 @@ export function App() {
   const selectedEntry = entrySelection.selected;
   const selectedProject = projectSelection.selected;
 
+  const { rememberDeleted, undo: undoDelete } = useUndoDelete({
+    restoreEntry,
+    onStatusMessage: setStatusMessage,
+  });
+
   const modal = useModalManager({
     projects,
     tags,
@@ -107,7 +97,7 @@ export function App() {
       projectSelection.clear();
     },
     onEntryDeleted: (entry) => {
-      setLastDeletedEntry(entry);
+      rememberDeleted(entry);
       const previous = filteredEntries[Math.max(0, entrySelection.selectedIndex - 1)];
       entrySelection.select(previous);
     },
@@ -128,43 +118,24 @@ export function App() {
     if (modal.inputMode === "HELP") modal.closeModal();
   });
 
-  const renderer = useRenderer();
-  useSelectionHandler((selection) => {
-    const text = selection?.getSelectedText();
-    if (text) {
-      copyToClipboard(text, renderer);
-      const preview = text.trim().replace(/\s+/g, " ");
-      const display = preview.length > 30 ? `${preview.slice(0, 30)}...` : preview;
-      setStatusMessage(`Copied to clipboard: "${display}"`);
-    }
-  });
+  const selectTab = useCallback((tab: Tab) => {
+    setCurrentTab(tab);
+    setStatusMessage(`${tab.charAt(0) + tab.slice(1).toLowerCase()} View`);
+  }, []);
 
-  useKeyboard(async (key) => {
-    const keymaps = config.keymaps;
-    if (key.ctrl && matchesBinding(key, "c")) process.exit(0);
-    if (modal.isOpen) return;
+  useSelectionClipboard(setStatusMessage);
 
-    if (matchesAnyBinding(key, keymaps.quit, "q")) {
-      process.exit(0);
-    }
-
-    const tab = TAB_KEY_MAP[normalizeKey(key)];
-    if (tab) {
-      setCurrentTab(tab);
-      setStatusMessage(`${tab.charAt(0) + tab.slice(1).toLowerCase()} View`);
-      return;
-    }
-
-    if (matchesBinding(key, "tab")) {
-      setCurrentTab((prev) => TABS[(TABS.indexOf(prev) + 1) % TABS.length]);
-    } else if (matchesBinding(key, keymaps.search_filter)) {
-      modal.openFilter();
-    } else if (matchesBinding(key, keymaps.help)) {
-      modal.openHelp();
-    } else if (matchesBinding(key, keymaps.refresh)) {
+  useAppKeymaps({
+    currentTab,
+    modalOpen: modal.isOpen,
+    onSelectTab: selectTab,
+    onOpenFilter: modal.openFilter,
+    onOpenHelp: modal.openHelp,
+    onRefresh: async () => {
       await reloadData();
       setStatusMessage("Refreshed data");
-    } else if (matchesBinding(key, keymaps.cancel)) {
+    },
+    onClearFilter: () => {
       if (currentTab === "TIMELINE" && timelineFilterQuery) {
         setTimelineFilterQuery("");
         setStatusMessage("Timeline filter cleared");
@@ -172,7 +143,8 @@ export function App() {
         setProjectsFilterQuery("");
         setStatusMessage("Projects filter cleared");
       }
-    }
+    },
+    onQuit,
   });
 
   return (
@@ -180,10 +152,7 @@ export function App() {
       <Header
         width={width}
         currentTab={currentTab}
-        onSelectTab={(tab) => {
-          setCurrentTab(tab);
-          setStatusMessage(`${tab.charAt(0) + tab.slice(1).toLowerCase()} View`);
-        }}
+        onSelectTab={selectTab}
         journalIcon={icons.journal}
         theme={theme}
       />
@@ -223,15 +192,7 @@ export function App() {
             onEditProject={modal.openEditProject}
             onEditTags={modal.openEditTags}
             onDeleteEntry={modal.openDeleteConfirm}
-            onUndoDelete={async () => {
-              if (lastDeletedEntry) {
-                await restoreEntry(lastDeletedEntry.id);
-                setStatusMessage(`Restored entry "${lastDeletedEntry.content.slice(0, 30)}..."`);
-                setLastDeletedEntry(null);
-              } else {
-                setStatusMessage("No recently deleted entry to undo");
-              }
-            }}
+            onUndoDelete={undoDelete}
             onUpdateEntryContent={async (id, content) => {
               await updateEntryContent(id, content);
               setStatusMessage("Updated note content via editor!");
