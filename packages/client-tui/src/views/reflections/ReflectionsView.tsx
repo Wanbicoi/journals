@@ -1,4 +1,4 @@
-import type { ReflectionPeriodType } from "@journals/core";
+import type { IconSet, ReflectionPeriodType } from "@journals/core";
 import type { ScrollBoxRenderable } from "@opentui/core";
 import { useKeyboard } from "@opentui/react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -15,7 +15,7 @@ interface ReflectionsViewProps {
   selectedPeriodIdx: number;
   onSelectPeriodIdx: (idx: number) => void;
   width: number;
-  icons: Record<string, string>;
+  icons: IconSet;
   theme: ThemePalette;
   isActive?: boolean;
   onStatusMessage?: (msg: string) => void;
@@ -194,14 +194,16 @@ export function ReflectionsView({
                   onMouseDown={() => onSelectPeriodIdx(idx)}
                 >
                   <box flexDirection="row">
-                    <text fg={isSel ? theme.primary : theme.fg}>{isSel ? "❯ " : "  "}</text>
+                    <text fg={isSel ? theme.primary : theme.fg}>
+                      {isSel ? `${icons.pointer} ` : "  "}
+                    </text>
                     <text fg={p.hasReflection ? theme.fg : theme.accent}>{p.periodKey}</text>
                   </box>
 
                   {p.hasReflection ? (
-                    <text fg={theme.success || theme.secondary}>{"● done"}</text>
+                    <text fg={theme.success || theme.secondary}>{`${icons.done} done`}</text>
                   ) : (
-                    <text fg={theme.muted}>{"○ todo"}</text>
+                    <text fg={theme.muted}>{`${icons.todo} todo`}</text>
                   )}
                 </box>
               );
@@ -292,7 +294,7 @@ export function ReflectionsView({
                           <text fg={theme.muted}>{`[${dateStr}] `}</text>
                           <text fg={theme.primary}>{`@${entry.projectName} `}</text>
                           {entry.tags.map((t) => (
-                            <text key={t} fg={theme.secondary}>{`#${t} `}</text>
+                            <text key={t} fg={theme.secondary}>{`${icons.tag} #${t} `}</text>
                           ))}
                         </box>
                         <text fg={theme.fg}>{`  ${entry.content}`}</text>

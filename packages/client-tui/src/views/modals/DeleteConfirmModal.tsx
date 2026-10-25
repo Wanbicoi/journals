@@ -5,7 +5,7 @@ interface DeleteConfirmModalProps {
   width: number;
   height: number;
   entrySummary: string;
-  warningIcon?: string;
+  warningIcon: string;
   theme: ThemePalette;
 }
 
@@ -13,7 +13,7 @@ export function DeleteConfirmModal({
   width,
   height,
   entrySummary,
-  warningIcon = "",
+  warningIcon,
   theme,
 }: DeleteConfirmModalProps) {
   return (

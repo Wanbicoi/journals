@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { PLAIN_ICONS } from "@journals/core";
 import { testRender } from "@opentui/react/test-utils";
 import { act } from "react";
 import type { Entry, Project, TagInfo } from "../../../hooks/useJournalData.js";
@@ -8,13 +9,7 @@ import { useModalManager } from "../useModalManager.js";
 
 type TestSetup = Awaited<ReturnType<typeof testRender>>;
 const theme = getTheme("default");
-const dummyIcons = {
-  quick: "",
-  project: "󰄲",
-  tag: "󰌕",
-  warning: "",
-  journal: "󰂺",
-};
+const dummyIcons = PLAIN_ICONS;
 
 const dummyProjects: Project[] = [
   {

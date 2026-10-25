@@ -1,3 +1,4 @@
+import type { IconSet } from "@journals/core";
 import type { ScrollBoxRenderable } from "@opentui/core";
 import { useKeyboard } from "@opentui/react";
 import { useEffect, useRef } from "react";
@@ -15,7 +16,7 @@ interface ProjectsViewProps {
   entries: Entry[];
   filterQuery?: string;
   width: number;
-  icons: Record<string, string>;
+  icons: IconSet;
   theme: ThemePalette;
   isActive?: boolean;
   onStatusMessage?: (msg: string) => void;
@@ -171,7 +172,9 @@ export function ProjectsView({
                 }}
               >
                 <box flexDirection="row">
-                  <text fg={isSel ? theme.primary : theme.fg}>{isSel ? "❯ " : "  "}</text>
+                  <text fg={isSel ? theme.primary : theme.fg}>
+                    {isSel ? `${icons.pointer} ` : "  "}
+                  </text>
                   <HighlightText
                     text={p.name}
                     query={filterQuery}
@@ -195,7 +198,7 @@ export function ProjectsView({
             <text fg={theme.secondary}>{`${icons.project} @${selProj.name}`}</text>
             <text
               fg={theme.muted}
-            >{` • ${projectNotes.length} associated note${projectNotes.length === 1 ? "" : "s"}`}</text>
+            >{` ${icons.bullet} ${projectNotes.length} associated note${projectNotes.length === 1 ? "" : "s"}`}</text>
           </box>
         </box>
 
@@ -220,7 +223,7 @@ export function ProjectsView({
 
           {/* Associated Notes Section */}
           <box flexDirection="row" marginTop={1}>
-            <text fg={theme.accent}>{`${icons.journal || "📝"} Associated Notes`}</text>
+            <text fg={theme.accent}>{`${icons.journal} Associated Notes`}</text>
           </box>
 
           {projectNotes.length === 0 ? (
@@ -231,9 +234,9 @@ export function ProjectsView({
                 <box flexDirection="row">
                   <text
                     fg={theme.muted}
-                  >{`${formatRelativeTime(e.createdAt)} • ${new Date(e.createdAt).toISOString().slice(0, 10)} ${new Date(e.createdAt).toTimeString().slice(0, 5)} `}</text>
+                  >{`${formatRelativeTime(e.createdAt)} ${icons.bullet} ${new Date(e.createdAt).toISOString().slice(0, 10)} ${new Date(e.createdAt).toTimeString().slice(0, 5)} `}</text>
                   {e.tags.map((t) => (
-                    <text key={t} fg={theme.tag}>{`${icons.tag || "󰌕"} #${t} `}</text>
+                    <text key={t} fg={theme.tag}>{`${icons.tag} #${t} `}</text>
                   ))}
                 </box>
                 <box paddingLeft={2} marginTop={0}>

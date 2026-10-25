@@ -1,3 +1,4 @@
+import type { IconSet } from "@journals/core";
 import type { ThemePalette } from "../theme.js";
 
 export interface RoutineBarDataPoint {
@@ -13,6 +14,7 @@ interface BiDirectionalBarChartProps {
   height?: number;
   focusedIdx?: number;
   onNavigateDate?: (dateStr: string) => void;
+  icons: IconSet;
   theme: ThemePalette;
   title?: string;
 }
@@ -30,6 +32,7 @@ export function BiDirectionalBarChart({
   height = 9,
   focusedIdx = data.length - 1,
   onNavigateDate,
+  icons,
   theme,
   title,
 }: BiDirectionalBarChartProps) {
@@ -82,7 +85,7 @@ export function BiDirectionalBarChart({
   // Cursor indicator line showing focused column
   let cursorLine = "";
   for (let i = 0; i < data.length; i++) {
-    cursorLine += i === focusedIdx ? "▲" : " ";
+    cursorLine += i === focusedIdx ? icons.chartCursor : " ";
   }
 
   // Generate date tick marks for first, middle, last
@@ -107,8 +110,8 @@ export function BiDirectionalBarChart({
         <box flexDirection="row" justifyContent="space-between" marginBottom={0}>
           <text fg={theme.primary}>{title}</text>
           <box flexDirection="row">
-            <text fg={theme.error || "red"}>{"▲ Missed  "}</text>
-            <text fg={theme.warning || "yellow"}>{"▼ Break"}</text>
+            <text fg={theme.error || "red"}>{`${icons.chartUp} Missed  `}</text>
+            <text fg={theme.warning || "yellow"}>{`${icons.chartDown} Break`}</text>
           </box>
         </box>
       )}

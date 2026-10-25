@@ -4,6 +4,116 @@ import path from "node:path";
 import yaml from "yaml";
 import { z } from "zod";
 
+/**
+ * The complete set of glyphs the TUI can render. Every icon lives here so that
+ * views never hardcode a glyph or carry their own fallback.
+ */
+export interface IconSet {
+  journal: string;
+  project: string;
+  tag: string;
+  calendar: string;
+  quick: string;
+  warning: string;
+  trash: string;
+  checked: string;
+  unchecked: string;
+  bullet: string;
+  global: string;
+  break: string;
+  status: string;
+  done: string;
+  todo: string;
+  pointer: string;
+  cursor: string;
+  target: string;
+  overdue: string;
+  chartUp: string;
+  chartDown: string;
+  chartCursor: string;
+}
+
+export const NERD_ICONS: IconSet = {
+  journal: "\u{f442}",
+  project: "\u{f401}",
+  tag: "\u{f02c}",
+  calendar: "\u{f455}",
+  quick: "\u{f0e7}",
+  warning: "\u{f071}",
+  trash: "\u{f4bf}",
+  checked: "\u{f4a7}",
+  unchecked: "\u{f4a0}",
+  bullet: "\u{f444}",
+  global: "🌐",
+  break: "⏸",
+  status: "●",
+  done: "●",
+  todo: "○",
+  pointer: "❯",
+  cursor: "▎",
+  target: "🎯",
+  overdue: "⚠",
+  chartUp: "▲",
+  chartDown: "▼",
+  chartCursor: "▲",
+};
+
+export const PLAIN_ICONS: IconSet = {
+  journal: "◆",
+  project: "◫",
+  tag: "#",
+  calendar: "📅",
+  quick: "⚡",
+  warning: "!",
+  trash: "x",
+  checked: "[x]",
+  unchecked: "[ ]",
+  bullet: "•",
+  global: "🌐",
+  break: "⏸",
+  status: "●",
+  done: "●",
+  todo: "○",
+  pointer: "❯",
+  cursor: "▎",
+  target: "🎯",
+  overdue: "⚠",
+  chartUp: "▲",
+  chartDown: "▼",
+  chartCursor: "▲",
+};
+
+/**
+ * Builds the icon schema from a default set. Each key falls back to its default
+ * individually, so a user can override one icon without redeclaring the whole set.
+ */
+function iconSetSchema(defaults: IconSet) {
+  return z.object({
+    journal: z.string().default(defaults.journal),
+    project: z.string().default(defaults.project),
+    tag: z.string().default(defaults.tag),
+    calendar: z.string().default(defaults.calendar),
+    quick: z.string().default(defaults.quick),
+    warning: z.string().default(defaults.warning),
+    trash: z.string().default(defaults.trash),
+    checked: z.string().default(defaults.checked),
+    unchecked: z.string().default(defaults.unchecked),
+    bullet: z.string().default(defaults.bullet),
+    global: z.string().default(defaults.global),
+    break: z.string().default(defaults.break),
+    status: z.string().default(defaults.status),
+    done: z.string().default(defaults.done),
+    todo: z.string().default(defaults.todo),
+    pointer: z.string().default(defaults.pointer),
+    cursor: z.string().default(defaults.cursor),
+    target: z.string().default(defaults.target),
+    overdue: z.string().default(defaults.overdue),
+    chartUp: z.string().default(defaults.chartUp),
+    chartDown: z.string().default(defaults.chartDown),
+    chartCursor: z.string().default(defaults.chartCursor),
+  });
+}
+
 export const ConfigSchema = z.object({
   appearance: z
     .object({
@@ -16,30 +126,8 @@ export const ConfigSchema = z.object({
     .default({}),
   icons: z
     .object({
-      nerd: z.record(z.string()).default({
-        journal: "",
-        project: "",
-        tag: "",
-        calendar: "",
-        quick: "",
-        warning: "",
-        trash: "",
-        checked: "",
-        unchecked: "",
-        bullet: "",
-      }),
-      plain: z.record(z.string()).default({
-        journal: "◆",
-        project: "◫",
-        tag: "#",
-        calendar: "📅",
-        quick: "⚡",
-        warning: "!",
-        trash: "x",
-        checked: "[x]",
-        unchecked: "[ ]",
-        bullet: "•",
-      }),
+      nerd: iconSetSchema(NERD_ICONS).default({}),
+      plain: iconSetSchema(PLAIN_ICONS).default({}),
     })
     .default({}),
   keymaps: z

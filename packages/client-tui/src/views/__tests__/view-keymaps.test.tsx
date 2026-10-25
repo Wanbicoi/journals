@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { ReflectionPeriodType } from "@journals/core";
+import { PLAIN_ICONS, type ReflectionPeriodType } from "@journals/core";
 import { testRender } from "@opentui/react/test-utils";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { act, useState } from "react";
@@ -14,13 +14,7 @@ import { TimelineView } from "../timeline/TimelineView.js";
 type TestSetup = Awaited<ReturnType<typeof testRender>>;
 
 const theme = getTheme("default");
-const icons = {
-  journal: "📔",
-  project: "📁",
-  tag: "🏷️",
-  calendar: "📅",
-  quick: "⚡",
-};
+const icons = PLAIN_ICONS;
 
 const sampleEntries: Entry[] = [
   {
@@ -441,6 +435,7 @@ describe("Collocated View Keymaps", () => {
             onQuickCapture={async () => {
               completedRoutine = true;
             }}
+            icons={icons}
             theme={theme}
             quickCaptureKey="c"
             isActive={true}
@@ -493,6 +488,7 @@ describe("Collocated View Keymaps", () => {
             onQuickCapture={async () => {
               completed = true;
             }}
+            icons={icons}
             theme={theme}
             quickCaptureKey="c"
             isActive={false}

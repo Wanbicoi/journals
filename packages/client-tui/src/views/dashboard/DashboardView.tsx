@@ -1,4 +1,4 @@
-import { formatRecurrenceRule } from "@journals/core";
+import { type IconSet, formatRecurrenceRule } from "@journals/core";
 import { useKeyboard } from "@opentui/react";
 import { BiDirectionalBarChart } from "../../components/BiDirectionalBarChart.js";
 import type { DashboardData, Project } from "../../hooks/useJournalData.js";
@@ -10,6 +10,7 @@ interface DashboardViewProps {
   loading?: boolean;
   focusedDayIdx: number;
   onNavigateDate: (dateStr: string) => void;
+  icons: IconSet;
   theme: ThemePalette;
   quickCaptureKey: string;
   isActive?: boolean;
@@ -27,6 +28,7 @@ export function DashboardView({
   loading = false,
   focusedDayIdx,
   onNavigateDate,
+  icons,
   theme,
   quickCaptureKey,
   isActive = true,
@@ -109,7 +111,7 @@ export function DashboardView({
         <box flexDirection="row">
           <text fg={theme.primary}>{"DAILY ROUTINE MONITOR  "}</text>
           <text fg={theme.muted}>{"State: "}</text>
-          <text fg={statusColor}>{`● ${dashboard.status}`}</text>
+          <text fg={statusColor}>{`${icons.status} ${dashboard.status}`}</text>
         </box>
         <box flexDirection="row">
           <text fg={theme.muted}>{"Last 60 Days: "}</text>
@@ -136,7 +138,7 @@ export function DashboardView({
         >
           <box flexDirection="row" justifyContent="space-between">
             <box flexDirection="row">
-              <text fg={theme.primary}>{"🎯 TODAY'S ROUTINE AGENDA  "}</text>
+              <text fg={theme.primary}>{`${icons.target} TODAY'S ROUTINE AGENDA  `}</text>
               <text fg={theme.muted}>{"(Press [Space] to complete)"}</text>
             </box>
             <text fg={theme.muted}>
@@ -151,7 +153,7 @@ export function DashboardView({
                 <box key={routine.projectId} flexDirection="row" justifyContent="space-between">
                   <box flexDirection="row">
                     <text fg={isDone ? theme.success || "green" : theme.warning || "yellow"}>
-                      {isDone ? "[✓] " : "[ ] "}
+                      {isDone ? `${icons.checked} ` : `${icons.unchecked} `}
                     </text>
                     <text
                       fg={isDone ? theme.fg : theme.secondary}
@@ -182,6 +184,7 @@ export function DashboardView({
           height={9}
           focusedIdx={focusedDayIdx}
           onNavigateDate={onNavigateDate}
+          icons={icons}
           theme={theme}
           title="Routine Anomaly Monitor (60 Days)"
         />
@@ -200,12 +203,14 @@ export function DashboardView({
           marginRight={1}
         >
           <box flexDirection="row" justifyContent="space-between">
-            <text fg={theme.accent}>{"⚠ Overdue Backlog / Make-up Debt"}</text>
+            <text fg={theme.accent}>{`${icons.overdue} Overdue Backlog / Make-up Debt`}</text>
             <text fg={theme.muted}>{`${dashboard.activeDebts.length} projects`}</text>
           </box>
           {dashboard.activeDebts.length === 0 ? (
             <box marginTop={1} marginBottom={1}>
-              <text fg={theme.muted}>{"✓ No routine debt. You are completely caught up!"}</text>
+              <text
+                fg={theme.muted}
+              >{`${icons.checked} No routine debt. You are completely caught up!`}</text>
             </box>
           ) : (
             <box flexDirection="column" marginTop={1}>
@@ -229,7 +234,7 @@ export function DashboardView({
           paddingRight={1}
         >
           <box flexDirection="row" justifyContent="space-between">
-            <text fg={theme.accent}>{"⏸ Active Breaks & Status"}</text>
+            <text fg={theme.accent}>{`${icons.break} Active Breaks & Status`}</text>
             <text fg={theme.muted}>{`${dashboard.activeBreaks.length} active`}</text>
           </box>
           {dashboard.activeBreaks.length === 0 ? (
@@ -244,7 +249,9 @@ export function DashboardView({
                 <box key={`${b.startDate}-${i}`} flexDirection="column" marginBottom={1}>
                   <box flexDirection="row" justifyContent="space-between">
                     <text fg={theme.warning || "yellow"}>
-                      {b.projectName ? `@${b.projectName}` : "🌐 Global (All Projects)"}
+                      {b.projectName
+                        ? `@${b.projectName}`
+                        : `${icons.global} Global (All Projects)`}
                     </text>
                     <text fg={theme.muted}>{`${b.remainingDays}d remaining`}</text>
                   </box>
@@ -267,7 +274,7 @@ export function DashboardView({
         marginBottom={1}
       >
         <box flexDirection="row" justifyContent="space-between">
-          <text fg={theme.primary}>{"📅 Configured Project Routines"}</text>
+          <text fg={theme.primary}>{`${icons.calendar} Configured Project Routines`}</text>
         </box>
         <box flexDirection="column" marginTop={1}>
           {projects

@@ -198,6 +198,7 @@ export function App() {
             onNavigateDate={navigateToDate}
             onQuickCapture={journalData.quickCapture}
             onStatusMessage={setStatusMessage}
+            icons={icons}
             theme={theme}
             quickCaptureKey={config.keymaps.quick_capture}
             isActive={!modal.isOpen}
@@ -287,6 +288,7 @@ export function App() {
         width={width}
         filterQuery={currentTab === "TIMELINE" ? timelineFilterQuery : projectsFilterQuery}
         statusMessage={statusMessage}
+        icons={icons}
         theme={theme}
         currentTab={currentTab}
       />

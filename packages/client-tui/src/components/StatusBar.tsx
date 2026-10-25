@@ -1,3 +1,4 @@
+import type { IconSet } from "@journals/core";
 import type { ThemePalette } from "../theme.js";
 
 export type TabType = "DASHBOARD" | "TIMELINE" | "REFLECTIONS" | "PROJECTS";
@@ -6,6 +7,7 @@ interface StatusBarProps {
   width: number;
   filterQuery: string;
   statusMessage: string;
+  icons: IconSet;
   theme: ThemePalette;
   currentTab?: TabType;
 }
@@ -21,6 +23,7 @@ export function StatusBar({
   width,
   filterQuery,
   statusMessage,
+  icons,
   theme,
   currentTab = "TIMELINE",
 }: StatusBarProps) {
@@ -35,7 +38,7 @@ export function StatusBar({
       <text fg={theme.border}>{"─".repeat(width)}</text>
       <box flexDirection="row" justifyContent="space-between">
         <box flexDirection="row">
-          <text fg={theme.primary}>{"❯ "}</text>
+          <text fg={theme.primary}>{`${icons.pointer} `}</text>
           <text fg={theme.fg}>{leftMsg}</text>
         </box>
         <text fg={theme.muted}>{hints}</text>

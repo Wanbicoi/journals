@@ -1,4 +1,4 @@
-import { getEffectiveDateStr } from "@journals/core";
+import { type IconSet, getEffectiveDateStr } from "@journals/core";
 import type { ScrollBoxRenderable } from "@opentui/core";
 import { useKeyboard } from "@opentui/react";
 import { useEffect, useRef } from "react";
@@ -15,7 +15,7 @@ interface TimelineViewProps {
   filterQuery: string;
   quickCaptureKey: string;
   loading?: boolean;
-  icons: Record<string, string>;
+  icons: IconSet;
   theme: ThemePalette;
   isActive?: boolean;
   onStatusMessage?: (msg: string) => void;
@@ -256,9 +256,7 @@ export function TimelineView({
           <box key={group.dateStr} flexDirection="column" marginTop={1}>
             {/* Daily Group Date Header */}
             <box flexDirection="row" marginBottom={1}>
-              <text
-                fg={theme.accent}
-              >{`${icons.calendar || "📅"} ${group.dateStr}  ${weekday}  `}</text>
+              <text fg={theme.accent}>{`${icons.calendar} ${group.dateStr}  ${weekday}  `}</text>
               <text fg={theme.muted}>{`(${count} ${count === 1 ? "entry" : "entries"})`}</text>
             </box>
 
@@ -279,18 +277,22 @@ export function TimelineView({
                 >
                   {/* Header row: Left gutter indicator + Time + Project + Tags */}
                   <box flexDirection="row">
-                    <text fg={isSel ? theme.primary : theme.muted}>{isSel ? "▎ " : "  "}</text>
+                    <text fg={isSel ? theme.primary : theme.muted}>
+                      {isSel ? `${icons.cursor} ` : "  "}
+                    </text>
                     <text fg={isSel ? theme.primary : theme.muted}>{`${time}  `}</text>
                     <text fg={isSel ? theme.primary : theme.secondary}>
                       {entry.projectName
-                        ? `${icons.project || "󰄲"} @${entry.projectName} `
-                        : "🌐 GLOBAL "}
+                        ? `${icons.project} @${entry.projectName} `
+                        : `${icons.global} GLOBAL `}
                     </text>
                     {entry.breakDays > 0 && (
-                      <text fg={theme.warning || "yellow"}>{`⏸ ${entry.breakDays}d break `}</text>
+                      <text
+                        fg={theme.warning || "yellow"}
+                      >{`${icons.break} ${entry.breakDays}d break `}</text>
                     )}
                     {entry.tags.map((t) => (
-                      <text key={t} fg={theme.tag}>{`${icons.tag || "󰌕"} #${t} `}</text>
+                      <text key={t} fg={theme.tag}>{`${icons.tag} #${t} `}</text>
                     ))}
                   </box>
 

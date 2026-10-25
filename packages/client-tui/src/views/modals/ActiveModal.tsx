@@ -1,4 +1,4 @@
-import type { Config } from "@journals/core";
+import type { Config, IconSet } from "@journals/core";
 import { config } from "../../api/client.js";
 import type { Entry, Project } from "../../hooks/useJournalData.js";
 import type { ThemePalette } from "../../theme.js";
@@ -13,21 +13,12 @@ import { NewProjectModal } from "./NewProjectModal.js";
 import { QuickCaptureModal } from "./QuickCaptureModal.js";
 import type { ModalManager } from "./useModalManager.js";
 
-export interface ActiveModalIcons {
-  quick?: string;
-  project?: string;
-  tag?: string;
-  warning?: string;
-  journal?: string;
-  [key: string]: string | undefined;
-}
-
 export interface ActiveModalProps {
   modal: ModalManager;
   width: number;
   height: number;
   theme: ThemePalette;
-  icons: ActiveModalIcons;
+  icons: IconSet;
   selectedEntry?: Entry;
   selectedProject?: Project;
   currentTab: "DASHBOARD" | "TIMELINE" | "REFLECTIONS" | "PROJECTS";
@@ -68,7 +59,7 @@ export function ActiveModal({
           inputBuffer={inputBuffer}
           suggestions={suggestions}
           activeSuggestionIdx={activeSuggestionIdx}
-          quickIcon={icons.quick || ""}
+          quickIcon={icons.quick}
           theme={theme}
           onChange={setInputBuffer}
           onSubmit={commitModalInput}
@@ -99,7 +90,7 @@ export function ActiveModal({
           width={width}
           height={height}
           entrySummary={selectedEntry.content}
-          warningIcon={icons.warning || ""}
+          warningIcon={icons.warning}
           theme={theme}
         />
       );
@@ -112,7 +103,7 @@ export function ActiveModal({
           inputBuffer={inputBuffer}
           suggestions={suggestions}
           activeSuggestionIdx={activeSuggestionIdx}
-          projectIcon={icons.project || "󰄲"}
+          projectIcon={icons.project}
           theme={theme}
           onChange={setInputBuffer}
           onSubmit={commitModalInput}
@@ -127,7 +118,7 @@ export function ActiveModal({
           inputBuffer={inputBuffer}
           suggestions={suggestions}
           activeSuggestionIdx={activeSuggestionIdx}
-          tagIcon={icons.tag || "󰌕"}
+          tagIcon={icons.tag}
           theme={theme}
           onChange={setInputBuffer}
           onSubmit={commitModalInput}
@@ -140,7 +131,7 @@ export function ActiveModal({
           width={width}
           height={height}
           inputBuffer={inputBuffer}
-          projectIcon={icons.project || "󰄲"}
+          projectIcon={icons.project}
           theme={theme}
           onChange={setInputBuffer}
           onSubmit={commitModalInput}
@@ -155,7 +146,7 @@ export function ActiveModal({
           height={height}
           projectName={selectedProject.name}
           inputBuffer={inputBuffer}
-          projectIcon={icons.project || "󰄲"}
+          projectIcon={icons.project}
           theme={theme}
           onChange={setInputBuffer}
           onSubmit={commitModalInput}
