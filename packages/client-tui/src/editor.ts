@@ -19,6 +19,8 @@ function resolveEditor(): string {
   return "nano";
 }
 
+// @unit journals.editor.open
+// @summary Open a note in $EDITOR
 export function openExternalEditor(initialContent: string): string {
   const editor = resolveEditor();
   const tmpFile = path.join(os.tmpdir(), `journal-project-${Date.now()}.md`);

@@ -36,14 +36,17 @@ export function ProjectsView({
     projects,
     selectedProjectIdx,
     isActive,
+    // @call journals.hooks.selection Select a project by index
     onSelectProject,
+    // @call journals.views.chrome Show the status message
     onStatusMessage,
     // @call journals.server.create-project Create a project
     onNewProject,
-    // @call journals.server.update-project Edit project content and recurrence
+    // @call journals.server.update-project Edit the project's name, recurrence, and policy
     onEditProjectSettings,
+    // @call journals.editor.open Open the selected project in $EDITOR
     onOpenEditor,
-    // @call journals.server.update-project Edit project content and recurrence
+    // @call journals.server.update-project Save $EDITOR edits to the project content
     onUpdateProjectContent,
   });
 

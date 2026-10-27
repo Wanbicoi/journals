@@ -10,6 +10,8 @@ interface DashboardActivityChartProps {
   onNavigateDate: (dateStr: string) => void;
 }
 
+// @unit journals.views.dashboard-chart
+// @summary Render the activity chart and focus a day
 export function DashboardActivityChart({
   dashboard,
   focusedDayIdx,

@@ -1,16 +1,13 @@
 import type { ReflectionPeriodType } from "@journals/core";
 import type { ScrollBoxRenderable } from "@opentui/core";
-import { useKeyboard } from "@opentui/react";
 import { useEffect, useRef } from "react";
 import { useIcons } from "../../contexts/icons.js";
-import { useKeymaps } from "../../contexts/keymaps.js";
 import { useTheme } from "../../contexts/theme.js";
-import { openExternalEditor } from "../../editor.js";
 import { useReflectionDetail, useReflectionPeriods } from "../../hooks/queries.js";
 import { useMarkdownSyntaxStyle } from "../../hooks/useMarkdownSyntaxStyle.js";
 import { useSaveReflection } from "../../hooks/useSaveReflection.js";
 import { resolveSelectedIndexBy } from "../../hooks/useSelection.js";
-import { matchesAnyBinding } from "../../keymap.js";
+import { useReflectionKeymaps } from "./useReflectionKeymaps.js";
 
 interface ReflectionsViewProps {
   periodType: ReflectionPeriodType;
@@ -36,7 +33,6 @@ export function ReflectionsView({
   const scrollBoxRef = useRef<ScrollBoxRenderable | null>(null);
   const icons = useIcons();
   const theme = useTheme();
-  const keymaps = useKeymaps();
   const syntaxStyle = useMarkdownSyntaxStyle(theme);
   const saveReflection = useSaveReflection();
 
@@ -55,56 +51,23 @@ export function ReflectionsView({
     refetch: refetchDetail,
   } = useReflectionDetail(selectedPeriod?.periodType, selectedPeriod?.periodKey);
 
-  // @call journals.server.save-reflection Save a reflection
-  useKeyboard(async (key) => {
-    if (!isActive) return;
-
-    // Cadence switching: w, m, q, y
-    if (matchesAnyBinding(key, "w", "W")) {
-      onChangePeriodType("WEEK");
-      onStatusMessage?.("Weekly Reflections");
-    } else if (matchesAnyBinding(key, "m", "M")) {
-      onChangePeriodType("MONTH");
-      onStatusMessage?.("Monthly Reflections");
-    } else if (matchesAnyBinding(key, "q", "Q")) {
-      onChangePeriodType("QUARTER");
-      onStatusMessage?.("Quarterly Reflections");
-    } else if (matchesAnyBinding(key, "y", "Y")) {
-      onChangePeriodType("YEAR");
-      onStatusMessage?.("Yearly Reflections");
-    } else if (matchesAnyBinding(key, "j", "down", keymaps.down)) {
-      const nextPeriod = periods[Math.min(selectedPeriodIdx + 1, Math.max(0, periods.length - 1))];
-      if (nextPeriod) onSelectPeriodKey(nextPeriod.periodKey);
-    } else if (matchesAnyBinding(key, "k", "up", keymaps.up)) {
-      const previousPeriod = periods[Math.max(0, selectedPeriodIdx - 1)];
-      if (previousPeriod) onSelectPeriodKey(previousPeriod.periodKey);
-    } else if (matchesAnyBinding(key, "e", "return", keymaps.edit_project_content)) {
-      // External editor spawn: e, Enter
-      if (onOpenEditor) {
-        onOpenEditor();
-      } else {
-        try {
-          const currentP = periods[selectedPeriodIdx];
-          if (currentP) {
-            const { data: freshDetail } = await refetchDetail();
-            const detail = freshDetail ?? currentDetail;
-            const initialContent =
-              detail?.reflection?.content || `# Reflection: ${currentP.label}\n\n`;
-            const updated = openExternalEditor(initialContent);
-            if (updated !== initialContent) {
-              await saveReflection.mutateAsync({
-                periodType,
-                periodKey: currentP.periodKey,
-                content: updated,
-              });
-              onStatusMessage?.(`Saved reflection for ${currentP.periodKey}`);
-            }
-          }
-        } catch (_e) {
-          onStatusMessage?.("Failed to edit reflection");
-        }
-      }
-    }
+  // @call journals.views.reflections-keys Route reflection keys
+  useReflectionKeymaps({
+    isActive,
+    periodType,
+    periods,
+    selectedPeriodIdx,
+    currentDetail,
+    refetchDetail,
+    saveReflection,
+    // @call journals.hooks.reflection Change the reflection cadence
+    onChangePeriodType,
+    // @call journals.hooks.reflection Select a period by key
+    onSelectPeriodKey,
+    // @call journals.views.chrome Show the status message
+    onStatusMessage,
+    // @call journals.editor.open Open the reflection in $EDITOR
+    onOpenEditor,
   });
 
   // Scroll into view

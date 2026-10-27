@@ -277,6 +277,58 @@ Design rules:
 The ladder, once more: derive → local state → lifted props → context for ambient → Query for server
 → store only when you can name the bug it fixes.
 
+### 2.8 One user action, one call: wrap the workflow
+
+A view says **what** the user wants, never **how** the sequence runs. When an action has steps —
+open an editor, read the result, decide whether it changed, save, report — put the steps behind one
+function. The view tells a collaborator to do the job; it does not ask for the pieces and assemble
+them itself.
+
+This is **Tell, Don't Ask** plus a **Facade** (or **Command**) around the steps, and it is SRP at
+the action boundary: the view dispatches intent, the action owns orchestration, the primitive owns
+mechanics, transport owns persistence.
+
+```tsx
+// Bad: two low-level callbacks. Every caller must know open → compare → save.
+<TimelineView onOpenEditor={openEditor} onUpdateEntryContent={updateEntry} />
+
+// Good: one intent-level callback.
+<TimelineView onEditEntry={editEntry} />
+```
+
+```ts
+// The facade hides open → compare → save. The primitive stays a primitive.
+export async function editEntryInEditor(entry: Entry, save: SaveEntry): Promise<boolean> {
+  const updated = openExternalEditor(entry.content);
+  if (updated === entry.content) return false;
+  await save(entry.id, updated);
+  return true;
+}
+```
+
+Rules:
+
+- **Do not push orchestration into the view or the key handler.** A handler reads state, calls one
+  action, and reports the outcome (§2.5).
+- **Do not push persistence into the primitive.** `openExternalEditor` edits a temp file and returns
+  text; giving it a repository or a save callback makes it do two jobs. Wrap above it, don't fatten
+  it.
+- **Name the action after the intent** (`editEntry`, `archiveProject`), not the steps
+  (`openThenSave`).
+- **One callback per user action in the prop contract.** A pair like `onOpenX` + `onSaveX` that must
+  be used together is one action pretending to be two.
+- **Test the action without a renderer.** If the sequence cannot run headless, it is in the wrong
+  layer.
+
+Smells that mean the facade is missing:
+
+- The same open → save sequence copied into Timeline, Projects, and Reflections.
+- A view importing the low-level primitive (`openExternalEditor`) to finish the flow.
+- A wrapper that returns only the edited text and leaves every caller to save it.
+
+The tree follows the same shape: the view points at one action unit, which points at the primitive
+and the endpoint.
+
 ---
 
 ## 3. State
@@ -656,6 +708,8 @@ Test behavior the user can observe, not implementation details.
 | `as any` to pass props | Fix the prop type |
 | A whole service object as a prop | Pass the fields the child reads (§2.2) |
 | A component importing `api/` or a fetcher | Move it into a hook (§2.5) |
+| Two callbacks that must be used together (`onOpenX` + `onSaveX`) | Wrap them in one action (§2.8) |
+| The same open → save sequence repeated in several views | Facade over the workflow (§2.8) |
 | Date / recurrence / debt math inside a handler | Pure function in `core` (§2.5) |
 | 15+ props, most of them forwarded unused | Split the component and compose (§2.6) |
 | `AppProvider value={{ everything }}` | One provider per concern (§2.7) |
@@ -680,6 +734,7 @@ Test behavior the user can observe, not implementation details.
 - [ ] No whole-container objects passed as props
 - [ ] Components import no transport or global config; data arrives through hooks (§2.5)
 - [ ] Domain rules live in pure modules, not handlers or JSX (§2.5)
+- [ ] Multi-step actions are wrapped behind one intent-level call; views do not orchestrate (§2.8)
 - [ ] No pass-through props; drilling is explicit and shallow (§2.6)
 - [ ] Each context is one concern, its value is memoized, and its hook throws outside the provider (§2.7)
 - [ ] Components are named exports with one job

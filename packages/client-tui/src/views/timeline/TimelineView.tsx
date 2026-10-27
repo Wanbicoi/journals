@@ -68,7 +68,9 @@ export function TimelineView({
     entries,
     selectedEntryIdx,
     isActive,
+    // @call journals.hooks.selection Select an entry by index
     onSelectEntry,
+    // @call journals.views.chrome Show the status message
     onStatusMessage,
     // @call journals.server.capture Quick capture a line
     onQuickCapture,
@@ -82,7 +84,9 @@ export function TimelineView({
     onDeleteEntry,
     // @call journals.server.restore-entry Restore a deleted entry
     onUndoDelete,
+    // @call journals.editor.open Open the selected entry in $EDITOR
     onOpenEditor,
+    // @call journals.server.update-entry-content Save $EDITOR edits to the entry
     onUpdateEntryContent,
   });
 

@@ -22,6 +22,9 @@ interface AppChromeProps {
 /**
  * The persistent frame: header, active screen, modal layer, and status bar.
  */
+
+// @unit journals.views.chrome
+// @summary Render the shell, tabs, and status bar
 export function AppChrome({
   width,
   height,

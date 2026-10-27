@@ -33,21 +33,38 @@ Journals terminal client
     ├── 4.6. Bind global keymaps and commands
     │   └── 4.6.1. Wire the global input surface
     ├── 4.7. Dashboard view: streaks and the activity chart
-    │   └── 4.7.1. Capture a routine completion
-    │       └── 4.7.1.1. Parse @project, #tags, /date, and /break
+    │   ├── 4.7.1. Capture a routine completion
+    │   │   └── 4.7.1.1. Parse @project, #tags, /date, and /break
+    │   ├── 4.7.2. Focus a day in the chart
+    │   ├── 4.7.3. Navigate to a date *(4.3.)*
+    │   ├── 4.7.4. Show the status message
+    │   ├── 4.7.5. Quick capture a line *(4.7.1.)*
+    │   └── 4.7.6. Complete a routine with a capture *(4.7.1.)*
     ├── 4.8. Timeline view: capture, edit, tag, delete
-    │   ├── 4.8.1. Quick capture a line *(4.7.1.)*
-    │   ├── 4.8.2. Edit an entry's content
-    │   ├── 4.8.3. Move an entry to another project
-    │   ├── 4.8.4. Replace an entry's tags
-    │   ├── 4.8.5. Soft-delete an entry
-    │   └── 4.8.6. Restore a deleted entry
+    │   ├── 4.8.1. Select an entry by index *(4.3.2.)*
+    │   ├── 4.8.2. Show the status message *(4.7.4.)*
+    │   ├── 4.8.3. Quick capture a line *(4.7.1.)*
+    │   ├── 4.8.4. Edit an entry's content
+    │   ├── 4.8.5. Move an entry to another project
+    │   ├── 4.8.6. Replace an entry's tags
+    │   ├── 4.8.7. Soft-delete an entry
+    │   ├── 4.8.8. Restore a deleted entry
+    │   ├── 4.8.9. Open the selected entry in $EDITOR
+    │   └── 4.8.10. Save $EDITOR edits to the entry *(4.8.4.)*
     ├── 4.9. Reflections view: weekly to yearly reviews
     │   ├── 4.9.1. List periods and their status
     │   ├── 4.9.2. Load one period
-    │   └── 4.9.3. Save a reflection
+    │   ├── 4.9.3. Route reflection keys
+    │   │   └── 4.9.3.1. Save a reflection
+    │   ├── 4.9.4. Change the reflection cadence *(4.2.)*
+    │   ├── 4.9.5. Select a period by key *(4.2.)*
+    │   ├── 4.9.6. Show the status message *(4.7.4.)*
+    │   └── 4.9.7. Open the reflection in $EDITOR *(4.8.9.)*
     └── 4.10. Projects view: list, create, edit content
-        ├── 4.10.1. Create a project
-        ├── 4.10.2. Edit project content and recurrence
-        └── 4.10.3. Edit project content and recurrence *(4.10.2.)*
+        ├── 4.10.1. Select a project by index *(4.3.2.)*
+        ├── 4.10.2. Show the status message *(4.7.4.)*
+        ├── 4.10.3. Create a project
+        ├── 4.10.4. Edit the project's name, recurrence, and policy
+        ├── 4.10.5. Open the selected project in $EDITOR *(4.8.9.)*
+        └── 4.10.6. Save $EDITOR edits to the project content *(4.10.4.)*
 ```

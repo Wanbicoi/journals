@@ -42,10 +42,15 @@ export function DashboardView({
     dashboard,
     focusedDayIdx,
     isActive,
+    // @call journals.views.dashboard-chart Focus a day in the chart
     onFocusDayIdx,
+    // @call journals.hooks.navigation Navigate to a date
     onNavigateDate,
+    // @call journals.views.chrome Show the status message
     onStatusMessage,
+    // @call journals.server.capture Quick capture a line
     onQuickCapture,
+    // @call journals.server.capture Complete a routine with a capture
     onToggleRoutine,
   });
 
