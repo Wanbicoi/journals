@@ -5,6 +5,8 @@ import type { DatabaseInstance } from "./client.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// @unit journals.db.migrate
+// @summary Apply pending migrations
 export function runMigrations(db: DatabaseInstance, migrationsFolder?: string) {
   const folder = migrationsFolder || path.join(__dirname, "migrations");
   migrate(db, { migrationsFolder: folder });

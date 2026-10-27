@@ -4,11 +4,14 @@ import type { DatabaseInstance } from "../../db/client.js";
 import { entries, entryTags, tags } from "../../db/schema.js";
 import { findOrCreateProject } from "../projects/handler.js";
 
+// @unit journals.server.capture
+// @summary Capture a line into an entry
 export function handleQuickCapture(
   db: DatabaseInstance,
   raw: string,
   defaultProject: string | null = "Inbox",
 ) {
+  // @call journals.core.capture-parse Parse @project, #tags, /date, and /break
   const parsed = parseCaptureLine(raw, defaultProject);
   const entryTime = parsed.date ?? Date.now();
 

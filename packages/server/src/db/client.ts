@@ -7,6 +7,8 @@ import * as schema from "./schema.js";
 
 export type DatabaseInstance = BunSQLiteDatabase<typeof schema>;
 
+// @unit journals.db.init
+// @summary Open the SQLite database and run migrations
 export function initDb(dbPath: string, walMode = true, autoMigrate = true): DatabaseInstance {
   if (dbPath !== ":memory:") {
     const dir = path.dirname(dbPath);
@@ -25,6 +27,7 @@ export function initDb(dbPath: string, walMode = true, autoMigrate = true): Data
   const db = drizzle(sqlite, { schema });
 
   if (autoMigrate) {
+    // @call journals.db.migrate Apply pending migrations
     runMigrations(db);
   }
 

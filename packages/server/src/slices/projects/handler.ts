@@ -6,6 +6,8 @@ import { sanitizeFtsQuery } from "../../lib/search-utils.js";
 
 type DbOrTx = DatabaseInstance | Parameters<Parameters<DatabaseInstance["transaction"]>[0]>[0];
 
+// @unit journals.server.list-projects
+// @summary List projects
 export function listProjects(db: DbOrTx) {
   const projs = db
     .select({
@@ -57,6 +59,8 @@ export function findOrCreateProject(db: DbOrTx, name: string) {
   return project;
 }
 
+// @unit journals.server.create-project
+// @summary Create a project
 export function createProject(
   db: DbOrTx,
   name: string,
@@ -80,6 +84,8 @@ export function createProject(
   return { id, name, content, recurrence, missedPolicy, createdAt: now, updatedAt: now };
 }
 
+// @unit journals.server.update-project
+// @summary Edit project content and recurrence
 export function updateProject(
   db: DbOrTx,
   id: string,
@@ -100,6 +106,8 @@ export function updateProjectContent(db: DbOrTx, id: string, content: string) {
   return updateProject(db, id, { content });
 }
 
+// @unit journals.server.search-projects
+// @summary Search projects
 export function searchProjects(db: DatabaseInstance, query: string, limit = 50) {
   const ftsQuery = sanitizeFtsQuery(query);
   if (!ftsQuery) {

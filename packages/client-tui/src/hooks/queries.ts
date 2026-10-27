@@ -132,7 +132,10 @@ export async function invalidateAfterMutation(
   await Promise.all(keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
 }
 
+// @unit journals.hooks.entries
+// @summary Query journal entries
 export function useEntries(options?: { refetchInterval?: number | false; enabled?: boolean }) {
+  // @call journals.api.entries Fetch entries from the server
   return useQuery<Entry[]>({
     queryKey: queryKeys.entries,
     queryFn: async () => (await fetchEntries()) ?? [],
@@ -141,7 +144,10 @@ export function useEntries(options?: { refetchInterval?: number | false; enabled
   });
 }
 
+// @unit journals.hooks.projects
+// @summary Query projects
 export function useProjects(options?: { refetchInterval?: number | false; enabled?: boolean }) {
+  // @call journals.api.projects Fetch projects from the server
   return useQuery<Project[]>({
     queryKey: queryKeys.projects,
     queryFn: async () => (await fetchProjects()) ?? [],
@@ -150,7 +156,10 @@ export function useProjects(options?: { refetchInterval?: number | false; enable
   });
 }
 
+// @unit journals.hooks.tags
+// @summary Query tags
 export function useTags(options?: { refetchInterval?: number | false; enabled?: boolean }) {
+  // @call journals.api.tags Fetch tags from the server
   return useQuery<TagInfo[]>({
     queryKey: queryKeys.tags,
     queryFn: async () => (await fetchTags()) ?? [],
@@ -159,11 +168,14 @@ export function useTags(options?: { refetchInterval?: number | false; enabled?: 
   });
 }
 
+// @unit journals.hooks.dashboard
+// @summary Query dashboard analytics
 export function useDashboardAnalytics(
   days = 60,
   options?: { enabled?: boolean; refetchInterval?: number | false },
 ) {
   const isEnabled = options?.enabled ?? true;
+  // @call journals.api.dashboard Fetch the dashboard summary from the server
   return useQuery<DashboardData>({
     queryKey: queryKeys.dashboard(days),
     queryFn: async () => await fetchDashboardAnalytics(days),

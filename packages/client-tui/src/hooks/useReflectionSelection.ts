@@ -5,6 +5,9 @@ import { useCallback, useState } from "react";
  * A cadence change and its selection reset are one transition, never two independent states.
  * Selection is a period key, not an index, so it survives refetches and cadence changes.
  */
+
+// @unit journals.hooks.reflection
+// @summary Track the selected reflection period
 export function useReflectionSelection() {
   const [periodType, setPeriodType] = useState<ReflectionPeriodType>("WEEK");
   const [selectedPeriodKey, setSelectedPeriodKey] = useState<string | null>(null);

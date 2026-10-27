@@ -7,24 +7,32 @@ export const serverUrl = `http://${config.server.host}:${config.server.port}`;
 
 export const client = hc<AppType>(serverUrl);
 
+// @unit journals.api.entries
+// @summary Fetch entries from the server
 export async function fetchEntries() {
   const res = await client.entries.$get();
   const data = await res.json();
   return data.entries;
 }
 
+// @unit journals.api.projects
+// @summary Fetch projects from the server
 export async function fetchProjects() {
   const res = await client.projects.$get();
   const data = await res.json();
   return data.projects;
 }
 
+// @unit journals.api.tags
+// @summary Fetch tags from the server
 export async function fetchTags() {
   const res = await client.tags.$get();
   const data = await res.json();
   return data.tags;
 }
 
+// @unit journals.api.dashboard
+// @summary Fetch the dashboard summary from the server
 export async function fetchDashboardAnalytics(days = 60) {
   const res = await client.analytics.dashboard.$get({
     query: { days: String(days) },

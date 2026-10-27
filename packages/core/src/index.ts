@@ -65,6 +65,8 @@ export function formatRecurrenceRule(rruleStr: string | null | undefined): strin
   }
 }
 
+// @unit journals.core.capture-parse
+// @summary Parse @project, #tags, /date, and /break from a capture line
 export function parseCaptureLine(
   raw: string,
   defaultProject: string | null = "Inbox",

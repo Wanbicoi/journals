@@ -7,6 +7,8 @@ import { extractContextWindow } from "./utils.js";
 
 export { extractContextWindow };
 
+// @unit journals.server.agent-create
+// @summary Log an agent entry
 export function createAgentEntry(
   db: DatabaseInstance,
   content: string,
@@ -111,6 +113,9 @@ export function incrementAgentEntryHits(db: DatabaseInstance, ids: string[]) {
  * Searches agent entries with FTS5, boosting rank with hit_time,
  * and generating contextual window preview around matches.
  */
+
+// @unit journals.server.agent-search
+// @summary Search agent entries
 export function searchAgentEntries(db: DatabaseInstance, query: string, limit = 20) {
   const ftsQuery = sanitizeFtsQuery(query);
   if (!ftsQuery) {

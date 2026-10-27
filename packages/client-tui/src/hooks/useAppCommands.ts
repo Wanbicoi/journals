@@ -18,6 +18,9 @@ interface UseAppCommandsOptions {
  * Wires the global input surface to the screen's state, reports the outcome of each command, and
  * owns the tab label transition. Returns the tab selector the header uses.
  */
+
+// @unit journals.hooks.commands
+// @summary Bind global keymaps and commands
 export function useAppCommands({
   currentTab,
   setCurrentTab,
@@ -35,6 +38,7 @@ export function useAppCommands({
     [onStatusMessage, setCurrentTab],
   );
 
+  // @call journals.hooks.global-commands Wire the global input surface
   useGlobalCommands({
     currentTab,
     modalOpen: modal.isOpen,

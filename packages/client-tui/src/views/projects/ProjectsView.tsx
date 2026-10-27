@@ -17,6 +17,8 @@ interface ProjectsViewProps {
   onUpdateProjectContent?: (id: string, content: string) => Promise<void> | void;
 }
 
+// @unit journals.views.projects
+// @summary Projects view: list, create, edit content
 export function ProjectsView({
   projects,
   selectedProjectIdx,
@@ -36,9 +38,12 @@ export function ProjectsView({
     isActive,
     onSelectProject,
     onStatusMessage,
+    // @call journals.server.create-project Create a project
     onNewProject,
+    // @call journals.server.update-project Edit project content and recurrence
     onEditProjectSettings,
     onOpenEditor,
+    // @call journals.server.update-project Edit project content and recurrence
     onUpdateProjectContent,
   });
 

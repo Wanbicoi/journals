@@ -19,6 +19,10 @@ export const agentMainCommand = defineCommand({
   },
 });
 
+// @unit journals.cli.agent
+// @summary Run the headless agent command line
+// @details citty dispatches to the `log`, `search`, `show`, `hit`, and `list`
+// | subcommands, which talk to the server over the same HTTP API as the TUI.
 export async function runAgentCli(args: string[]): Promise<void> {
   try {
     await runMain(agentMainCommand, { rawArgs: args });

@@ -15,6 +15,9 @@ import { generatePeriods, parsePeriodKey } from "./time-utils.js";
  * List periods of a given type with reflection status and entry counts.
  * Flags missing reflections.
  */
+
+// @unit journals.server.list-periods
+// @summary List reflection periods and their status
 export function listPeriodStatuses(
   db: DatabaseInstance,
   periodType: ReflectionPeriodType,
@@ -102,6 +105,9 @@ export function listPeriodStatuses(
 /**
  * Get full detail for a specific period: reflection content + aggregated lower-level entries and sub-reflections
  */
+
+// @unit journals.server.period-detail
+// @summary Load one reflection period
 export function getPeriodDetail(
   db: DatabaseInstance,
   periodType: ReflectionPeriodType,
@@ -237,6 +243,9 @@ export function getPeriodDetail(
 /**
  * Save or update reflection content for a period
  */
+
+// @unit journals.server.save-reflection
+// @summary Save a reflection
 export function saveReflection(
   db: DatabaseInstance,
   periodType: ReflectionPeriodType,

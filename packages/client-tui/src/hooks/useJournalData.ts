@@ -16,13 +16,21 @@ export interface UseJournalDataOptions {
   isDashboardActive?: boolean;
 }
 
+// @unit journals.hooks.data
+// @summary Load the journal's data and mutations
+// @details Wraps the query hooks and the write calls into one object, so the
+// | app shell reads `journalData` instead of each query separately.
 export function useJournalData(options: UseJournalDataOptions = {}) {
   const { isDashboardActive = true } = options;
   const queryClient = useQueryClient();
 
+  // @call journals.hooks.entries Query journal entries
   const entriesQuery = useEntries();
+  // @call journals.hooks.projects Query projects
   const projectsQuery = useProjects();
+  // @call journals.hooks.tags Query tags
   const tagsQuery = useTags();
+  // @call journals.hooks.dashboard Query dashboard analytics
   const dashboardQuery = useDashboardAnalytics(60, { enabled: isDashboardActive });
 
   const entries = entriesQuery.data ?? [];

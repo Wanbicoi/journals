@@ -43,6 +43,9 @@ export interface SelectionById<T extends Identifiable> {
  * Selection stored as an id, derived against the list every render. Indices survive filters,
  * deletes, and refetches only as a derived value, never as state.
  */
+
+// @unit journals.hooks.selection
+// @summary Keep the selected item by id
 export function useSelectionById<T extends Identifiable>(items: T[]): SelectionById<T> {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selectedIndex = resolveSelectedIndex(items, selectedId);

@@ -4,6 +4,9 @@ import type { Tab } from "./useAppKeymaps.js";
 /**
  * The two screen filters are one UI machine: changing a tab decides which one Escape clears.
  */
+
+// @unit journals.hooks.filters
+// @summary Filter entries and projects by query
 export function useJournalFilters() {
   const [timelineFilterQuery, setTimelineFilterQuery] = useState("");
   const [projectsFilterQuery, setProjectsFilterQuery] = useState("");

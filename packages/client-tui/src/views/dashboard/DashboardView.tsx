@@ -21,6 +21,8 @@ interface DashboardViewProps {
   ) => Promise<void> | void;
 }
 
+// @unit journals.views.dashboard
+// @summary Dashboard view: streaks and the activity chart
 export function DashboardView({
   dashboard,
   projects,
@@ -35,6 +37,7 @@ export function DashboardView({
 }: DashboardViewProps) {
   const icons = useIcons();
   const theme = useTheme();
+  // @call journals.server.capture Capture a routine completion
   const { completeRoutine } = useDashboardKeymaps({
     dashboard,
     focusedDayIdx,

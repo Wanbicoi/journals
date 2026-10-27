@@ -49,6 +49,9 @@ export interface DashboardSummary {
 /**
  * Returns analytics for the past N days (default 60).
  */
+
+// @unit journals.server.analytics
+// @summary Load the dashboard summary
 export function getDashboardAnalytics(db: DatabaseInstance, numDays = 60): DashboardSummary {
   const allProjects = db.select().from(projects).all();
   const allEntries = db.select().from(entries).where(isNull(entries.deletedAt)).all();

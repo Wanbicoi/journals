@@ -11,15 +11,21 @@ interface UseAppNavigationOptions {
 /**
  * Filtering, selection identity, and the date jump are the screen's navigation machine.
  */
+
+// @unit journals.hooks.navigation
+// @summary Filter, select, and navigate entries and projects
 export function useAppNavigation(
   entries: Entry[],
   projects: Project[],
   { onNavigateToTimeline }: UseAppNavigationOptions,
 ) {
+  // @call journals.hooks.filters Filter entries and projects by query
   const filters = useJournalFilters();
   const filteredEntries = filterEntries(entries, filters.timelineFilterQuery);
   const filteredProjects = filterProjects(projects, filters.projectsFilterQuery);
+  // @call journals.hooks.selection Keep the selected entry by id
   const entrySelection = useSelectionById(filteredEntries);
+  // @call journals.hooks.selection Keep the selected project by id
   const projectSelection = useSelectionById(filteredProjects);
 
   const navigateToDate = useCallback(

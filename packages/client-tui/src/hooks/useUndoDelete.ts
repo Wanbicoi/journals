@@ -10,6 +10,9 @@ interface UseUndoDeleteOptions {
  * Remembers the last soft-deleted entry so `u` can restore it. The view only calls `undo`; the
  * hook owns the restore mutation and the user-facing status.
  */
+
+// @unit journals.hooks.undo
+// @summary Undo the last delete
 export function useUndoDelete({ restoreEntry, onStatusMessage }: UseUndoDeleteOptions) {
   const [lastDeletedEntry, setLastDeletedEntry] = useState<Entry | null>(null);
 

@@ -71,6 +71,8 @@ export interface ModalManager {
   openHelp: () => void;
 }
 
+// @unit journals.hooks.modal-manager
+// @summary Manage the open modal and its input mode
 export function useModalManager(options: UseModalManagerOptions): ModalManager {
   const {
     projects,

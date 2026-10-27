@@ -8,3 +8,5 @@ data/
 .direnv/
 .envrc
 *.tsbuildinfo
+.unitdoc/
+__pycache__/

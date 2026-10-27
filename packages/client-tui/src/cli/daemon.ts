@@ -80,6 +80,10 @@ export const daemonCommand = defineCommand({
   },
 });
 
+// @unit journals.cli.daemon
+// @summary Run the daemon command line
+// @details citty dispatches to the daemon subcommands, which start, stop, and
+// | inspect the background server process.
 export async function runDaemonCli(args: string[]): Promise<void> {
   const { runMain } = await import("citty");
   try {

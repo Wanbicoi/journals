@@ -1,0 +1,8 @@
+# One participant: the whole monorepo is one system, so ids are `journals.*`.
+[workspace]
+
+[[participant]]
+path = "."
+prefix = "journals"
+display = "journals"
+lang = "typescript"

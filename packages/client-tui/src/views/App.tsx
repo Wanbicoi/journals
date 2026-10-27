@@ -18,14 +18,19 @@ import { TimelineView } from "./timeline/TimelineView.js";
 export interface AppProps {
   onQuit: () => void;
 }
+// @unit journals.app
+// @summary Journals application shell
 export function App({ onQuit }: AppProps) {
   const { width = 100, height = 30 } = useTerminalDimensions();
   const [currentTab, setCurrentTab] = useState<Tab>("DASHBOARD");
   const [focusedDayIdx, setFocusedDayIdx] = useState(59);
   const [statusMessage, setStatusMessage] = useState("Ready");
+  // @call journals.hooks.data Load entries, projects, tags, and dashboard
   const journalData = useJournalData({ isDashboardActive: currentTab === "DASHBOARD" });
   const { entries, projects, tags, dashboard, loading, isError, error } = journalData;
+  // @call journals.hooks.reflection Track the selected reflection period
   const reflection = useReflectionSelection();
+  // @call journals.hooks.navigation Filter, select, and navigate entries and projects
   const navigation = useAppNavigation(entries, projects, {
     onNavigateToTimeline: (dateStr) => {
       setCurrentTab("TIMELINE");
@@ -34,10 +39,12 @@ export function App({ onQuit }: AppProps) {
   });
   const { filters, filteredEntries, filteredProjects, entrySelection, projectSelection } =
     navigation;
+  // @call journals.hooks.undo Restore a deleted entry
   const { rememberDeleted, undo: undoDelete } = useUndoDelete({
     restoreEntry: journalData.restoreEntry,
     onStatusMessage: setStatusMessage,
   });
+  // @call journals.hooks.modals Open capture, project, and entry modals
   const modal = useAppModals({
     quickCapture: journalData.quickCapture,
     createProject: journalData.createProject,
@@ -61,6 +68,7 @@ export function App({ onQuit }: AppProps) {
       navigation.selectPreviousEntry();
     },
   });
+  // @call journals.hooks.commands Bind global keymaps and commands
   const selectTab = useAppCommands({
     currentTab,
     setCurrentTab,
@@ -92,6 +100,7 @@ export function App({ onQuit }: AppProps) {
           viewName={currentTab.charAt(0) + currentTab.slice(1).toLowerCase()}
         >
           {currentTab === "DASHBOARD" ? (
+            // @call journals.views.dashboard Dashboard view: streaks and the activity chart
             <DashboardView
               dashboard={dashboard}
               projects={projects}
@@ -104,6 +113,7 @@ export function App({ onQuit }: AppProps) {
               isActive={!modal.isOpen}
             />
           ) : currentTab === "TIMELINE" ? (
+            // @call journals.views.timeline Timeline view: capture, edit, tag, delete
             <TimelineView
               entries={filteredEntries}
               selectedEntryIdx={Math.max(0, entrySelection.selectedIndex)}
@@ -121,6 +131,7 @@ export function App({ onQuit }: AppProps) {
               onUpdateEntryContent={journalData.updateEntryContent}
             />
           ) : currentTab === "REFLECTIONS" ? (
+            // @call journals.views.reflections Reflections view: weekly to yearly reviews
             <ReflectionsView
               periodType={reflection.periodType}
               onChangePeriodType={reflection.changePeriodType}
@@ -130,6 +141,7 @@ export function App({ onQuit }: AppProps) {
               onStatusMessage={setStatusMessage}
             />
           ) : (
+            // @call journals.views.projects Projects view: list, create, edit content
             <ProjectsView
               projects={filteredProjects}
               selectedProjectIdx={Math.max(0, projectSelection.selectedIndex)}

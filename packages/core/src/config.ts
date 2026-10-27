@@ -179,6 +179,8 @@ export type Config = z.infer<typeof ConfigSchema>;
 
 let loadedConfigDir: string | undefined;
 
+// @unit journals.core.db-path
+// @summary Resolve the SQLite path
 export function resolveDbPath(rawPath: string, baseDir?: string): string {
   if (rawPath.startsWith("~/") || rawPath === "~") {
     return path.join(os.homedir(), rawPath.slice(rawPath === "~" ? 1 : 2));
@@ -187,6 +189,8 @@ export function resolveDbPath(rawPath: string, baseDir?: string): string {
   return path.resolve(root, rawPath);
 }
 
+// @unit journals.core.config
+// @summary Load the YAML configuration
 export function loadConfig(customPath?: string): Config {
   const envConfig = process.env.JOURNAL_CONFIG;
   const candidatePaths = [

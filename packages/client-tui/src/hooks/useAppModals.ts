@@ -38,6 +38,9 @@ interface UseAppModalsOptions {
  * Modal state plus the exact mutations each modal commits. Callers pass the actions, never the
  * whole journal container.
  */
+
+// @unit journals.hooks.modals
+// @summary Open capture, project, and entry modals
 export function useAppModals({
   quickCapture,
   createProject,
@@ -58,6 +61,7 @@ export function useAppModals({
   onProjectsFilterChange,
   onEntryDeleted,
 }: UseAppModalsOptions) {
+  // @call journals.hooks.modal-manager Manage the open modal and its input mode
   return useModalManager({
     projects,
     tags,

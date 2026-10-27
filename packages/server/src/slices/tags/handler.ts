@@ -2,6 +2,8 @@ import { count, desc, eq, like } from "drizzle-orm";
 import type { DatabaseInstance } from "../../db/client.js";
 import { entryTags, tags } from "../../db/schema.js";
 
+// @unit journals.server.list-tags
+// @summary List tags
 export function listTags(db: DatabaseInstance, prefix?: string) {
   const query = db
     .select({

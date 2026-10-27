@@ -10,17 +10,21 @@ import { ThemeProvider } from "./contexts/theme.js";
 import { queryClient } from "./queryClient.js";
 import { getTheme } from "./theme.js";
 
+// @unit journals.tui
+// @summary Journals terminal client
 async function main() {
   const args = process.argv.slice(2);
 
   // If invoked with "daemon" subcommand, route to daemon CLI
   if (args[0] === "daemon") {
+    // @call journals.cli.daemon Run the daemon command line
     await runDaemonCli(args.slice(1));
     process.exit(0);
   }
 
   // If invoked with "agent" subcommand, route to headless agent CLI
   if (args[0] === "agent") {
+    // @call journals.cli.agent Run the headless agent command line
     await runAgentCli(args.slice(1));
     process.exit(0);
   }
@@ -30,6 +34,7 @@ async function main() {
   const { config, serverUrl } = await import("./api/client.js");
 
   let serverInstance: { server: { stop: () => void } } | null = null;
+  // @call journals.server.start Start the in-process API server when it is not running
   try {
     const testRes = await fetch(`${serverUrl}/health`);
     if (!testRes.ok) throw new Error("not running");
@@ -82,6 +87,7 @@ async function main() {
   };
   const theme = getTheme(config.appearance.theme);
   const icons = config.appearance.use_nerd_font ? config.icons.nerd : config.icons.plain;
+  // @call journals.app Render the application
   root.render(
     <ThemeProvider theme={theme} dayStartHour={config.appearance.day_start_hour ?? 0}>
       <IconProvider value={icons}>

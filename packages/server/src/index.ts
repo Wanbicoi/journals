@@ -12,14 +12,20 @@ export interface StartedServer {
   db: DatabaseInstance;
 }
 
+// @unit journals.server.start
+// @summary Start the API server
 export function startServer(
   customConfigPath?: string,
   options: { silent?: boolean } = {},
 ): StartedServer {
+  // @call journals.core.config Load the YAML configuration
   const config = loadConfig(customConfigPath);
+  // @call journals.core.db-path Resolve the SQLite path
   const dbPath = resolveDbPath(config.server.db_path);
 
+  // @call journals.db.init Open the database and run migrations
   const db = initDb(dbPath, config.server.wal_mode);
+  // @call journals.server.app Register the HTTP routes
   const app = createApp(db);
 
   const server = Bun.serve({

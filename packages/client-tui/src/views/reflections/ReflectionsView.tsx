@@ -22,6 +22,8 @@ interface ReflectionsViewProps {
   onOpenEditor?: () => void;
 }
 
+// @unit journals.views.reflections
+// @summary Reflections view: weekly to yearly reviews
 export function ReflectionsView({
   periodType,
   onChangePeriodType,
@@ -38,6 +40,7 @@ export function ReflectionsView({
   const syntaxStyle = useMarkdownSyntaxStyle(theme);
   const saveReflection = useSaveReflection();
 
+  // @call journals.server.list-periods List periods and their status
   const { data: periods = [] } = useReflectionPeriods(periodType);
   const selectedPeriodIdx = resolveSelectedIndexBy(
     periods,
@@ -45,12 +48,14 @@ export function ReflectionsView({
     (period) => period.periodKey,
   );
   const selectedPeriod = selectedPeriodIdx === -1 ? undefined : periods[selectedPeriodIdx];
+  // @call journals.server.period-detail Load one period
   const {
     data: currentDetail = null,
     isLoading: loadingDetail,
     refetch: refetchDetail,
   } = useReflectionDetail(selectedPeriod?.periodType, selectedPeriod?.periodKey);
 
+  // @call journals.server.save-reflection Save a reflection
   useKeyboard(async (key) => {
     if (!isActive) return;
 

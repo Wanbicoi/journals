@@ -4,6 +4,8 @@ import { entries, entryTags, projects, tags } from "../../db/schema.js";
 import { sanitizeFtsQuery } from "../../lib/search-utils.js";
 import { findOrCreateProject } from "../projects/handler.js";
 
+// @unit journals.server.list-entries
+// @summary List journal entries
 export function listEntries(db: DatabaseInstance) {
   const allEntries = db
     .select({
@@ -49,6 +51,8 @@ export function listEntries(db: DatabaseInstance) {
   }));
 }
 
+// @unit journals.server.update-entry-project
+// @summary Move an entry to another project
 export function updateEntryProject(
   db: DatabaseInstance,
   entryId: string,
@@ -72,6 +76,8 @@ export function updateEntryProject(
   });
 }
 
+// @unit journals.server.update-entry-tags
+// @summary Replace an entry's tags
 export function updateEntryTags(db: DatabaseInstance, entryId: string, newTags: string[]) {
   return db.transaction((tx) => {
     tx.delete(entryTags).where(eq(entryTags.entryId, entryId)).run();
@@ -85,6 +91,8 @@ export function updateEntryTags(db: DatabaseInstance, entryId: string, newTags: 
   });
 }
 
+// @unit journals.server.update-entry-content
+// @summary Edit an entry's content
 export function updateEntryContent(
   db: DatabaseInstance,
   entryId: string,
@@ -99,18 +107,24 @@ export function updateEntryContent(
   return { success: true, id: entryId, content, breakDays };
 }
 
+// @unit journals.server.delete-entry
+// @summary Soft-delete an entry
 export function deleteEntry(db: DatabaseInstance, entryId: string) {
   const now = Date.now();
   db.update(entries).set({ deletedAt: now, updatedAt: now }).where(eq(entries.id, entryId)).run();
   return { success: true, id: entryId };
 }
 
+// @unit journals.server.restore-entry
+// @summary Restore a deleted entry
 export function restoreEntry(db: DatabaseInstance, entryId: string) {
   const now = Date.now();
   db.update(entries).set({ deletedAt: null, updatedAt: now }).where(eq(entries.id, entryId)).run();
   return { success: true, id: entryId };
 }
 
+// @unit journals.server.search-entries
+// @summary Search entries
 export function searchEntries(db: DatabaseInstance, query: string, limit = 50) {
   const ftsQuery = sanitizeFtsQuery(query);
   if (!ftsQuery) {

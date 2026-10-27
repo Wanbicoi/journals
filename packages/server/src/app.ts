@@ -32,6 +32,11 @@ import { handleQuickCapture } from "./slices/quick-capture/handler.js";
 import { createReflectionsRouter } from "./slices/reflections/router.js";
 import { listTags } from "./slices/tags/handler.js";
 
+// @unit journals.server.app
+// @summary Register the HTTP routes
+// @details One Hono chain over the vertical slices: capture, entries, projects,
+// | analytics, tags, reflections, and agent entries. Each route validates its
+// | body with a core zod schema before the slice handler touches the database.
 export function createApp(db: DatabaseInstance) {
   const app = new Hono()
     .get("/health", (c) => c.json({ status: "ok" }))

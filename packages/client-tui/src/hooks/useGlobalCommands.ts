@@ -21,6 +21,9 @@ interface UseGlobalCommandsOptions {
  * Input commands that belong to the whole app: global keys, the help-click dismissal, and copying
  * a terminal selection. Views keep their own keys.
  */
+
+// @unit journals.hooks.global-commands
+// @summary Wire the global input surface
 export function useGlobalCommands({
   currentTab,
   modalOpen,

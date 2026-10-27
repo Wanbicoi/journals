@@ -41,6 +41,8 @@ function groupEntriesByDate(entries: Entry[], dayStartHour: number): TimelineDat
   return groups;
 }
 
+// @unit journals.views.timeline
+// @summary Timeline view: capture, edit, tag, delete
 export function TimelineView({
   entries,
   selectedEntryIdx,
@@ -68,11 +70,17 @@ export function TimelineView({
     isActive,
     onSelectEntry,
     onStatusMessage,
+    // @call journals.server.capture Quick capture a line
     onQuickCapture,
+    // @call journals.server.update-entry-content Edit an entry's content
     onEditContent,
+    // @call journals.server.update-entry-project Move an entry to another project
     onEditProject,
+    // @call journals.server.update-entry-tags Replace an entry's tags
     onEditTags,
+    // @call journals.server.delete-entry Soft-delete an entry
     onDeleteEntry,
+    // @call journals.server.restore-entry Restore a deleted entry
     onUndoDelete,
     onOpenEditor,
     onUpdateEntryContent,
