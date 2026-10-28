@@ -1,7 +1,7 @@
 import { BiDirectionalBarChart } from "../../components/BiDirectionalBarChart.js";
 import { useIcons } from "../../contexts/icons.js";
 import { useTheme } from "../../contexts/theme.js";
-import type { DashboardData } from "../../hooks/useJournalData.js";
+import type { DashboardData } from "../../hooks/queries.js";
 
 interface DashboardActivityChartProps {
   dashboard: DashboardData;

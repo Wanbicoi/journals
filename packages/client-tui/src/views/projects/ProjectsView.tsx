@@ -1,57 +1,73 @@
-import type { Entry, Project } from "../../hooks/useJournalData.js";
+import { useMemo } from "react";
+import { ErrorState } from "../../components/ErrorState.js";
+import { useModals } from "../../contexts/modals.js";
+import { useNavigation } from "../../contexts/navigation.js";
+import { useNotifications } from "../../contexts/notification.js";
+import { useTheme } from "../../contexts/theme.js";
+import { editInEditor } from "../../editor.js";
+import { filterProjects } from "../../hooks/filterJournal.js";
+import type { Entry, Project } from "../../hooks/queries.js";
+import { useEntries, useProjects } from "../../hooks/queries.js";
+import { useProjectMutations } from "../../hooks/useProjectMutations.js";
+import { useSelectionById } from "../../hooks/useSelection.js";
 import { ProjectDetail } from "./ProjectDetail.js";
 import { ProjectList } from "./ProjectList.js";
 import { useProjectsKeymaps } from "./useProjectsKeymaps.js";
 
-interface ProjectsViewProps {
-  projects: Project[];
-  selectedProjectIdx: number;
-  onSelectProject?: (idx: number) => void;
-  entries: Entry[];
-  filterQuery?: string;
-  isActive?: boolean;
-  onStatusMessage?: (msg: string) => void;
-  onNewProject?: () => void;
-  onEditProjectSettings?: (project: Project) => void;
-  onOpenEditor?: (project: Project) => void;
-  onUpdateProjectContent?: (id: string, content: string) => Promise<void> | void;
-}
-
 // @unit journals.views.projects
 // @summary Projects view: list, create, edit content
-export function ProjectsView({
-  projects,
-  selectedProjectIdx,
-  onSelectProject,
-  entries,
-  filterQuery = "",
-  isActive = true,
-  onStatusMessage,
-  onNewProject,
-  onEditProjectSettings,
-  onOpenEditor,
-  onUpdateProjectContent,
-}: ProjectsViewProps) {
+// @details Loads its own projects and entries, owns its selection, and opens the project modals
+// | through context. The editor workflow is one action owned here.
+export function ProjectsView() {
+  const theme = useTheme();
+  const { filter } = useNavigation();
+  const { open } = useModals();
+  const { notify } = useNotifications();
+  const { updateProjectContent } = useProjectMutations();
+
+  // @call journals.hooks.projects Load the project list
+  const { data: projects = [], isLoading, isError, error, refetch } = useProjects();
+  // @call journals.hooks.entries Load the entries shown under each project
+  const { data: entries = [] } = useEntries();
+  // @call journals.hooks.filter-projects Filter projects by the search query
+  const filteredProjects = useMemo(() => filterProjects(projects, filter), [projects, filter]);
+  // @call journals.hooks.selection Keep the selected project by id
+  const selection = useSelectionById(filteredProjects);
+
+  const editProjectContent = async (project: Project) => {
+    const saved = await editInEditor(project.content, (content) =>
+      updateProjectContent(project.id, content),
+    );
+    if (saved) notify(`Updated content for @${project.name}`);
+  };
+
   useProjectsKeymaps({
-    projects,
-    selectedProjectIdx,
-    isActive,
-    // @call journals.hooks.selection Select a project by index
-    onSelectProject,
-    // @call journals.views.chrome Show the status message
-    onStatusMessage,
-    // @call journals.server.create-project Create a project
-    onNewProject,
-    // @call journals.server.update-project Edit the project's name, recurrence, and policy
-    onEditProjectSettings,
-    // @call journals.editor.open Open the selected project in $EDITOR
-    onOpenEditor,
-    // @call journals.server.update-project Save $EDITOR edits to the project content
-    onUpdateProjectContent,
+    projects: filteredProjects,
+    selectedProjectIdx: selection.selectedIndex,
+    onSelectProject: selection.selectIndex,
+    // @call journals.contexts.modals Open the new project modal
+    onNewProject: () => open({ name: "new-project" }),
+    // @call journals.contexts.modals Open the project settings modal
+    onEditProjectSettings: (project) => open({ name: "edit-project-settings", project }),
+    // @call journals.actions.edit-in-editor Edit the selected project in $EDITOR
+    onEditProjectContent: (project) => void editProjectContent(project),
   });
 
-  const selectedProject = projects[selectedProjectIdx];
-  const projectNotes = selectedProject
+  if (isError) {
+    // @call journals.views.error-state Show a load error and offer a retry
+    return <ErrorState error={error} onRetry={refetch} />;
+  }
+
+  if (isLoading) {
+    return (
+      <box padding={1}>
+        <text fg={theme.muted}>{"Loading your projects..."}</text>
+      </box>
+    );
+  }
+
+  const selectedProject = filteredProjects[selection.selectedIndex];
+  const projectNotes: Entry[] = selectedProject
     ? entries.filter(
         (entry) =>
           !!entry.projectName &&
@@ -62,10 +78,9 @@ export function ProjectsView({
   return (
     <box flexDirection="row" flexGrow={1} paddingLeft={1} paddingRight={1}>
       <ProjectList
-        projects={projects}
-        selectedProjectIdx={selectedProjectIdx}
-        filterQuery={filterQuery}
-        onSelectProject={onSelectProject ?? (() => {})}
+        projects={filteredProjects}
+        selectedProjectIdx={selection.selectedIndex}
+        onSelectProject={selection.selectIndex}
       />
       <ProjectDetail
         projectName={selectedProject?.name ?? "None"}

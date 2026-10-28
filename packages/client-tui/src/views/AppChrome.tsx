@@ -1,62 +1,35 @@
 import type { ReactNode } from "react";
 import { Header } from "../components/Header.js";
 import { StatusBar } from "../components/StatusBar.js";
-import type { Tab } from "../hooks/useAppKeymaps.js";
-import type { Entry, Project } from "../hooks/useJournalData.js";
+import { useLayout } from "../contexts/layout.js";
 import { ActiveModal } from "./modals/ActiveModal.js";
-import type { ModalManager } from "./modals/useModalManager.js";
 
 interface AppChromeProps {
-  width: number;
-  height: number;
-  currentTab: Tab;
-  statusMessage: string;
-  filterQuery: string;
-  modal: ModalManager;
-  selectedEntry?: Entry;
-  selectedProject?: Project;
-  onSelectTab: (tab: Tab) => void;
   children: ReactNode;
 }
 
 /**
- * The persistent frame: header, active screen, modal layer, and status bar.
+ * The persistent frame: header, active screen, modal layer, and status bar. Every part reads its
+ * own state and the terminal size from context; the frame needs no props.
  */
 
 // @unit journals.views.chrome
 // @summary Render the shell, tabs, and status bar
-export function AppChrome({
-  width,
-  height,
-  currentTab,
-  statusMessage,
-  filterQuery,
-  modal,
-  selectedEntry,
-  selectedProject,
-  onSelectTab,
-  children,
-}: AppChromeProps) {
+export function AppChrome({ children }: AppChromeProps) {
+  // @call journals.contexts.layout Read the terminal size
+  const { width, height } = useLayout();
+
   return (
     <box flexDirection="column" width={width} height={height}>
-      <Header width={width} currentTab={currentTab} onSelectTab={onSelectTab} />
+      {/* @call journals.views.header Render the header and its view tabs */}
+      <Header />
       <box flexGrow={1} flexDirection="column">
         {children}
       </box>
-      <ActiveModal
-        modal={modal}
-        width={width}
-        height={height}
-        selectedEntry={selectedEntry}
-        selectedProject={selectedProject}
-        currentTab={currentTab}
-      />
-      <StatusBar
-        width={width}
-        filterQuery={filterQuery}
-        statusMessage={statusMessage}
-        currentTab={currentTab}
-      />
+      {/* @call journals.views.modal-layer Render the active modal */}
+      <ActiveModal />
+      {/* @call journals.views.status-bar Show the status notification and per-view key hints */}
+      <StatusBar />
     </box>
   );
 }

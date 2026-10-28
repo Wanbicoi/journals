@@ -1,6 +1,6 @@
 import { useIcons } from "../../contexts/icons.js";
 import { useTheme } from "../../contexts/theme.js";
-import type { DashboardData } from "../../hooks/useJournalData.js";
+import type { DashboardData } from "../../hooks/queries.js";
 
 function truncate(text: string, max: number): string {
   const clean = text.replace(/\s+/g, " ").trim();

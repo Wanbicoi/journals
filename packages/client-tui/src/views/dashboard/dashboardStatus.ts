@@ -1,5 +1,5 @@
 import { formatRecurrenceRule } from "@journals/core";
-import type { DashboardData } from "../../hooks/useJournalData.js";
+import type { DashboardData } from "../../hooks/queries.js";
 import type { ThemePalette } from "../../theme.js";
 
 type DashboardStatus = DashboardData["status"];

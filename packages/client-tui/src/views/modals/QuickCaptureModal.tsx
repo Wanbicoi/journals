@@ -1,45 +1,45 @@
 import { Modal } from "../../components/Modal.js";
-import type { SuggestionType } from "../../suggest.js";
-import type { ThemePalette } from "../../theme.js";
+import { useIcons } from "../../contexts/icons.js";
+import { useNotifications } from "../../contexts/notification.js";
+import { useTheme } from "../../contexts/theme.js";
+import { useEntryMutations } from "../../hooks/useEntryMutations.js";
+import { useTextModalInput } from "./useTextModalInput.js";
 
-interface QuickCaptureModalProps {
-  width: number;
-  height: number;
-  inputBuffer: string;
-  suggestions: { type: SuggestionType; matches: string[] } | null;
-  activeSuggestionIdx: number;
-  quickIcon: string;
-  theme: ThemePalette;
-  onChange?: (value: string) => void;
-  onSubmit?: (value: string) => void;
-}
+// @unit journals.modals.quick-capture
+// @summary Capture a one-line journal entry
+export function QuickCaptureModal() {
+  const theme = useTheme();
+  const icons = useIcons();
+  const { notify } = useNotifications();
+  const { quickCapture } = useEntryMutations();
 
-export function QuickCaptureModal({
-  width,
-  height,
-  inputBuffer,
-  suggestions,
-  activeSuggestionIdx,
-  quickIcon,
-  theme,
-  onChange,
-  onSubmit,
-}: QuickCaptureModalProps) {
+  // @call journals.modals.text-input Handle the capture input, suggestions, and draft
+  const { buffer, setBuffer, suggestions, activeSuggestionIdx, submitBuffer } = useTextModalInput({
+    allowedSuggestions: ["project", "tag", "break"],
+    draftInEditor: true,
+    // @call journals.hooks.capture Save the captured line
+    submit: async (value) => {
+      if (!value) return;
+      await quickCapture(value);
+      notify("Captured new journal entry!");
+    },
+  });
+
   return (
-    <Modal width={width} height={height} theme={theme} borderColor={theme.primary}>
-      <text bg={theme.primary} fg={theme.selectedFg}>{` ${quickIcon} QUICK CAPTURE `}</text>
+    <Modal theme={theme} borderColor={theme.primary}>
+      <text bg={theme.primary} fg={theme.selectedFg}>{` ${icons.quick} QUICK CAPTURE `}</text>
       <text fg={theme.muted}>
         {"Syntax: Note text @project #tags /date YYYY-MM-DD /yesterday /break 3d"}
       </text>
       <box flexDirection="row">
         <text fg={theme.accent}>{"> "}</text>
         <input
-          value={inputBuffer}
+          value={buffer}
           focused
-          onChange={onChange}
-          onInput={onChange}
-          onSubmit={
-            onSubmit ? (e: unknown) => onSubmit(typeof e === "string" ? e : inputBuffer) : undefined
+          onChange={setBuffer}
+          onInput={setBuffer}
+          onSubmit={(value: unknown) =>
+            void submitBuffer(typeof value === "string" ? value : buffer)
           }
           placeholder="Note text @project #tags..."
           textColor={theme.fg}

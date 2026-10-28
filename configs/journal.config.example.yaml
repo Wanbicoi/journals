@@ -58,30 +58,62 @@ icons:
     chartCursor: "▲"
 
 # ==========================================
-# KEYMAP CONFIGURATION (Fully customizable)
+# KEYMAP CONFIGURATION (grouped by scope)
 # ==========================================
+# Each screen answers its own scope; the same action name can appear in several
+# scopes with the same or a different key. `global` is dispatched everywhere,
+# the others only while their view is on screen, and never while a modal is open.
 keymaps:
-  # Views / Tabs
-  view_dashboard: "1"              # Switch to 60-day routine dashboard
-  view_timeline: "2"               # Switch to daily timeline stream
-  view_reflections: "3"            # Switch to periodic reflections view
-  view_projects: "4"               # Switch to projects view & preview
-  
-  # Navigation
-  up: "k"
-  down: "j"
-  
-  # Actions
-  quick_capture: "n"               # Open 1-line quick capture input
-  new_project: "N"                 # Create a new project (in Projects view or globally)
-  edit_project: "p"                # Reassign/edit project for selected note
-  edit_tags: "t"                   # Edit tags for selected note
-  delete_entry: "d"                # Delete selected note (with confirmation dialog)
-  edit_project_content: "e"        # Edit/append markdown content in projects view
-  
-  # Global Actions
-  cancel: "escape"
-  quit: "q"
+  global:
+    view_dashboard: "1"            # Switch to 60-day routine dashboard
+    view_timeline: "2"             # Switch to daily timeline stream
+    view_reflections: "3"          # Switch to periodic reflections view
+    view_projects: "4"             # Switch to projects view & preview
+    next_view: "tab"               # Cycle to the next view
+    search_filter: "/"             # Open the search filter
+    help: "?"                      # Show the shortcut help
+    refresh: "r"                   # Refetch every cached query
+    cancel: "escape"               # Clear the active filter
+    quit: "q"                      # Quit the app
+
+  timeline:
+    down: ["j", "down"]
+    up: ["k", "up"]
+    move_top: "g"
+    move_bottom: "G"
+    jump_today: "T"
+    prev_day: "["
+    next_day: "]"
+    undo: ["u", "U"]               # Restore the last deleted note
+    quick_capture: ["n", "c"]      # Open 1-line quick capture input
+    edit_entry: "e"                # Edit the selected note inline
+    edit_project: "p"              # Reassign the note to another project
+    edit_tags: "t"                 # Edit the note's tags
+    delete_entry: "d"              # Delete the note (with confirmation)
+    open_editor: "o"               # Edit the note in $EDITOR
+
+  projects:
+    down: ["j", "down"]
+    up: ["k", "up"]
+    new_project: ["n", "N"]        # Create a project
+    edit_project_settings: "P"     # Edit the project's routine & policy
+    edit_project_content: ["e", "o"] # Edit the project markdown in $EDITOR
+
+  dashboard:
+    day_prev: ["h", "left"]        # Focus the previous chart day
+    day_next: ["l", "right"]       # Focus the next chart day
+    toggle_routine: ["space", " "] # Complete today's due routine
+    open_day: "return"             # Open the focused day in the timeline
+    quick_capture: ["n", "c"]      # Open 1-line quick capture input
+
+  reflections:
+    down: ["j", "down"]
+    up: ["k", "up"]
+    cadence_week: ["w", "W"]
+    cadence_month: ["m", "M"]
+    cadence_quarter: "Q"
+    cadence_year: ["y", "Y"]
+    open_reflection: ["e", "return"] # Write the reflection in $EDITOR
 
 # ==========================================
 # QUICK ADD DEFAULTS

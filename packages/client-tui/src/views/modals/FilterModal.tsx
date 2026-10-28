@@ -1,37 +1,40 @@
 import { Modal } from "../../components/Modal.js";
-import type { ThemePalette } from "../../theme.js";
+import { useNavigation } from "../../contexts/navigation.js";
+import { useNotifications } from "../../contexts/notification.js";
+import { useTheme } from "../../contexts/theme.js";
+import { useTextModalInput } from "./useTextModalInput.js";
 
-interface FilterModalProps {
-  width: number;
-  height: number;
-  inputBuffer: string;
-  tabTitle: string;
-  theme: ThemePalette;
-  onChange?: (value: string) => void;
-  onSubmit?: (value: string) => void;
-}
+// @unit journals.modals.filter
+// @summary Search the active view
+export function FilterModal() {
+  const theme = useTheme();
+  const { tab, filter, setFilter, clearFilter } = useNavigation();
+  const { notify } = useNotifications();
 
-export function FilterModal({
-  width,
-  height,
-  inputBuffer,
-  tabTitle,
-  theme,
-  onChange,
-  onSubmit,
-}: FilterModalProps) {
+  const { buffer, setBuffer, submitBuffer } = useTextModalInput({
+    initialValue: filter,
+    // @call journals.contexts.navigation Save the search filter
+    submit: (value) => {
+      setFilter(value);
+      notify(value ? `Filter: "${value}"` : "Filter cleared");
+    },
+    onCancel: () => {
+      if (clearFilter()) notify("Filter cleared");
+    },
+  });
+
   return (
-    <Modal width={width} height={height} theme={theme} borderColor={theme.accent}>
-      <text bg={theme.accent} fg={theme.selectedFg}>{` / FILTER ${tabTitle.toUpperCase()} `}</text>
+    <Modal theme={theme} borderColor={theme.accent}>
+      <text bg={theme.accent} fg={theme.selectedFg}>{` / FILTER ${tab.toUpperCase()} `}</text>
       <box flexDirection="row" marginTop={1}>
         <text fg={theme.fg}>{"Query: "}</text>
         <input
-          value={inputBuffer}
+          value={buffer}
           focused
-          onChange={onChange}
-          onInput={onChange}
-          onSubmit={
-            onSubmit ? (e: unknown) => onSubmit(typeof e === "string" ? e : inputBuffer) : undefined
+          onChange={setBuffer}
+          onInput={setBuffer}
+          onSubmit={(value: unknown) =>
+            void submitBuffer(typeof value === "string" ? value : buffer)
           }
           placeholder="Search query..."
           textColor={theme.fg}

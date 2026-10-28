@@ -1,36 +1,35 @@
 import { useIcons } from "../contexts/icons.js";
+import type { Keymaps } from "../contexts/keymaps.js";
+import { useKeymaps } from "../contexts/keymaps.js";
+import { useLayout } from "../contexts/layout.js";
+import { useNavigation } from "../contexts/navigation.js";
+import { useNotifications } from "../contexts/notification.js";
 import { useTheme } from "../contexts/theme.js";
+import { bindingLabel } from "../keymap.js";
 
-export type TabType = "DASHBOARD" | "TIMELINE" | "REFLECTIONS" | "PROJECTS";
-
-interface StatusBarProps {
-  width: number;
-  filterQuery: string;
-  statusMessage: string;
-  currentTab?: TabType;
-}
-
-const TAB_HINTS: Record<TabType, string> = {
-  DASHBOARD: "[Space] Complete  [Enter] Open day  [h/l] Day  [n] Note  [q] Quit",
-  TIMELINE: "[j/k] Move  [e] Edit  [n] Note  [d] Del  [/] Filter  [q] Quit",
-  REFLECTIONS: "[w/m/Q/y] Cadence  [j/k] Move  [e/Enter] Write  [q] Quit",
-  PROJECTS: "[j/k] Move  [n] New  [P] Routine  [e/o] Edit  [q] Quit",
+const TAB_HINTS: Record<string, (k: Keymaps) => string> = {
+  DASHBOARD: (k) =>
+    `[${bindingLabel(k.dashboard.toggle_routine)}] Complete  [${bindingLabel(k.dashboard.open_day)}] Open day  [${bindingLabel(k.dashboard.day_prev)}/${bindingLabel(k.dashboard.day_next)}] Day  [${bindingLabel(k.dashboard.quick_capture)}] Note  [${bindingLabel(k.global.quit)}] Quit`,
+  TIMELINE: (k) =>
+    `[${bindingLabel(k.timeline.down)}/${bindingLabel(k.timeline.up)}] Move  [${bindingLabel(k.timeline.edit_entry)}] Edit  [${bindingLabel(k.timeline.quick_capture)}] Note  [${bindingLabel(k.timeline.delete_entry)}] Del  [${bindingLabel(k.global.search_filter)}] Filter  [${bindingLabel(k.global.quit)}] Quit`,
+  REFLECTIONS: (k) =>
+    `[${bindingLabel(k.reflections.cadence_week)}/${bindingLabel(k.reflections.cadence_month)}/${bindingLabel(k.reflections.cadence_quarter)}/${bindingLabel(k.reflections.cadence_year)}] Cadence  [${bindingLabel(k.reflections.down)}/${bindingLabel(k.reflections.up)}] Move  [${bindingLabel(k.reflections.open_reflection)}] Write  [${bindingLabel(k.global.quit)}] Quit`,
+  PROJECTS: (k) =>
+    `[${bindingLabel(k.projects.down)}/${bindingLabel(k.projects.up)}] Move  [${bindingLabel(k.projects.new_project)}] New  [${bindingLabel(k.projects.edit_project_settings)}] Routine  [${bindingLabel(k.projects.edit_project_content)}] Edit  [${bindingLabel(k.global.quit)}] Quit`,
 };
 
-export function StatusBar({
-  width,
-  filterQuery,
-  statusMessage,
-  currentTab = "TIMELINE",
-}: StatusBarProps) {
+// @unit journals.views.status-bar
+// @summary Show the status notification and per-view key hints
+export function StatusBar() {
   const theme = useTheme();
   const icons = useIcons();
+  const keymaps = useKeymaps();
+  const { width } = useLayout();
+  const { message } = useNotifications();
+  const { filter, tab } = useNavigation();
 
-  // Truncate or fit status info cleanly
-  const leftMsg = filterQuery ? `[Filter: "${filterQuery}"] ${statusMessage}` : statusMessage;
-
-  // Shortcuts hint for quick reference based on active tab
-  const hints = TAB_HINTS[currentTab] || TAB_HINTS.TIMELINE;
+  const leftMsg = filter ? `[Filter: "${filter}"] ${message}` : message;
+  const hints = (TAB_HINTS[tab] ?? TAB_HINTS.TIMELINE)(keymaps);
 
   return (
     <box height={2} flexDirection="column">

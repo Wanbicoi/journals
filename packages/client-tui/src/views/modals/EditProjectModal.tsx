@@ -1,43 +1,48 @@
 import { Modal } from "../../components/Modal.js";
-import type { SuggestionType } from "../../suggest.js";
-import type { ThemePalette } from "../../theme.js";
+import { useIcons } from "../../contexts/icons.js";
+import { useNotifications } from "../../contexts/notification.js";
+import { useTheme } from "../../contexts/theme.js";
+import type { Entry } from "../../hooks/queries.js";
+import { useEntryMutations } from "../../hooks/useEntryMutations.js";
+import { useTextModalInput } from "./useTextModalInput.js";
 
 interface EditProjectModalProps {
-  width: number;
-  height: number;
-  inputBuffer: string;
-  suggestions: { type: SuggestionType; matches: string[] } | null;
-  activeSuggestionIdx: number;
-  projectIcon: string;
-  theme: ThemePalette;
-  onChange?: (value: string) => void;
-  onSubmit?: (value: string) => void;
+  entry: Entry;
 }
 
-export function EditProjectModal({
-  width,
-  height,
-  inputBuffer,
-  suggestions,
-  activeSuggestionIdx,
-  projectIcon,
-  theme,
-  onChange,
-  onSubmit,
-}: EditProjectModalProps) {
+// @unit journals.modals.reassign-entry
+// @summary Move an entry to another project
+export function EditProjectModal({ entry }: EditProjectModalProps) {
+  const theme = useTheme();
+  const icons = useIcons();
+  const { notify } = useNotifications();
+  const { updateEntryProject } = useEntryMutations();
+
+  const { buffer, setBuffer, suggestions, activeSuggestionIdx, submitBuffer } = useTextModalInput({
+    initialValue: `@${entry.projectName || ""}`,
+    allowedSuggestions: ["project"],
+    // @call journals.hooks.update-entry-project Reassign the entry
+    submit: async (value) => {
+      const target = value.replace(/^@/, "");
+      if (!target) return;
+      await updateEntryProject(entry.id, target);
+      notify(`Note reassigned to @${target}`);
+    },
+  });
+
   return (
-    <Modal width={width} height={height} theme={theme} borderColor={theme.primary}>
-      <text fg={theme.primary}>{`${projectIcon} REASSIGN PROJECT`}</text>
+    <Modal theme={theme} borderColor={theme.primary}>
+      <text fg={theme.primary}>{`${icons.project} REASSIGN PROJECT`}</text>
       <text fg={theme.muted}>{"Type @projectName [Tab for suggestion]"}</text>
       <box flexDirection="row">
         <text fg={theme.fg}>{"Project: "}</text>
         <input
-          value={inputBuffer}
+          value={buffer}
           focused
-          onChange={onChange}
-          onInput={onChange}
-          onSubmit={
-            onSubmit ? (e: unknown) => onSubmit(typeof e === "string" ? e : inputBuffer) : undefined
+          onChange={setBuffer}
+          onInput={setBuffer}
+          onSubmit={(value: unknown) =>
+            void submitBuffer(typeof value === "string" ? value : buffer)
           }
           placeholder="@projectName"
           textColor={theme.fg}

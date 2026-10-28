@@ -1,7 +1,8 @@
 import { useIcons } from "../../contexts/icons.js";
 import { useKeymaps } from "../../contexts/keymaps.js";
 import { useTheme } from "../../contexts/theme.js";
-import type { DashboardData } from "../../hooks/useJournalData.js";
+import type { DashboardData } from "../../hooks/queries.js";
+import { bindingLabel } from "../../keymap.js";
 import { formatRoutine, statusColor, statusLabel } from "./dashboardStatus.js";
 
 type Routine = NonNullable<DashboardData["todayRoutines"]>[number];
@@ -67,7 +68,7 @@ export function DashboardTodayPanel({ dashboard, onCompleteRoutine }: DashboardT
       })}
       {dueRoutines.length === 0 && (
         <text fg={theme.muted}>
-          {`${icons.checked} Nothing due today ${icons.bullet} press '${keymaps.quick_capture}' to log a note`}
+          {`${icons.checked} Nothing due today ${icons.bullet} press '${bindingLabel(keymaps.dashboard.quick_capture)}' to log a note`}
         </text>
       )}
     </box>

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { testRender } from "@opentui/react/test-utils";
-import { act, useState } from "react";
+import { act, useEffect, useState } from "react";
+import { useModals } from "../../contexts/modals.js";
 import { TestProviders } from "../../test-support/TestProviders.js";
 import { type Tab, useAppKeymaps } from "../useAppKeymaps.js";
 
@@ -20,7 +21,6 @@ describe("useAppKeymaps", () => {
       activeTab = tab;
       useAppKeymaps({
         currentTab: tab,
-        modalOpen: false,
         onSelectTab: setTab,
         onOpenFilter: () => {
           filterOpened = true;
@@ -95,14 +95,17 @@ describe("useAppKeymaps", () => {
     testSetup.renderer.destroy();
   });
 
-  it("ignores global keys while a modal is open", async () => {
+  it("ignores global keys while a modal is open, but Ctrl+C still quits", async () => {
     let quit = false;
+    let tabChanges = 0;
 
     function Probe() {
+      const { open } = useModals();
       useAppKeymaps({
         currentTab: "DASHBOARD",
-        modalOpen: true,
-        onSelectTab: () => {},
+        onSelectTab: () => {
+          tabChanges++;
+        },
         onOpenFilter: () => {},
         onOpenHelp: () => {},
         onRefresh: () => {},
@@ -111,6 +114,11 @@ describe("useAppKeymaps", () => {
           quit = true;
         },
       });
+
+      useEffect(() => {
+        open({ name: "help" });
+      }, [open]);
+
       return (
         <box>
           <text>modal</text>
@@ -129,11 +137,18 @@ describe("useAppKeymaps", () => {
     });
 
     await act(async () => {
-      testSetup.mockInput.pressKey("q");
       testSetup.mockInput.pressKey("2");
+      testSetup.mockInput.pressKey("q");
     });
 
+    expect(tabChanges).toBe(0);
     expect(quit).toBe(false);
+
+    await act(async () => {
+      testSetup.mockInput.pressCtrlC();
+    });
+    expect(quit).toBe(true);
+
     testSetup.renderer.destroy();
   });
 });

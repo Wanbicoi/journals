@@ -1,60 +1,64 @@
-import { normalizeRecurrenceRule } from "@journals/core";
 import { Modal } from "../../components/Modal.js";
-import type { ThemePalette } from "../../theme.js";
+import { useIcons } from "../../contexts/icons.js";
+import { useNotifications } from "../../contexts/notification.js";
+import { useTheme } from "../../contexts/theme.js";
+import { parseProjectSpec } from "../../hooks/projectSpec.js";
+import type { Project } from "../../hooks/queries.js";
+import { useProjectMutations } from "../../hooks/useProjectMutations.js";
+import { useTextModalInput } from "./useTextModalInput.js";
 
 interface EditProjectSettingsModalProps {
-  width: number;
-  height: number;
-  projectName: string;
-  inputBuffer: string;
-  projectIcon: string;
-  theme: ThemePalette;
-  onChange?: (value: string) => void;
-  onSubmit?: (value: string) => void;
+  project: Project;
 }
 
-export function EditProjectSettingsModal({
-  width,
-  height,
-  projectName,
-  inputBuffer,
-  projectIcon,
-  theme,
-  onChange,
-  onSubmit,
-}: EditProjectSettingsModalProps) {
-  const tokens = inputBuffer.split(/\s+/);
-  let recurrencePreview: string | null = null;
-  const recurIndex = tokens.findIndex((t) => t.startsWith("/every") || t.startsWith("/recur"));
-  if (recurIndex !== -1) {
-    const recurPart = tokens
-      .slice(recurIndex)
-      .join(" ")
-      .replace(/^\/(every|recur:?)\s*/, "");
-    if (recurPart.toLowerCase() === "none" || recurPart.toLowerCase() === "clear") {
-      recurrencePreview = "None (Remove Routine)";
-    } else {
-      recurrencePreview = normalizeRecurrenceRule(recurPart);
-    }
-  }
+// @unit journals.modals.edit-project-settings
+// @summary Edit a project's name, recurrence, and missed policy
+export function EditProjectSettingsModal({ project }: EditProjectSettingsModalProps) {
+  const theme = useTheme();
+  const icons = useIcons();
+  const { notify } = useNotifications();
+  const { updateProject } = useProjectMutations();
 
-  const policyToken = tokens.find((t) => t.startsWith("/policy:"));
-  const policyPreview = policyToken ? policyToken.replace("/policy:", "") : null;
+  const recurStr = project.recurrence ? ` /recur ${project.recurrence}` : "";
+  const policyStr = ` /policy:${project.missedPolicy || "spike"}`;
+
+  const { buffer, setBuffer, submitBuffer } = useTextModalInput({
+    initialValue: `${project.name}${recurStr}${policyStr}`,
+    // @call journals.hooks.update-project Save the project settings
+    submit: async (value) => {
+      const spec = parseProjectSpec(value);
+      await updateProject(project.id, {
+        name: spec.name || project.name,
+        recurrence: spec.recurrence,
+        missedPolicy: spec.missedPolicy,
+      });
+      notify(`Updated settings for @${spec.name || project.name}`);
+    },
+  });
+
+  // @call journals.hooks.project-spec Preview the parsed name, cadence, and policy
+  const spec = parseProjectSpec(buffer);
+  const recurrencePreview =
+    spec.recurrence === undefined
+      ? null
+      : spec.recurrence === null
+        ? "None (Remove Routine)"
+        : spec.recurrence;
 
   return (
-    <Modal width={width} height={height} theme={theme} borderColor={theme.primary}>
+    <Modal theme={theme} borderColor={theme.primary}>
       <text
         fg={theme.primary}
-      >{`${projectIcon} EDIT PROJECT ROUTINE & SETTINGS: @${projectName}`}</text>
+      >{`${icons.project} EDIT PROJECT ROUTINE & SETTINGS: @${project.name}`}</text>
       <box flexDirection="row">
         <text fg={theme.fg}>{"Input: "}</text>
         <input
-          value={inputBuffer}
+          value={buffer}
           focused
-          onChange={onChange}
-          onInput={onChange}
-          onSubmit={
-            onSubmit ? (e: unknown) => onSubmit(typeof e === "string" ? e : inputBuffer) : undefined
+          onChange={setBuffer}
+          onInput={setBuffer}
+          onSubmit={(value: unknown) =>
+            void submitBuffer(typeof value === "string" ? value : buffer)
           }
           placeholder="/every cadence [/policy:accumulate|spike|mark_done]"
           textColor={theme.fg}
@@ -65,8 +69,8 @@ export function EditProjectSettingsModal({
       {recurrencePreview && (
         <text fg={theme.accent}>{`Detected Recurrence: ${recurrencePreview}`}</text>
       )}
-      {policyPreview && (
-        <text fg={theme.warning || "yellow"}>{`Detected Policy: ${policyPreview}`}</text>
+      {spec.missedPolicy && (
+        <text fg={theme.warning || "yellow"}>{`Detected Policy: ${spec.missedPolicy}`}</text>
       )}
       <text fg={theme.muted}>
         {"Recurrence: Add /every <cadence> (e.g. /every weekday, /recur daily, /recur:none)"}

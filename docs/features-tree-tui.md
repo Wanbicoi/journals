@@ -13,58 +13,90 @@ Journals terminal client
 │   │   └── 3.3.1. Apply pending migrations
 │   └── 3.4. Register the HTTP routes
 └── 4. Render the application
-    ├── 4.1. Load entries, projects, tags, and dashboard
-    │   ├── 4.1.1. Query journal entries
-    │   │   └── 4.1.1.1. Fetch entries from the server
-    │   ├── 4.1.2. Query projects
-    │   │   └── 4.1.2.1. Fetch projects from the server
-    │   ├── 4.1.3. Query tags
-    │   │   └── 4.1.3.1. Fetch tags from the server
-    │   └── 4.1.4. Query dashboard analytics
-    │       └── 4.1.4.1. Fetch the dashboard summary from the server
-    ├── 4.2. Track the selected reflection period
-    ├── 4.3. Filter, select, and navigate entries and projects
-    │   ├── 4.3.1. Filter entries and projects by query
-    │   ├── 4.3.2. Keep the selected entry by id
-    │   └── 4.3.3. Keep the selected project by id *(4.3.2.)*
-    ├── 4.4. Restore a deleted entry
-    ├── 4.5. Open capture, project, and entry modals
-    │   └── 4.5.1. Manage the open modal and its input mode
-    ├── 4.6. Bind global keymaps and commands
-    │   └── 4.6.1. Wire the global input surface
-    ├── 4.7. Dashboard view: streaks and the activity chart
-    │   ├── 4.7.1. Capture a routine completion
-    │   │   └── 4.7.1.1. Parse @project, #tags, /date, and /break
-    │   ├── 4.7.2. Focus a day in the chart
-    │   ├── 4.7.3. Navigate to a date *(4.3.)*
-    │   ├── 4.7.4. Show the status message
-    │   ├── 4.7.5. Quick capture a line *(4.7.1.)*
-    │   └── 4.7.6. Complete a routine with a capture *(4.7.1.)*
-    ├── 4.8. Timeline view: capture, edit, tag, delete
-    │   ├── 4.8.1. Select an entry by index *(4.3.2.)*
-    │   ├── 4.8.2. Show the status message *(4.7.4.)*
-    │   ├── 4.8.3. Quick capture a line *(4.7.1.)*
-    │   ├── 4.8.4. Edit an entry's content
-    │   ├── 4.8.5. Move an entry to another project
-    │   ├── 4.8.6. Replace an entry's tags
-    │   ├── 4.8.7. Soft-delete an entry
-    │   ├── 4.8.8. Restore a deleted entry
-    │   ├── 4.8.9. Open the selected entry in $EDITOR
-    │   └── 4.8.10. Save $EDITOR edits to the entry *(4.8.4.)*
-    ├── 4.9. Reflections view: weekly to yearly reviews
-    │   ├── 4.9.1. List periods and their status
-    │   ├── 4.9.2. Load one period
-    │   ├── 4.9.3. Route reflection keys
-    │   │   └── 4.9.3.1. Save a reflection
-    │   ├── 4.9.4. Change the reflection cadence *(4.2.)*
-    │   ├── 4.9.5. Select a period by key *(4.2.)*
-    │   ├── 4.9.6. Show the status message *(4.7.4.)*
-    │   └── 4.9.7. Open the reflection in $EDITOR *(4.8.9.)*
-    └── 4.10. Projects view: list, create, edit content
-        ├── 4.10.1. Select a project by index *(4.3.2.)*
-        ├── 4.10.2. Show the status message *(4.7.4.)*
-        ├── 4.10.3. Create a project
-        ├── 4.10.4. Edit the project's name, recurrence, and policy
-        ├── 4.10.5. Open the selected project in $EDITOR *(4.8.9.)*
-        └── 4.10.6. Save $EDITOR edits to the project content *(4.10.4.)*
+    └── 4.1. Render the active view inside the chrome
+        ├── 4.1.1. Bind global keymaps and commands
+        │   ├── 4.1.1.1. Copy the terminal selection
+        │   └── 4.1.1.2. Dispatch the screen-level keys
+        │       ├── 4.1.1.2.1. Open the search filter
+        │       │   └── 4.1.1.2.1.1. Save the search filter
+        │       │       └── 4.1.1.2.1.1.1. Report the view change
+        │       ├── 4.1.1.2.2. Open the keyboard help
+        │       ├── 4.1.1.2.3. Refresh every cached query
+        │       └── 4.1.1.2.4. Clear the active view's filter *(4.1.1.2.1.1.)*
+        ├── 4.1.2. Pick the view for the active route
+        │   ├── 4.1.2.1. Timeline view: capture, edit, tag, delete
+        │   │   ├── 4.1.2.1.1. Load the timeline's journal entries
+        │   │   │   └── 4.1.2.1.1.1. Fetch entries from the server
+        │   │   ├── 4.1.2.1.2. Filter entries by the search query
+        │   │   ├── 4.1.2.1.3. Keep the selected entry by id
+        │   │   ├── 4.1.2.1.4. Open the quick capture modal
+        │   │   ├── 4.1.2.1.5. Open the inline content editor *(4.1.2.1.4.)*
+        │   │   ├── 4.1.2.1.6. Edit the selected entry in $EDITOR
+        │   │   │   └── 4.1.2.1.6.1. Open the content in $EDITOR
+        │   │   ├── 4.1.2.1.7. Open the project reassignment modal *(4.1.2.1.4.)*
+        │   │   ├── 4.1.2.1.8. Open the tag editor *(4.1.2.1.4.)*
+        │   │   ├── 4.1.2.1.9. Confirm and soft-delete the selected entry
+        │   │   │   ├── 4.1.2.1.9.1. Remember the deleted entry for undo
+        │   │   │   └── 4.1.2.1.9.2. Soft-delete the opened entry
+        │   │   │       └── 4.1.2.1.9.2.1. Soft-delete the entry
+        │   │   ├── 4.1.2.1.10. Restore the last deleted entry
+        │   │   │   └── 4.1.2.1.10.1. Restore the entry
+        │   │   └── 4.1.2.1.11. Show a load error and offer a retry
+        │   ├── 4.1.2.2. Reflections view: weekly to yearly reviews
+        │   │   ├── 4.1.2.2.1. Track the cadence and the selected period
+        │   │   ├── 4.1.2.2.2. List periods and their status
+        │   │   ├── 4.1.2.2.3. Load one period
+        │   │   └── 4.1.2.2.4. Route reflection keys
+        │   │       └── 4.1.2.2.4.1. Edit the reflection in $EDITOR *(4.1.2.1.6.)*
+        │   ├── 4.1.2.3. Projects view: list, create, edit content
+        │   │   ├── 4.1.2.3.1. Load the project list
+        │   │   │   └── 4.1.2.3.1.1. Fetch projects from the server
+        │   │   ├── 4.1.2.3.2. Load the entries shown under each project *(4.1.2.1.1.)*
+        │   │   ├── 4.1.2.3.3. Filter projects by the search query
+        │   │   ├── 4.1.2.3.4. Keep the selected project by id *(4.1.2.1.3.)*
+        │   │   ├── 4.1.2.3.5. Open the new project modal *(4.1.2.1.4.)*
+        │   │   ├── 4.1.2.3.6. Open the project settings modal *(4.1.2.1.4.)*
+        │   │   ├── 4.1.2.3.7. Edit the selected project in $EDITOR *(4.1.2.1.6.)*
+        │   │   └── 4.1.2.3.8. Show a load error and offer a retry *(4.1.2.1.11.)*
+        │   └── 4.1.2.4. Dashboard view: streaks and the activity chart
+        │       ├── 4.1.2.4.1. Load the 60-day dashboard analytics
+        │       │   └── 4.1.2.4.1.1. Fetch the dashboard summary from the server
+        │       ├── 4.1.2.4.2. Load projects to count configured routines *(4.1.2.3.1.)*
+        │       ├── 4.1.2.4.3. Capture a routine completion
+        │       │   └── 4.1.2.4.3.1. Parse and store the captured line
+        │       │       └── 4.1.2.4.3.1.1. Parse @project, #tags, /date, and /break
+        │       ├── 4.1.2.4.4. Focus a day in the chart
+        │       ├── 4.1.2.4.5. Navigate to the selected day *(4.1.1.2.1.1.)*
+        │       ├── 4.1.2.4.6. Open the quick capture modal *(4.1.2.1.4.)*
+        │       └── 4.1.2.4.7. Show a load error and offer a retry *(4.1.2.1.11.)*
+        └── 4.1.3. Render the shell, header, tabs, and status bar
+            ├── 4.1.3.1. Read the terminal size
+            ├── 4.1.3.2. Render the header and its view tabs
+            ├── 4.1.3.3. Render the active modal
+            │   ├── 4.1.3.3.1. Capture a one-line journal entry
+            │   │   ├── 4.1.3.3.1.1. Handle the capture input, suggestions, and draft
+            │   │   │   ├── 4.1.3.3.1.1.1. Draft the buffer in $EDITOR on Ctrl+E
+            │   │   │   └── 4.1.3.3.1.1.2. Close the modal *(4.1.2.1.4.)*
+            │   │   └── 4.1.3.3.1.2. Save the captured line *(4.1.2.4.3.)*
+            │   ├── 4.1.3.3.2. Search the active view *(4.1.1.2.1.)*
+            │   ├── 4.1.3.3.3. Show the keyboard shortcuts *(4.1.1.2.2.)*
+            │   ├── 4.1.3.3.4. Create a project
+            │   │   ├── 4.1.3.3.4.1. Create the project
+            │   │   │   └── 4.1.3.3.4.1.1. Create the project
+            │   │   └── 4.1.3.3.4.2. Preview the parsed name, cadence, and policy
+            │   ├── 4.1.3.3.5. Edit an entry's content in a textarea
+            │   │   └── 4.1.3.3.5.1. Save the edited content
+            │   │       └── 4.1.3.3.5.1.1. Save the entry's content
+            │   ├── 4.1.3.3.6. Move an entry to another project
+            │   │   └── 4.1.3.3.6.1. Reassign the entry
+            │   │       └── 4.1.3.3.6.1.1. Move the entry
+            │   ├── 4.1.3.3.7. Replace an entry's tags
+            │   │   └── 4.1.3.3.7.1. Replace the entry's tags
+            │   │       └── 4.1.3.3.7.1.1. Replace the entry's tags
+            │   ├── 4.1.3.3.8. Confirm and soft-delete an entry *(4.1.2.1.9.)*
+            │   └── 4.1.3.3.9. Edit a project's name, recurrence, and policy
+            │       ├── 4.1.3.3.9.1. Save the project settings
+            │       │   └── 4.1.3.3.9.1.1. Save the project's name, recurrence, and policy
+            │       └── 4.1.3.3.9.2. Preview the parsed name, cadence, and policy *(4.1.3.3.4.2.)*
+            └── 4.1.3.4. Show the status notification and per-view key hints
 ```

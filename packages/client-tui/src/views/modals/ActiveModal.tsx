@@ -1,7 +1,4 @@
-import { useIcons } from "../../contexts/icons.js";
-import { useKeymaps } from "../../contexts/keymaps.js";
-import { useTheme } from "../../contexts/theme.js";
-import type { Entry, Project } from "../../hooks/useJournalData.js";
+import { useModals } from "../../contexts/modals.js";
 import { DeleteConfirmModal } from "./DeleteConfirmModal.js";
 import { EditContentModal } from "./EditContentModal.js";
 import { EditProjectModal } from "./EditProjectModal.js";
@@ -11,160 +8,52 @@ import { FilterModal } from "./FilterModal.js";
 import { HelpModal } from "./HelpModal.js";
 import { NewProjectModal } from "./NewProjectModal.js";
 import { QuickCaptureModal } from "./QuickCaptureModal.js";
-import type { ModalManager } from "./useModalManager.js";
 
-export interface ActiveModalProps {
-  modal: ModalManager;
-  width: number;
-  height: number;
-  selectedEntry?: Entry;
-  selectedProject?: Project;
-  currentTab: "DASHBOARD" | "TIMELINE" | "REFLECTIONS" | "PROJECTS";
-}
+// @unit journals.views.modal-layer
+// @summary Render the active modal
+// @details A thin dispatcher: the modal context decides which modal is open, each modal owns its
+// | input, its target, and its save action, and reads the terminal size from the layout context.
+export function ActiveModal() {
+  const { modal } = useModals();
 
-export function ActiveModal({
-  modal,
-  width,
-  height,
-  selectedEntry,
-  selectedProject,
-  currentTab,
-}: ActiveModalProps) {
-  const theme = useTheme();
-  const icons = useIcons();
-  const keymaps = useKeymaps();
-  const {
-    inputMode,
-    inputBuffer,
-    setInputBuffer,
-    commitModalInput,
-    closeModal,
-    suggestions,
-    activeSuggestionIdx,
-  } = modal;
+  if (!modal) return null;
 
-  if (inputMode === "NONE") {
-    return null;
-  }
+  switch (modal.name) {
+    case "capture":
+      // @call journals.modals.quick-capture Capture a one-line journal entry
+      return <QuickCaptureModal />;
 
-  switch (inputMode) {
-    case "CAPTURE":
-      return (
-        <QuickCaptureModal
-          width={width}
-          height={height}
-          inputBuffer={inputBuffer}
-          suggestions={suggestions}
-          activeSuggestionIdx={activeSuggestionIdx}
-          quickIcon={icons.quick}
-          theme={theme}
-          onChange={setInputBuffer}
-          onSubmit={commitModalInput}
-        />
-      );
+    case "filter":
+      // @call journals.modals.filter Search the active view
+      return <FilterModal />;
 
-    case "EDIT_CONTENT":
-      if (!selectedEntry) return null;
-      return (
-        <EditContentModal
-          width={width}
-          height={height}
-          initialValue={selectedEntry.content}
-          theme={theme}
-          onSave={async (newContent) => {
-            await commitModalInput(newContent);
-          }}
-          onCancel={() => {
-            closeModal("Edit cancelled");
-          }}
-        />
-      );
+    case "help":
+      // @call journals.modals.help Show the keyboard shortcuts
+      return <HelpModal />;
 
-    case "DELETE_CONFIRM":
-      if (!selectedEntry) return null;
-      return (
-        <DeleteConfirmModal
-          width={width}
-          height={height}
-          entrySummary={selectedEntry.content}
-          warningIcon={icons.warning}
-          theme={theme}
-        />
-      );
+    case "new-project":
+      // @call journals.modals.new-project Create a project
+      return <NewProjectModal />;
 
-    case "EDIT_PROJECT":
-      return (
-        <EditProjectModal
-          width={width}
-          height={height}
-          inputBuffer={inputBuffer}
-          suggestions={suggestions}
-          activeSuggestionIdx={activeSuggestionIdx}
-          projectIcon={icons.project}
-          theme={theme}
-          onChange={setInputBuffer}
-          onSubmit={commitModalInput}
-        />
-      );
+    case "edit-content":
+      // @call journals.modals.edit-content Edit an entry's content in a textarea
+      return <EditContentModal entry={modal.entry} />;
 
-    case "EDIT_TAGS":
-      return (
-        <EditTagsModal
-          width={width}
-          height={height}
-          inputBuffer={inputBuffer}
-          suggestions={suggestions}
-          activeSuggestionIdx={activeSuggestionIdx}
-          tagIcon={icons.tag}
-          theme={theme}
-          onChange={setInputBuffer}
-          onSubmit={commitModalInput}
-        />
-      );
+    case "edit-project":
+      // @call journals.modals.reassign-entry Move an entry to another project
+      return <EditProjectModal entry={modal.entry} />;
 
-    case "NEW_PROJECT":
-      return (
-        <NewProjectModal
-          width={width}
-          height={height}
-          inputBuffer={inputBuffer}
-          projectIcon={icons.project}
-          theme={theme}
-          onChange={setInputBuffer}
-          onSubmit={commitModalInput}
-        />
-      );
+    case "edit-tags":
+      // @call journals.modals.edit-tags Replace an entry's tags
+      return <EditTagsModal entry={modal.entry} />;
 
-    case "EDIT_PROJECT_SETTINGS":
-      if (!selectedProject) return null;
-      return (
-        <EditProjectSettingsModal
-          width={width}
-          height={height}
-          projectName={selectedProject.name}
-          inputBuffer={inputBuffer}
-          projectIcon={icons.project}
-          theme={theme}
-          onChange={setInputBuffer}
-          onSubmit={commitModalInput}
-        />
-      );
+    case "delete-entry":
+      // @call journals.modals.delete-entry Confirm and soft-delete an entry
+      return <DeleteConfirmModal entry={modal.entry} />;
 
-    case "FILTER":
-      return (
-        <FilterModal
-          width={width}
-          height={height}
-          inputBuffer={inputBuffer}
-          tabTitle={currentTab === "TIMELINE" ? "Timeline / Journal" : "Projects"}
-          theme={theme}
-          onChange={setInputBuffer}
-          onSubmit={commitModalInput}
-        />
-      );
-
-    case "HELP":
-      return <HelpModal width={width} height={height} keymaps={keymaps} theme={theme} />;
+    case "edit-project-settings":
+      // @call journals.modals.edit-project-settings Edit a project's name, recurrence, and policy
+      return <EditProjectSettingsModal project={modal.project} />;
 
     default:
       return null;

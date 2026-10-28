@@ -1,27 +1,14 @@
 import { useKeyboard } from "@opentui/react";
-import { useKeymaps } from "../contexts/keymaps.js";
-import { matchesAnyBinding, matchesBinding, normalizeKey } from "../keymap.js";
+import type { Tab } from "../contexts/navigation.js";
+import { matchesBinding } from "../keymap.js";
+import { useScopedKeymaps } from "./useScopedKeymaps.js";
 
-export type Tab = "DASHBOARD" | "TIMELINE" | "REFLECTIONS" | "PROJECTS";
+export type { Tab };
 
 const TABS: Tab[] = ["DASHBOARD", "TIMELINE", "REFLECTIONS", "PROJECTS"];
 
-function buildTabKeyMap(keymaps: ReturnType<typeof useKeymaps>): Record<string, Tab> {
-  return {
-    "1": "DASHBOARD",
-    [keymaps.view_dashboard]: "DASHBOARD",
-    "2": "TIMELINE",
-    [keymaps.view_timeline]: "TIMELINE",
-    "3": "REFLECTIONS",
-    [keymaps.view_reflections]: "REFLECTIONS",
-    "4": "PROJECTS",
-    [keymaps.view_projects]: "PROJECTS",
-  };
-}
-
 export interface UseAppKeymapsOptions {
   currentTab: Tab;
-  modalOpen: boolean;
   onSelectTab: (tab: Tab) => void;
   onOpenFilter: () => void;
   onOpenHelp: () => void;
@@ -31,12 +18,17 @@ export interface UseAppKeymapsOptions {
 }
 
 /**
- * The screen-level keymap: navigation between tabs, global actions, and the quit intent. Views own
- * their own keys; this hook owns the ones that are true regardless of the active panel.
+ * The global keymap: view switching, search, help, refresh, clear-filter, and quit. View keys live
+ * in each view's own scope, so this hook never lists a letter. Ctrl+C still quits while a modal is
+ * open, which is why it is handled before the scoped dispatcher.
  */
+
+// @unit journals.hooks.app-keymaps
+// @summary Dispatch the global keys
+// @details Tab switching, search, help, refresh, clear-filter, and quit are true regardless of the
+// | active panel; each view owns its own key scope.
 export function useAppKeymaps({
   currentTab,
-  modalOpen,
   onSelectTab,
   onOpenFilter,
   onOpenHelp,
@@ -44,37 +36,24 @@ export function useAppKeymaps({
   onClearFilter,
   onQuit,
 }: UseAppKeymapsOptions) {
-  const keymaps = useKeymaps();
-  const tabKeyMap = buildTabKeyMap(keymaps);
+  useKeyboard((key) => {
+    if (key.ctrl && matchesBinding(key, "c")) onQuit();
+  });
 
-  useKeyboard(async (key) => {
-    if (key.ctrl && matchesBinding(key, "c")) {
-      onQuit();
-      return;
-    }
-    if (modalOpen) return;
-
-    if (matchesAnyBinding(key, keymaps.quit, "q")) {
-      onQuit();
-      return;
-    }
-
-    const tab = tabKeyMap[normalizeKey(key)];
-    if (tab) {
-      onSelectTab(tab);
-      return;
-    }
-
-    if (matchesBinding(key, "tab")) {
-      onSelectTab(TABS[(TABS.indexOf(currentTab) + 1) % TABS.length]);
-    } else if (matchesBinding(key, keymaps.search_filter)) {
-      onOpenFilter();
-    } else if (matchesBinding(key, keymaps.help)) {
-      onOpenHelp();
-    } else if (matchesBinding(key, keymaps.refresh)) {
-      await onRefresh();
-    } else if (matchesBinding(key, keymaps.cancel)) {
-      onClearFilter();
-    }
+  useScopedKeymaps("global", {
+    view_dashboard: () => onSelectTab("DASHBOARD"),
+    view_timeline: () => onSelectTab("TIMELINE"),
+    view_reflections: () => onSelectTab("REFLECTIONS"),
+    view_projects: () => onSelectTab("PROJECTS"),
+    next_view: () => onSelectTab(TABS[(TABS.indexOf(currentTab) + 1) % TABS.length]),
+    // @call journals.modals.filter Open the search filter
+    search_filter: () => onOpenFilter(),
+    // @call journals.modals.help Open the keyboard help
+    help: () => onOpenHelp(),
+    // @call journals.hooks.refresh Refresh every cached query
+    refresh: () => void onRefresh(),
+    // @call journals.contexts.navigation Clear the active view's filter
+    cancel: () => onClearFilter(),
+    quit: () => onQuit(),
   });
 }

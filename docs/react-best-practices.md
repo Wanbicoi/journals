@@ -244,6 +244,10 @@ Use it for values that are **ambient, widely read, and slow-changing**:
 
 Design rules:
 
+- **Promote only what the frame reads.** In this client the route (`{ tab, filter }`), the status
+  notification, the modal layer, the undo slot, and the terminal size are context because the
+  chrome, every view, and every modal read or write them. Selection, drafts, and buffer text stay
+  local to the screen or modal that owns them.
 - **One provider per concern.** `ThemeProvider`, `KeymapProvider`, `ModalProvider` — never one
   `AppProvider` whose value is `{ everything }`. A god-object re-renders every consumer on any field
   change and brings back the untraceable-props problem.
@@ -464,6 +468,11 @@ useEffect(() => {
 Server data is a cache with a lifecycle: freshness, refetch, invalidation, retries. Query owns it;
 components read it. Never copy it into `useState`.
 
+**Load where it renders.** A screen calls the query hooks for what it draws. A shell that fetches
+everything and passes containers down makes every view a consumer of data it never shows, and every
+new view an edit to the shell. The cache deduplicates, so two views asking for projects is one
+request, not two.
+
 ### 5.1 Query keys are the cache contract
 
 ```tsx
@@ -674,8 +683,8 @@ Test behavior the user can observe, not implementation details.
 
 ## 13. Interaction details that separate senior work
 
-- **Keyboard parity.** Every mouse-reachable action has a key, and an `isActive` gate keeps
-  background views from stealing keystrokes.
+- **Keyboard parity.** Every mouse-reachable action has a key, and one scoped keymap gate keeps
+  view keys off while a modal owns the keyboard.
 - **Focus is state.** Opening a modal moves focus; closing restores it. Never leave focus on a
   destroyed node.
 - **Every async action has a pending affordance** and disables its own trigger. Double-submit is a
@@ -686,6 +695,10 @@ Test behavior the user can observe, not implementation details.
   keeps the TUI usable on limited palettes.
 - **Key matching is one function.** Comparing `key.name`, `key.sequence`, a config value, and a
   hardcoded fallback four ways per binding guarantees inconsistency. Normalize once, then match.
+  Every key a handler reacts to — letters, arrows, `Space`, `Tab`, and the alternate for an action —
+  comes from the keymap config, so a handler never names a key the user cannot rebind. Bindings are
+  grouped by scope (`keymaps.timeline`, `keymaps.projects`, …), so moving a key between screens is
+  a config edit, not a code edit.
 
 ---
 
@@ -768,7 +781,7 @@ closed; the last column records the commit that fixed each one. New code must no
 | §10 error boundaries | `packages/client-tui/src` (none) | A thrown component tears down the whole TUI | One boundary per view | `8c05915` |
 | §13 key normalization | `App.tsx:140-175`, `TimelineView.tsx` | Each binding compares `key.name`, `key.sequence`, config value, and a hardcoded fallback inline | `matchesBinding(key, "up")` helper | `a664434`, `0d9ca91` |
 
-What **does** hold up and should be preserved: the `isActive` gating of keyboard handlers, the
+What **does** hold up and should be preserved: the scoped keymap gate, the
 undo-after-delete flow, derived filtering in `App.tsx`, and the keymap/modal contract tests.
 
 ---

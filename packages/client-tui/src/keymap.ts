@@ -1,3 +1,5 @@
+import type { Binding } from "@journals/core";
+
 export interface KeyEventLike {
   name?: string;
   sequence?: string;
@@ -21,17 +23,71 @@ export function normalizeKey(key: KeyEventLike): string {
   return key.name ?? sequence ?? "";
 }
 
-export function matchesBinding(key: KeyEventLike, binding: string): boolean {
-  return normalizeKey(key) === binding;
+function bindingsOf(binding: Binding): readonly string[] {
+  return typeof binding === "string" ? [binding] : binding;
 }
 
-export function matchesShiftedBinding(key: KeyEventLike, binding: string): boolean {
-  const normalized = normalizeKey(key);
-  if (normalized === binding) return true;
-  return key.shift === true && normalized.toLowerCase() === binding.toLowerCase();
+export function matchesBinding(key: KeyEventLike, binding: Binding): boolean {
+  return bindingsOf(binding).includes(normalizeKey(key));
 }
 
-export function matchesAnyBinding(key: KeyEventLike, ...bindings: string[]): boolean {
+/** Matches the binding, or its uppercase form when the key was pressed with Shift. */
+export function matchesShiftedBinding(key: KeyEventLike, binding: Binding): boolean {
   const normalized = normalizeKey(key);
-  return bindings.includes(normalized);
+  return bindingsOf(binding).some(
+    (value) =>
+      normalized === value ||
+      (key.shift === true && normalized.toLowerCase() === value.toLowerCase()),
+  );
+}
+
+export function matchesAnyBinding(key: KeyEventLike, ...bindings: Binding[]): boolean {
+  const normalized = normalizeKey(key);
+  return bindings.some((binding) => bindingsOf(binding).includes(normalized));
+}
+
+/**
+ * Resolve a key to the action it is bound to. Every action's keys come from the keymap config, so
+ * a view never spells a letter or an arrow itself. Exact matches win over the Shift fallback, so
+ * `G` (move to bottom) cannot be shadowed by `g` (move to top).
+ */
+export function actionForKey<A extends string>(
+  key: KeyEventLike,
+  bindings: Partial<Record<A, Binding>>,
+): A | null {
+  const normalized = normalizeKey(key);
+  const entries = Object.entries(bindings) as [A, Binding][];
+
+  for (const [action, binding] of entries) {
+    if (bindingsOf(binding).includes(normalized)) return action;
+  }
+
+  if (key.shift) {
+    for (const [action, binding] of entries) {
+      const shifted = bindingsOf(binding).find(
+        (value) =>
+          value !== value.toLowerCase() && value.toLowerCase() === normalized.toLowerCase(),
+      );
+      if (shifted) return action;
+    }
+  }
+
+  return null;
+}
+
+const KEY_LABELS: Record<string, string> = {
+  escape: "Esc",
+  return: "Enter",
+  tab: "Tab",
+  space: "Space",
+  up: "↑",
+  down: "↓",
+  left: "←",
+  right: "→",
+};
+
+/** The key to print in a hint for an action that may accept several keys. */
+export function bindingLabel(binding: Binding): string {
+  const value = typeof binding === "string" ? binding : binding[0];
+  return KEY_LABELS[value] ?? value;
 }

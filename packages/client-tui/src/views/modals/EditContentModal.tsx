@@ -5,26 +5,25 @@ import {
 } from "@opentui/core";
 import { useEffect, useMemo, useRef } from "react";
 import { Modal } from "../../components/Modal.js";
+import { useModals } from "../../contexts/modals.js";
+import { useNotifications } from "../../contexts/notification.js";
+import { useTheme } from "../../contexts/theme.js";
+import type { Entry } from "../../hooks/queries.js";
+import { useEntryMutations } from "../../hooks/useEntryMutations.js";
 import { matchesBinding } from "../../keymap.js";
-import type { ThemePalette } from "../../theme.js";
 
 interface EditContentModalProps {
-  width: number;
-  height: number;
-  initialValue: string;
-  theme: ThemePalette;
-  onSave: (content: string) => void;
-  onCancel: () => void;
+  entry: Entry;
 }
 
-export function EditContentModal({
-  width,
-  height,
-  initialValue,
-  theme,
-  onSave,
-  onCancel,
-}: EditContentModalProps) {
+// @unit journals.modals.edit-content
+// @summary Edit an entry's content in a textarea
+export function EditContentModal({ entry }: EditContentModalProps) {
+  const theme = useTheme();
+  const { close } = useModals();
+  const { notify } = useNotifications();
+  // @call journals.hooks.update-entry-content Save the edited content
+  const { updateEntryContent } = useEntryMutations();
   const textareaRef = useRef<TextareaRenderable | null>(null);
 
   useEffect(() => {
@@ -47,7 +46,7 @@ export function EditContentModal({
   );
 
   return (
-    <Modal width={width} height={height} theme={theme} borderColor={theme.primary}>
+    <Modal theme={theme} borderColor={theme.primary}>
       <text bg={theme.primary} fg={theme.selectedFg}>
         {" EDIT NOTE CONTENT "}
       </text>
@@ -65,7 +64,7 @@ export function EditContentModal({
         <textarea
           ref={textareaRef}
           focused
-          initialValue={initialValue}
+          initialValue={entry.content}
           height={4}
           wrapMode="word"
           textColor={theme.fg}
@@ -73,11 +72,20 @@ export function EditContentModal({
           keyBindings={keyBindings}
           onSubmit={() => {
             const text = textareaRef.current?.plainText ?? "";
-            onSave(text);
+            if (!text) return;
+            void (async () => {
+              try {
+                await updateEntryContent(entry.id, text);
+                notify("Updated note content!");
+                close();
+              } catch (error) {
+                notify(`Save failed: ${error instanceof Error ? error.message : String(error)}`);
+              }
+            })();
           }}
           onKeyDown={(key) => {
             if (matchesBinding(key, "escape")) {
-              onCancel();
+              close();
             }
           }}
         />

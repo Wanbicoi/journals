@@ -5,36 +5,24 @@ import { useIcons } from "../../contexts/icons.js";
 import { useTheme } from "../../contexts/theme.js";
 import { useReflectionDetail, useReflectionPeriods } from "../../hooks/queries.js";
 import { useMarkdownSyntaxStyle } from "../../hooks/useMarkdownSyntaxStyle.js";
+import { useReflectionSelection } from "../../hooks/useReflectionSelection.js";
 import { useSaveReflection } from "../../hooks/useSaveReflection.js";
 import { resolveSelectedIndexBy } from "../../hooks/useSelection.js";
 import { useReflectionKeymaps } from "./useReflectionKeymaps.js";
 
-interface ReflectionsViewProps {
-  periodType: ReflectionPeriodType;
-  onChangePeriodType: (type: ReflectionPeriodType) => void;
-  selectedPeriodKey: string | null;
-  onSelectPeriodKey: (key: string) => void;
-  isActive?: boolean;
-  onStatusMessage?: (msg: string) => void;
-  onOpenEditor?: () => void;
-}
-
 // @unit journals.views.reflections
 // @summary Reflections view: weekly to yearly reviews
-export function ReflectionsView({
-  periodType,
-  onChangePeriodType,
-  selectedPeriodKey,
-  onSelectPeriodKey,
-  isActive = true,
-  onStatusMessage,
-  onOpenEditor,
-}: ReflectionsViewProps) {
+// @details Owns the reflection cadence and the selected period key. The app shell passes only
+// | whether the view is active, like every other screen.
+export function ReflectionsView() {
   const scrollBoxRef = useRef<ScrollBoxRenderable | null>(null);
   const icons = useIcons();
   const theme = useTheme();
   const syntaxStyle = useMarkdownSyntaxStyle(theme);
   const saveReflection = useSaveReflection();
+  // @call journals.hooks.reflection Track the cadence and the selected period
+  const { periodType, selectedPeriodKey, changePeriodType, selectPeriodKey } =
+    useReflectionSelection();
 
   // @call journals.server.list-periods List periods and their status
   const { data: periods = [] } = useReflectionPeriods(periodType);
@@ -53,21 +41,14 @@ export function ReflectionsView({
 
   // @call journals.views.reflections-keys Route reflection keys
   useReflectionKeymaps({
-    isActive,
     periodType,
     periods,
     selectedPeriodIdx,
     currentDetail,
     refetchDetail,
     saveReflection,
-    // @call journals.hooks.reflection Change the reflection cadence
-    onChangePeriodType,
-    // @call journals.hooks.reflection Select a period by key
-    onSelectPeriodKey,
-    // @call journals.views.chrome Show the status message
-    onStatusMessage,
-    // @call journals.editor.open Open the reflection in $EDITOR
-    onOpenEditor,
+    onChangePeriodType: changePeriodType,
+    onSelectPeriodKey: selectPeriodKey,
   });
 
   // Scroll into view
@@ -92,15 +73,15 @@ export function ReflectionsView({
       <box flexDirection="row" paddingLeft={2} marginBottom={1}>
         <text fg={theme.muted}>{"Time Scale: "}</text>
         {subTabs.map((st) => {
-          const isActive = periodType === st.type;
+          const isCurrent = periodType === st.type;
           return (
             <box
               key={st.type}
               flexDirection="row"
               marginRight={2}
-              onMouseDown={() => onChangePeriodType(st.type)}
+              onMouseDown={() => changePeriodType(st.type)}
             >
-              {isActive ? (
+              {isCurrent ? (
                 <text bg={theme.selectedBg} fg={theme.selectedFg}>
                   {` [${st.key}] ${st.label} `}
                 </text>
@@ -140,7 +121,7 @@ export function ReflectionsView({
                   backgroundColor={isSel ? theme.border : undefined}
                   paddingLeft={1}
                   paddingRight={1}
-                  onMouseDown={() => onSelectPeriodKey(p.periodKey)}
+                  onMouseDown={() => selectPeriodKey(p.periodKey)}
                 >
                   <box flexDirection="row">
                     <text fg={isSel ? theme.primary : theme.fg}>

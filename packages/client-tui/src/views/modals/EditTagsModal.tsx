@@ -1,43 +1,54 @@
 import { Modal } from "../../components/Modal.js";
-import type { SuggestionType } from "../../suggest.js";
-import type { ThemePalette } from "../../theme.js";
+import { useIcons } from "../../contexts/icons.js";
+import { useNotifications } from "../../contexts/notification.js";
+import { useTheme } from "../../contexts/theme.js";
+import type { Entry } from "../../hooks/queries.js";
+import { useEntryMutations } from "../../hooks/useEntryMutations.js";
+import { useTextModalInput } from "./useTextModalInput.js";
 
 interface EditTagsModalProps {
-  width: number;
-  height: number;
-  inputBuffer: string;
-  suggestions: { type: SuggestionType; matches: string[] } | null;
-  activeSuggestionIdx: number;
-  tagIcon: string;
-  theme: ThemePalette;
-  onChange?: (value: string) => void;
-  onSubmit?: (value: string) => void;
+  entry: Entry;
 }
 
-export function EditTagsModal({
-  width,
-  height,
-  inputBuffer,
-  suggestions,
-  activeSuggestionIdx,
-  tagIcon,
-  theme,
-  onChange,
-  onSubmit,
-}: EditTagsModalProps) {
+/** Comma- or `#`-separated input, normalized to the tag alphabet the server accepts. */
+function parseTags(raw: string): string[] {
+  return raw
+    .split(",")
+    .map((tag) => tag.trim().toLowerCase().replace(/^#/, ""))
+    .filter((tag) => /^[a-z0-9-_]+$/.test(tag));
+}
+
+// @unit journals.modals.edit-tags
+// @summary Replace an entry's tags
+export function EditTagsModal({ entry }: EditTagsModalProps) {
+  const theme = useTheme();
+  const icons = useIcons();
+  const { notify } = useNotifications();
+  const { updateEntryTags } = useEntryMutations();
+
+  const { buffer, setBuffer, suggestions, activeSuggestionIdx, submitBuffer } = useTextModalInput({
+    initialValue: entry.tags.join(", "),
+    allowedSuggestions: ["tag"],
+    // @call journals.hooks.update-entry-tags Replace the entry's tags
+    submit: async (value) => {
+      await updateEntryTags(entry.id, parseTags(value));
+      notify("Updated note tags!");
+    },
+  });
+
   return (
-    <Modal width={width} height={height} theme={theme} borderColor={theme.tag}>
-      <text fg={theme.tag}>{`${tagIcon} EDIT NOTE TAGS`}</text>
+    <Modal theme={theme} borderColor={theme.tag}>
+      <text fg={theme.tag}>{`${icons.tag} EDIT NOTE TAGS`}</text>
       <text fg={theme.muted}>{"Comma-separated tags, #tag [Tab for suggestion]"}</text>
       <box flexDirection="row">
         <text fg={theme.fg}>{"Tags: "}</text>
         <input
-          value={inputBuffer}
+          value={buffer}
           focused
-          onChange={onChange}
-          onInput={onChange}
-          onSubmit={
-            onSubmit ? (e: unknown) => onSubmit(typeof e === "string" ? e : inputBuffer) : undefined
+          onChange={setBuffer}
+          onInput={setBuffer}
+          onSubmit={(value: unknown) =>
+            void submitBuffer(typeof value === "string" ? value : buffer)
           }
           placeholder="tag1, tag2, #tag3"
           textColor={theme.fg}

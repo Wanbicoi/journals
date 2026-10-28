@@ -1,16 +1,18 @@
 import type React from "react";
+import { useLayout } from "../contexts/layout.js";
 import type { ThemePalette } from "../theme.js";
 
 interface ModalProps {
-  width: number;
-  height: number;
   theme: ThemePalette;
   borderColor?: string;
   maxWidth?: number;
   children: React.ReactNode;
 }
 
-export function Modal({ width, height, theme, borderColor, maxWidth = 72, children }: ModalProps) {
+// @unit journals.views.modal-frame
+// @summary Position a modal inside the terminal
+export function Modal({ theme, borderColor, maxWidth = 72, children }: ModalProps) {
+  const { width, height } = useLayout();
   const top = Math.max(2, Math.floor(height / 4));
   const left = Math.max(4, Math.floor(width / 6));
   const modalWidth = Math.min(maxWidth, width - 8);

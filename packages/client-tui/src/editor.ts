@@ -21,6 +21,7 @@ function resolveEditor(): string {
 
 // @unit journals.editor.open
 // @summary Open a note in $EDITOR
+// @details The primitive: edits a temp file and returns the text. It knows nothing about saving.
 export function openExternalEditor(initialContent: string): string {
   const editor = resolveEditor();
   const tmpFile = path.join(os.tmpdir(), `journal-project-${Date.now()}.md`);
@@ -47,4 +48,22 @@ export function openExternalEditor(initialContent: string): string {
       process.stdin.setRawMode?.(true);
     }
   }
+}
+
+// @unit journals.actions.edit-in-editor
+// @summary Edit content in $EDITOR and save the changes
+// @details One user action: open the editor, compare the result, and call `save` only when the
+// | writer actually changed something. Callers do not assemble the open/compare/save sequence.
+// @returns Whether the content changed and was saved
+export async function editInEditor(
+  initialContent: string,
+  save: (content: string) => Promise<unknown>,
+): Promise<boolean> {
+  // @call journals.editor.open Open the content in $EDITOR
+  const updated = openExternalEditor(initialContent);
+
+  if (updated === initialContent) return false;
+
+  await save(updated);
+  return true;
 }

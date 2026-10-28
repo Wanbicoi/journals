@@ -1,23 +1,19 @@
 import { HighlightText } from "../../components/HighlightText.js";
 import { useIcons } from "../../contexts/icons.js";
+import { useNavigation } from "../../contexts/navigation.js";
 import { useTheme } from "../../contexts/theme.js";
-import type { Entry } from "../../hooks/useJournalData.js";
+import type { Entry } from "../../hooks/queries.js";
 
 interface TimelineEntryRowProps {
   entry: Entry;
   isSelected: boolean;
-  filterQuery: string;
   onSelect: () => void;
 }
 
-export function TimelineEntryRow({
-  entry,
-  isSelected,
-  filterQuery,
-  onSelect,
-}: TimelineEntryRowProps) {
+export function TimelineEntryRow({ entry, isSelected, onSelect }: TimelineEntryRowProps) {
   const icons = useIcons();
   const theme = useTheme();
+  const { filter } = useNavigation();
   const time = new Date(entry.createdAt).toTimeString().slice(0, 5);
 
   return (
@@ -47,7 +43,7 @@ export function TimelineEntryRow({
           <HighlightText
             key={`${entry.id}-line-${lIdx}`}
             text={line || " "}
-            query={filterQuery}
+            query={filter}
             theme={theme}
             defaultFg={theme.fg}
             selectable

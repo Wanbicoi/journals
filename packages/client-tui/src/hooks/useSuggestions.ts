@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { type SuggestionType, detectSuggestionQuery } from "../suggest.js";
-import type { Project, TagInfo } from "./useJournalData.js";
+import type { Project, TagInfo } from "./queries.js";
 
 export const DEFAULT_BREAK_PRESETS = [
   "/break 1d",
@@ -11,6 +11,8 @@ export const DEFAULT_BREAK_PRESETS = [
   "/break 14d",
 ];
 
+// @unit journals.hooks.suggestions
+// @summary Suggest @projects, #tags, and break presets
 export function useSuggestions(projects: Project[], tags: TagInfo[]) {
   const [activeSuggestionIdx, setActiveSuggestionIdx] = useState(0);
 

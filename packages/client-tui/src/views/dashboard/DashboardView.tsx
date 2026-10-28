@@ -1,60 +1,55 @@
+import { useState } from "react";
+import { ErrorState } from "../../components/ErrorState.js";
 import { useIcons } from "../../contexts/icons.js";
+import { useModals } from "../../contexts/modals.js";
+import { useNavigation } from "../../contexts/navigation.js";
 import { useTheme } from "../../contexts/theme.js";
-import type { DashboardData, Project } from "../../hooks/useJournalData.js";
+import { useDashboardAnalytics, useProjects } from "../../hooks/queries.js";
+import { useEntryMutations } from "../../hooks/useEntryMutations.js";
 import { DashboardActivityChart } from "./DashboardActivityChart.js";
 import { DashboardAttention } from "./DashboardAttention.js";
 import { DashboardTodayPanel } from "./DashboardTodayPanel.js";
 import { useDashboardKeymaps } from "./useDashboardKeymaps.js";
 
-interface DashboardViewProps {
-  dashboard: DashboardData | null;
-  projects: Project[];
-  loading?: boolean;
-  focusedDayIdx: number;
-  onNavigateDate: (dateStr: string) => void;
-  isActive?: boolean;
-  onFocusDayIdx?: (idx: number) => void;
-  onStatusMessage?: (msg: string) => void;
-  onQuickCapture?: (text: string) => Promise<void> | void;
-  onToggleRoutine?: (
-    routine: NonNullable<DashboardData["todayRoutines"]>[number],
-  ) => Promise<void> | void;
-}
-
 // @unit journals.views.dashboard
 // @summary Dashboard view: streaks and the activity chart
-export function DashboardView({
-  dashboard,
-  projects,
-  loading = false,
-  focusedDayIdx,
-  onNavigateDate,
-  isActive = true,
-  onFocusDayIdx,
-  onStatusMessage,
-  onQuickCapture,
-  onToggleRoutine,
-}: DashboardViewProps) {
+export function DashboardView() {
   const icons = useIcons();
   const theme = useTheme();
-  // @call journals.server.capture Capture a routine completion
+  const { navigate } = useNavigation();
+  const { open } = useModals();
+  const { quickCapture } = useEntryMutations();
+  const [focusedDayIdx, setFocusedDayIdx] = useState(59);
+
+  // @call journals.hooks.dashboard Load the 60-day dashboard analytics
+  const { data: dashboard = null, isLoading, isError, error, refetch } = useDashboardAnalytics(60);
+  // @call journals.hooks.projects Load projects to count configured routines
+  const { data: projects = [] } = useProjects();
+
+  // The chart may return fewer days than the default focus; clamp before reading the series.
+  const focusedDay = dashboard
+    ? Math.min(focusedDayIdx, Math.max(0, dashboard.days.length - 1))
+    : 0;
+
+  // @call journals.hooks.capture Capture a routine completion
   const { completeRoutine } = useDashboardKeymaps({
     dashboard,
-    focusedDayIdx,
-    isActive,
+    focusedDayIdx: focusedDay,
     // @call journals.views.dashboard-chart Focus a day in the chart
-    onFocusDayIdx,
-    // @call journals.hooks.navigation Navigate to a date
-    onNavigateDate,
-    // @call journals.views.chrome Show the status message
-    onStatusMessage,
-    // @call journals.server.capture Quick capture a line
-    onQuickCapture,
-    // @call journals.server.capture Complete a routine with a capture
-    onToggleRoutine,
+    onFocusDayIdx: setFocusedDayIdx,
+    // @call journals.contexts.navigation Navigate to the selected day
+    onNavigateDate: (dateStr) => navigate("TIMELINE", dateStr),
+    onQuickCapture: (text) => quickCapture(text),
+    // @call journals.contexts.modals Open the quick capture modal
+    onOpenCapture: () => open({ name: "capture" }),
   });
 
-  if (loading || !dashboard) {
+  if (isError) {
+    // @call journals.views.error-state Show a load error and offer a retry
+    return <ErrorState error={error} onRetry={refetch} />;
+  }
+
+  if (isLoading || !dashboard) {
     return (
       <box padding={1}>
         <text fg={theme.muted}>{"Loading your dashboard..."}</text>
@@ -71,9 +66,9 @@ export function DashboardView({
       <DashboardTodayPanel dashboard={dashboard} onCompleteRoutine={completeRoutine} />
       <DashboardActivityChart
         dashboard={dashboard}
-        focusedDayIdx={focusedDayIdx}
-        onFocusIdx={onFocusDayIdx}
-        onNavigateDate={onNavigateDate}
+        focusedDayIdx={focusedDay}
+        onFocusIdx={setFocusedDayIdx}
+        onNavigateDate={(dateStr) => navigate("TIMELINE", dateStr)}
       />
       <DashboardAttention dashboard={dashboard} />
 

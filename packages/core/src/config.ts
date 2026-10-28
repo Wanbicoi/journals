@@ -114,6 +114,94 @@ function iconSetSchema(defaults: IconSet) {
   });
 }
 
+/** One action may be bound to several keys: a letter and the arrow it mirrors. */
+export const BindingSchema = z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]);
+
+export type Binding = z.infer<typeof BindingSchema>;
+
+function binding(value: Binding) {
+  return BindingSchema.default(value);
+}
+
+/**
+ * Default keys, grouped by the screen that answers them. A scope owns its own bindings, so the
+ * same action name (`down`, `quick_capture`) can appear in several scopes with the same or a
+ * different key. The global scope is dispatched everywhere; the others only by their view.
+ */
+export const DEFAULT_KEYMAPS = {
+  global: {
+    view_dashboard: "1",
+    view_timeline: "2",
+    view_reflections: "3",
+    view_projects: "4",
+    next_view: "tab",
+    search_filter: "/",
+    help: "?",
+    refresh: "r",
+    cancel: "escape",
+    quit: "q",
+  },
+  timeline: {
+    down: ["j", "down"],
+    up: ["k", "up"],
+    move_top: "g",
+    move_bottom: "G",
+    jump_today: "T",
+    prev_day: "[",
+    next_day: "]",
+    undo: ["u", "U"],
+    quick_capture: ["n", "c"],
+    edit_entry: "e",
+    edit_project: "p",
+    edit_tags: "t",
+    delete_entry: "d",
+    open_editor: "o",
+  },
+  projects: {
+    down: ["j", "down"],
+    up: ["k", "up"],
+    new_project: ["n", "N"],
+    edit_project_settings: "P",
+    edit_project_content: ["e", "o"],
+  },
+  dashboard: {
+    day_prev: ["h", "left"],
+    day_next: ["l", "right"],
+    toggle_routine: ["space", " "],
+    open_day: "return",
+    quick_capture: ["n", "c"],
+  },
+  reflections: {
+    down: ["j", "down"],
+    up: ["k", "up"],
+    cadence_week: ["w", "W"],
+    cadence_month: ["m", "M"],
+    cadence_quarter: "Q",
+    cadence_year: ["y", "Y"],
+    open_reflection: ["e", "return"],
+  },
+} satisfies Record<string, Record<string, Binding>>;
+
+export type KeymapScope = keyof typeof DEFAULT_KEYMAPS;
+
+function scopeSchema<T extends Record<string, Binding>>(defaults: T) {
+  const shape = Object.fromEntries(
+    Object.entries(defaults).map(([action, value]) => [action, binding(value)]),
+  ) as { [K in keyof T]: z.ZodDefault<typeof BindingSchema> };
+
+  return z.object(shape).default(defaults);
+}
+
+export const KeymapsSchema = z.object({
+  global: scopeSchema(DEFAULT_KEYMAPS.global),
+  timeline: scopeSchema(DEFAULT_KEYMAPS.timeline),
+  projects: scopeSchema(DEFAULT_KEYMAPS.projects),
+  dashboard: scopeSchema(DEFAULT_KEYMAPS.dashboard),
+  reflections: scopeSchema(DEFAULT_KEYMAPS.reflections),
+});
+
+export type Keymaps = z.infer<typeof KeymapsSchema>;
+
 export const ConfigSchema = z.object({
   appearance: z
     .object({
@@ -130,27 +218,7 @@ export const ConfigSchema = z.object({
       plain: iconSetSchema(PLAIN_ICONS).default({}),
     })
     .default({}),
-  keymaps: z
-    .object({
-      view_dashboard: z.string().default("1"),
-      view_timeline: z.string().default("2"),
-      view_reflections: z.string().default("3"),
-      view_projects: z.string().default("4"),
-      up: z.string().default("k"),
-      down: z.string().default("j"),
-      quick_capture: z.string().default("n"),
-      new_project: z.string().default("N"),
-      edit_project: z.string().default("p"),
-      edit_tags: z.string().default("t"),
-      delete_entry: z.string().default("d"),
-      edit_project_content: z.string().default("e"),
-      search_filter: z.string().default("/"),
-      help: z.string().default("?"),
-      refresh: z.string().default("r"),
-      cancel: z.string().default("escape"),
-      quit: z.string().default("q"),
-    })
-    .default({}),
+  keymaps: KeymapsSchema.default({}),
   quick_add: z
     .object({
       default_project: z.string().default("Inbox"),

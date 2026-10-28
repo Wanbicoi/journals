@@ -1,13 +1,19 @@
-import { describe, expect, it } from "bun:test";
+import { afterAll, describe, expect, it } from "bun:test";
 import { testRender } from "@opentui/react/test-utils";
 import { act } from "react";
-import type { Entry, Project, TagInfo } from "../../../hooks/useJournalData.js";
-import { TestProviders } from "../../../test-support/TestProviders.js";
+import type { ModalsValue } from "../../../contexts/modals.js";
+import { useModals } from "../../../contexts/modals.js";
+import { useNavigation } from "../../../contexts/navigation.js";
+import { useNotifications } from "../../../contexts/notification.js";
+import type { Entry, Project, TagInfo } from "../../../hooks/queries.js";
+import { queryKeys } from "../../../hooks/queries.js";
+import { createQueryClient } from "../../../queryClient.js";
+import { AppProviders } from "../../../test-support/AppProviders.js";
 import { ActiveModal } from "../ActiveModal.js";
-import { useModalManager } from "../useModalManager.js";
 
 type TestSetup = Awaited<ReturnType<typeof testRender>>;
-const dummyProjects: Project[] = [
+
+const projects: Project[] = [
   {
     id: "p1",
     name: "Alpha",
@@ -28,12 +34,9 @@ const dummyProjects: Project[] = [
   },
 ];
 
-const dummyTags: TagInfo[] = [
-  { name: "work", count: 5 },
-  { name: "ideas", count: 2 },
-];
+const tags: TagInfo[] = [{ name: "work", count: 5 }];
 
-const dummyEntry: Entry = {
+const entry: Entry = {
   id: "e1",
   projectId: "p1",
   projectName: "Alpha",
@@ -43,279 +46,221 @@ const dummyEntry: Entry = {
   createdAt: Date.now(),
 };
 
-describe("ActiveModal Dispatcher & useModalManager", () => {
-  it("renders null when inputMode is NONE", async () => {
-    let managerInstance!: ReturnType<typeof useModalManager>;
+const originalFetch = globalThis.fetch;
 
-    function TestWrapper() {
-      const modal = useModalManager({
-        projects: dummyProjects,
-        tags: dummyTags,
-        currentTab: "TIMELINE",
-      });
-      managerInstance = modal;
+interface RecordedCall {
+  method: string;
+  url: string;
+  body: unknown;
+}
 
-      return <ActiveModal modal={modal} width={80} height={24} currentTab="TIMELINE" />;
-    }
-
-    let testSetup!: TestSetup;
-    await act(async () => {
-      testSetup = await testRender(
-        <TestProviders>
-          <TestWrapper />
-        </TestProviders>,
-        { onDestroy: () => {} },
-      );
+function stubServer(): RecordedCall[] {
+  const calls: RecordedCall[] = [];
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    calls.push({
+      method: init?.method ?? "GET",
+      url,
+      body: init?.body ? JSON.parse(String(init.body)) : null,
     });
+    return new Response("{}", { status: 200 });
+  }) as unknown as typeof fetch;
+  return calls;
+}
 
-    expect(managerInstance.isOpen).toBe(false);
-    expect(managerInstance.inputMode).toBe("NONE");
-    expect(testSetup.renderer.currentFocusedRenderable).toBeNull();
+afterAll(() => {
+  globalThis.fetch = originalFetch;
+});
+
+interface Harness {
+  api: ModalsValue;
+  message: string;
+  filter: string;
+}
+
+async function renderModal(initialTab: "TIMELINE" | "PROJECTS" = "TIMELINE") {
+  const client = createQueryClient();
+  client.setQueryData(queryKeys.projects, projects);
+  client.setQueryData(queryKeys.tags, tags);
+
+  const harness: Harness = { api: {} as ModalsValue, message: "", filter: "" };
+
+  function Probe() {
+    harness.api = useModals();
+    harness.message = useNotifications().message;
+    harness.filter = useNavigation().filter;
+    return <ActiveModal />;
+  }
+
+  let testSetup!: TestSetup;
+  await act(async () => {
+    testSetup = await testRender(
+      <AppProviders client={client} initialTab={initialTab}>
+        <Probe />
+      </AppProviders>,
+      { onDestroy: () => {} },
+    );
+  });
+
+  const press = async (key: string) => {
+    await act(async () => {
+      testSetup.mockInput.pressKey(key);
+    });
+  };
+
+  const frame = async () => {
+    await act(async () => {
+      await testSetup.flush();
+    });
+    return testSetup.captureCharFrame();
+  };
+
+  return { testSetup, harness, press, frame };
+}
+
+describe("ActiveModal dispatcher", () => {
+  it("renders nothing while no modal is open", async () => {
+    stubServer();
+    const { testSetup, frame } = await renderModal();
+
+    expect(await frame()).not.toContain("QUICK CAPTURE");
     testSetup.renderer.destroy();
   });
 
-  it("renders QuickCaptureModal when inputMode is CAPTURE", async () => {
-    let managerInstance!: ReturnType<typeof useModalManager>;
-
-    function TestWrapper() {
-      const modal = useModalManager({
-        projects: dummyProjects,
-        tags: dummyTags,
-        currentTab: "TIMELINE",
-      });
-
-      managerInstance = modal;
-      return <ActiveModal modal={modal} width={80} height={24} currentTab="TIMELINE" />;
-    }
-
-    let testSetup!: TestSetup;
-    await act(async () => {
-      testSetup = await testRender(
-        <TestProviders>
-          <TestWrapper />
-        </TestProviders>,
-        { onDestroy: () => {} },
-      );
-    });
+  it("captures a line and reports it", async () => {
+    const calls = stubServer();
+    const { testSetup, harness, frame } = await renderModal();
 
     await act(async () => {
-      managerInstance.openCapture();
+      harness.api.open({ name: "capture" });
     });
-
-    expect(managerInstance.isOpen).toBe(true);
-    expect(managerInstance.inputMode).toBe("CAPTURE");
-    expect(testSetup.renderer.currentFocusedRenderable).toBeDefined();
-    expect(testSetup.renderer.currentFocusedRenderable?.constructor.name).toBe("InputRenderable");
-    testSetup.renderer.destroy();
-  });
-
-  it("renders DeleteConfirmModal when DELETE_CONFIRM is active and handles confirm", async () => {
-    let deletedId = "";
-    let managerInstance!: ReturnType<typeof useModalManager>;
-
-    function TestWrapper() {
-      const modal = useModalManager({
-        projects: dummyProjects,
-        tags: dummyTags,
-        currentTab: "TIMELINE",
-        selectedEntry: dummyEntry,
-        deleteEntry: async (id) => {
-          deletedId = id;
-        },
-      });
-
-      managerInstance = modal;
-      return (
-        <ActiveModal
-          modal={modal}
-          width={80}
-          height={24}
-          selectedEntry={dummyEntry}
-          currentTab="TIMELINE"
-        />
-      );
-    }
-
-    let testSetup!: TestSetup;
-    await act(async () => {
-      testSetup = await testRender(
-        <TestProviders>
-          <TestWrapper />
-        </TestProviders>,
-        { onDestroy: () => {} },
-      );
-    });
+    expect(await frame()).toContain("QUICK CAPTURE");
 
     await act(async () => {
-      managerInstance.openDeleteConfirm();
+      testSetup.mockInput.typeText("Wrote tests @Alpha #work");
     });
-
-    expect(managerInstance.isOpen).toBe(true);
-    expect(managerInstance.inputMode).toBe("DELETE_CONFIRM");
-
-    // Press 'y' to confirm delete
     await act(async () => {
-      testSetup.mockInput.pressKey("y");
+      testSetup.mockInput.pressEnter();
     });
 
-    expect(deletedId).toBe("e1");
-    expect(managerInstance.isOpen).toBe(false);
-    expect(managerInstance.inputMode).toBe("NONE");
+    const capture = calls.find((call) => call.url.includes("/capture"));
+    expect((capture?.body as { raw: string }).raw).toBe("Wrote tests @Alpha #work");
+    expect(harness.api.isOpen).toBe(false);
+    expect(harness.message).toBe("Captured new journal entry!");
 
     testSetup.renderer.destroy();
   });
 
-  it("parses and commits new project creation", async () => {
-    let createdName = "";
-    let createdRecur: string | null | undefined;
-    let createdPolicy: string | undefined;
-
-    let managerInstance!: ReturnType<typeof useModalManager>;
-
-    function TestWrapper() {
-      const modal = useModalManager({
-        projects: dummyProjects,
-        tags: dummyTags,
-        currentTab: "PROJECTS",
-        createProject: async (name, recurrence, policy) => {
-          createdName = name;
-          createdRecur = recurrence;
-          createdPolicy = policy;
-        },
-      });
-
-      managerInstance = modal;
-      return <ActiveModal modal={modal} width={80} height={24} currentTab="PROJECTS" />;
-    }
-
-    let testSetup!: TestSetup;
-    await act(async () => {
-      testSetup = await testRender(
-        <TestProviders>
-          <TestWrapper />
-        </TestProviders>,
-        { onDestroy: () => {} },
-      );
-    });
+  it("suggests project names from the cache", async () => {
+    stubServer();
+    const { testSetup, harness, frame } = await renderModal();
 
     await act(async () => {
-      managerInstance.openNewProject();
+      harness.api.open({ name: "capture" });
+    });
+    await act(async () => {
+      testSetup.mockInput.typeText("Quick note @Al");
     });
 
-    expect(managerInstance.isOpen).toBe(true);
-    expect(managerInstance.inputMode).toBe("NEW_PROJECT");
+    expect(await frame()).toContain("[@Alpha]");
+    testSetup.renderer.destroy();
+  });
+
+  it("confirms the opened entry before deleting it", async () => {
+    const calls = stubServer();
+    const { testSetup, harness, press, frame } = await renderModal();
 
     await act(async () => {
-      await managerInstance.commitModalInput("Reading /recur:FREQ=DAILY /policy:accumulate");
+      harness.api.open({ name: "delete-entry", entry });
     });
+    expect(await frame()).toContain("DELETE NOTE");
 
-    expect(createdName).toBe("Reading");
-    expect(createdRecur as string | null).toBe("FREQ=DAILY");
-    expect(createdPolicy as string).toBe("accumulate");
-    expect(managerInstance.isOpen).toBe(false);
-    expect(managerInstance.inputMode).toBe("NONE");
+    await press("y");
+
+    expect(calls.some((call) => call.method === "DELETE" && call.url.includes("/entries/e1"))).toBe(
+      true,
+    );
+    expect(harness.api.isOpen).toBe(false);
+    expect(harness.message).toContain("Press 'u' to undo");
 
     testSetup.renderer.destroy();
   });
 
-  it("parses and commits filter queries for timeline and projects", async () => {
-    let timelineQuery = "";
-    let projectsQuery = "";
-    let currentTab: "TIMELINE" | "PROJECTS" = "TIMELINE";
-    let managerInstance!: ReturnType<typeof useModalManager>;
-
-    function TestWrapper() {
-      const modal = useModalManager({
-        projects: dummyProjects,
-        tags: dummyTags,
-        currentTab,
-        onTimelineFilterChange: (q) => {
-          timelineQuery = q;
-        },
-        onProjectsFilterChange: (q) => {
-          projectsQuery = q;
-        },
-      });
-
-      managerInstance = modal;
-      return <ActiveModal modal={modal} width={80} height={24} currentTab={currentTab} />;
-    }
-
-    let testSetup!: TestSetup;
-    await act(async () => {
-      testSetup = await testRender(
-        <TestProviders>
-          <TestWrapper />
-        </TestProviders>,
-        { onDestroy: () => {} },
-      );
-    });
+  it("creates a project from the slash syntax", async () => {
+    const calls = stubServer();
+    const { testSetup, harness } = await renderModal("PROJECTS");
 
     await act(async () => {
-      managerInstance.openFilter();
-    });
-
-    await act(async () => {
-      await managerInstance.commitModalInput("@Alpha");
-    });
-
-    expect(timelineQuery).toBe("@Alpha");
-
-    // Now test projects tab filter
-    currentTab = "PROJECTS";
-    await act(async () => {
-      managerInstance.openFilter();
+      harness.api.open({ name: "new-project" });
     });
     await act(async () => {
-      await managerInstance.commitModalInput("Beta");
+      testSetup.mockInput.typeText("Reading /recur:FREQ=DAILY /policy:accumulate");
     });
-    expect(projectsQuery).toBe("Beta");
+    await act(async () => {
+      testSetup.mockInput.pressEnter();
+    });
+
+    const created = calls.find((call) => call.method === "POST" && call.url.endsWith("/projects"));
+    expect(created?.body).toMatchObject({
+      name: "Reading",
+      recurrence: "FREQ=DAILY",
+      missedPolicy: "accumulate",
+    });
+    expect(harness.api.isOpen).toBe(false);
 
     testSetup.renderer.destroy();
   });
 
-  it("handles suggestions for projects and tags in capture mode", async () => {
-    let managerInstance!: ReturnType<typeof useModalManager>;
-
-    function TestWrapper() {
-      const modal = useModalManager({
-        projects: dummyProjects,
-        tags: dummyTags,
-        currentTab: "TIMELINE",
-      });
-
-      managerInstance = modal;
-      return <ActiveModal modal={modal} width={80} height={24} currentTab="TIMELINE" />;
-    }
-
-    let testSetup!: TestSetup;
-    await act(async () => {
-      testSetup = await testRender(
-        <TestProviders>
-          <TestWrapper />
-        </TestProviders>,
-        { onDestroy: () => {} },
-      );
-    });
+  it("applies a filter to the active view", async () => {
+    stubServer();
+    const { testSetup, harness } = await renderModal("TIMELINE");
 
     await act(async () => {
-      managerInstance.openCapture();
+      harness.api.open({ name: "filter" });
     });
+    await act(async () => {
+      testSetup.mockInput.typeText("tag:important");
+    });
+    await act(async () => {
+      testSetup.mockInput.pressEnter();
+    });
+
+    expect(harness.filter).toBe("tag:important");
+    expect(harness.api.isOpen).toBe(false);
+
+    testSetup.renderer.destroy();
+  });
+
+  it("shows the keyboard help and closes on the next key", async () => {
+    stubServer();
+    const { testSetup, harness, press, frame } = await renderModal();
 
     await act(async () => {
-      managerInstance.setInputBuffer("Quick note @Al");
+      harness.api.open({ name: "help" });
     });
+    expect(await frame()).toContain("KEYBOARD SHORTCUTS");
 
-    expect(managerInstance.suggestions).not.toBeNull();
-    expect(managerInstance.suggestions?.type).toBe("project");
-    expect(managerInstance.suggestions?.matches).toEqual(["Alpha"]);
+    await press("x");
+    expect(harness.api.isOpen).toBe(false);
+
+    testSetup.renderer.destroy();
+  });
+
+  it("edits an entry's content in the textarea", async () => {
+    stubServer();
+    const { testSetup, harness, frame } = await renderModal();
 
     await act(async () => {
-      managerInstance.setInputBuffer("Quick note #wo");
+      harness.api.open({ name: "edit-content", entry });
     });
+    expect(await frame()).toContain("Test note content");
 
-    expect(managerInstance.suggestions?.type).toBe("tag");
-    expect(managerInstance.suggestions?.matches).toEqual(["work"]);
+    await act(async () => {
+      testSetup.mockInput.pressEscape();
+      // The terminal parser waits to distinguish a lone Escape from an escape sequence.
+      await new Promise((resolve) => setTimeout(resolve, 30));
+    });
+    expect(harness.api.isOpen).toBe(false);
 
     testSetup.renderer.destroy();
   });

@@ -1,50 +1,45 @@
-import { normalizeRecurrenceRule } from "@journals/core";
 import { Modal } from "../../components/Modal.js";
-import type { ThemePalette } from "../../theme.js";
+import { useIcons } from "../../contexts/icons.js";
+import { useNotifications } from "../../contexts/notification.js";
+import { useTheme } from "../../contexts/theme.js";
+import { parseProjectSpec } from "../../hooks/projectSpec.js";
+import { useProjectMutations } from "../../hooks/useProjectMutations.js";
+import { useTextModalInput } from "./useTextModalInput.js";
 
-interface NewProjectModalProps {
-  width: number;
-  height: number;
-  inputBuffer: string;
-  projectIcon: string;
-  theme: ThemePalette;
-  onChange?: (value: string) => void;
-  onSubmit?: (value: string) => void;
-}
+// @unit journals.modals.new-project
+// @summary Create a project
+export function NewProjectModal() {
+  const theme = useTheme();
+  const icons = useIcons();
+  const { notify } = useNotifications();
+  const { createProject } = useProjectMutations();
 
-export function NewProjectModal({
-  width,
-  height,
-  inputBuffer,
-  projectIcon,
-  theme,
-  onChange,
-  onSubmit,
-}: NewProjectModalProps) {
-  // Check if buffer contains recurrence syntax: e.g. "Fitness /every 2 days" or "Gym /recur:daily /policy:accumulate"
-  const tokens = inputBuffer.split(/\s+/);
-  let recurrencePreview: string | null = null;
-  const recurIndex = tokens.findIndex((t) => t.startsWith("/every") || t.startsWith("/recur"));
-  if (recurIndex !== -1) {
-    const recurPart = tokens
-      .slice(recurIndex)
-      .join(" ")
-      .replace(/^\/(every|recur:?)\s*/, "");
-    recurrencePreview = normalizeRecurrenceRule(recurPart);
-  }
+  const { buffer, setBuffer, submitBuffer } = useTextModalInput({
+    // @call journals.hooks.create-project Create the project
+    submit: async (value) => {
+      const spec = parseProjectSpec(value);
+      if (!spec.name) return;
+      await createProject(spec.name, spec.recurrence ?? null, spec.missedPolicy ?? "spike");
+      notify(`Created project @${spec.name}`);
+    },
+  });
+
+  // @call journals.hooks.project-spec Preview the parsed name, cadence, and policy
+  const spec = parseProjectSpec(buffer);
+  const recurrencePreview = spec.recurrence !== undefined ? spec.recurrence : null;
 
   return (
-    <Modal width={width} height={height} theme={theme} borderColor={theme.primary}>
-      <text fg={theme.primary}>{`${projectIcon} CREATE NEW PROJECT`}</text>
+    <Modal theme={theme} borderColor={theme.primary}>
+      <text fg={theme.primary}>{`${icons.project} CREATE NEW PROJECT`}</text>
       <box flexDirection="row">
         <text fg={theme.fg}>{"Input: "}</text>
         <input
-          value={inputBuffer}
+          value={buffer}
           focused
-          onChange={onChange}
-          onInput={onChange}
-          onSubmit={
-            onSubmit ? (e: unknown) => onSubmit(typeof e === "string" ? e : inputBuffer) : undefined
+          onChange={setBuffer}
+          onInput={setBuffer}
+          onSubmit={(value: unknown) =>
+            void submitBuffer(typeof value === "string" ? value : buffer)
           }
           placeholder="Project name [/every cadence] [/policy:...]"
           textColor={theme.fg}

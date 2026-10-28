@@ -1,29 +1,21 @@
 import { getEffectiveDateStr } from "@journals/core";
 import type { ScrollBoxRenderable } from "@opentui/core";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import { ErrorState } from "../../components/ErrorState.js";
+import { useModals } from "../../contexts/modals.js";
+import { useNavigation } from "../../contexts/navigation.js";
+import { useNotifications } from "../../contexts/notification.js";
 import { useDayStartHour, useTheme } from "../../contexts/theme.js";
-import type { Entry } from "../../hooks/useJournalData.js";
+import { useUndo } from "../../contexts/undo.js";
+import { editInEditor } from "../../editor.js";
+import { filterEntries } from "../../hooks/filterJournal.js";
+import type { Entry } from "../../hooks/queries.js";
+import { useEntries } from "../../hooks/queries.js";
+import { useEntryMutations } from "../../hooks/useEntryMutations.js";
+import { useSelectionById } from "../../hooks/useSelection.js";
 import { type TimelineDateGroup, TimelineDayGroup } from "./TimelineDayGroup.js";
 import { TimelineEmptyState } from "./TimelineEmptyState.js";
 import { useTimelineKeymaps } from "./useTimelineKeymaps.js";
-
-interface TimelineViewProps {
-  entries: Entry[];
-  selectedEntryIdx: number;
-  onSelectEntry?: (idx: number) => void;
-  filterQuery: string;
-  loading?: boolean;
-  isActive?: boolean;
-  onStatusMessage?: (msg: string) => void;
-  onQuickCapture?: () => void;
-  onEditContent?: (entry: Entry) => void;
-  onEditProject?: (entry: Entry) => void;
-  onEditTags?: (entry: Entry) => void;
-  onDeleteEntry?: (entry: Entry) => void;
-  onUndoDelete?: () => void;
-  onOpenEditor?: (entry: Entry) => void;
-  onUpdateEntryContent?: (id: string, content: string) => Promise<void> | void;
-}
 
 function groupEntriesByDate(entries: Entry[], dayStartHour: number): TimelineDateGroup[] {
   const groups: TimelineDateGroup[] = [];
@@ -43,61 +35,65 @@ function groupEntriesByDate(entries: Entry[], dayStartHour: number): TimelineDat
 
 // @unit journals.views.timeline
 // @summary Timeline view: capture, edit, tag, delete
-export function TimelineView({
-  entries,
-  selectedEntryIdx,
-  onSelectEntry,
-  filterQuery,
-  loading = false,
-  isActive = true,
-  onStatusMessage,
-  onQuickCapture,
-  onEditContent,
-  onEditProject,
-  onEditTags,
-  onDeleteEntry,
-  onUndoDelete,
-  onOpenEditor,
-  onUpdateEntryContent,
-}: TimelineViewProps) {
+// @details Loads its own entries, owns its selection, and dispatches actions to the modal and
+// | undo contexts. Nothing here is passed down from the app shell.
+export function TimelineView() {
   const scrollBoxRef = useRef<ScrollBoxRenderable | null>(null);
   const theme = useTheme();
   const dayStartHour = useDayStartHour();
+  const { filter } = useNavigation();
+  const { open } = useModals();
+  const { undo } = useUndo();
+  const { notify } = useNotifications();
+  const { updateEntryContent } = useEntryMutations();
+
+  // @call journals.hooks.entries Load the timeline's journal entries
+  const { data: entries = [], isLoading, isError, error, refetch } = useEntries();
+  // @call journals.hooks.filter-entries Filter entries by the search query
+  const filteredEntries = useMemo(() => filterEntries(entries, filter), [entries, filter]);
+  // @call journals.hooks.selection Keep the selected entry by id
+  const selection = useSelectionById(filteredEntries);
+
+  const editEntry = async (entry: Entry) => {
+    const saved = await editInEditor(entry.content, (content) =>
+      updateEntryContent(entry.id, content),
+    );
+    if (saved) notify("Updated note content via editor!");
+  };
 
   useTimelineKeymaps({
-    entries,
-    selectedEntryIdx,
-    isActive,
-    // @call journals.hooks.selection Select an entry by index
-    onSelectEntry,
-    // @call journals.views.chrome Show the status message
-    onStatusMessage,
-    // @call journals.server.capture Quick capture a line
-    onQuickCapture,
-    // @call journals.server.update-entry-content Edit an entry's content
-    onEditContent,
-    // @call journals.server.update-entry-project Move an entry to another project
-    onEditProject,
-    // @call journals.server.update-entry-tags Replace an entry's tags
-    onEditTags,
-    // @call journals.server.delete-entry Soft-delete an entry
-    onDeleteEntry,
-    // @call journals.server.restore-entry Restore a deleted entry
-    onUndoDelete,
-    // @call journals.editor.open Open the selected entry in $EDITOR
-    onOpenEditor,
-    // @call journals.server.update-entry-content Save $EDITOR edits to the entry
-    onUpdateEntryContent,
+    entries: filteredEntries,
+    selectedEntryIdx: selection.selectedIndex,
+    onSelectEntry: selection.selectIndex,
+    // @call journals.contexts.modals Open the quick capture modal
+    onQuickCapture: () => open({ name: "capture" }),
+    // @call journals.contexts.modals Open the inline content editor
+    onEditContent: (entry) => open({ name: "edit-content", entry }),
+    // @call journals.actions.edit-in-editor Edit the selected entry in $EDITOR
+    onEditEntry: (entry) => void editEntry(entry),
+    // @call journals.contexts.modals Open the project reassignment modal
+    onEditProject: (entry) => open({ name: "edit-project", entry }),
+    // @call journals.contexts.modals Open the tag editor
+    onEditTags: (entry) => open({ name: "edit-tags", entry }),
+    // @call journals.modals.delete-entry Confirm and soft-delete the selected entry
+    onDeleteEntry: (entry) => open({ name: "delete-entry", entry }),
+    // @call journals.hooks.restore-entry Restore the last deleted entry
+    onUndoDelete: () => void undo(),
   });
 
   useEffect(() => {
-    if (scrollBoxRef.current && entries[selectedEntryIdx]) {
-      const selectedId = `entry-${entries[selectedEntryIdx].id}`;
+    if (scrollBoxRef.current && filteredEntries[selection.selectedIndex]) {
+      const selectedId = `entry-${filteredEntries[selection.selectedIndex].id}`;
       scrollBoxRef.current.scrollChildIntoView(selectedId);
     }
-  }, [selectedEntryIdx, entries]);
+  }, [selection.selectedIndex, filteredEntries]);
 
-  if (loading) {
+  if (isError) {
+    // @call journals.views.error-state Show a load error and offer a retry
+    return <ErrorState error={error} onRetry={refetch} />;
+  }
+
+  if (isLoading) {
     return (
       <box padding={1}>
         <text fg={theme.primary}>{"Loading journal entries..."}</text>
@@ -105,11 +101,11 @@ export function TimelineView({
     );
   }
 
-  if (entries.length === 0) {
-    return <TimelineEmptyState filterQuery={filterQuery} />;
+  if (filteredEntries.length === 0) {
+    return <TimelineEmptyState />;
   }
 
-  const groups = groupEntriesByDate(entries, dayStartHour);
+  const groups = groupEntriesByDate(filteredEntries, dayStartHour);
 
   return (
     <scrollbox ref={scrollBoxRef} flexGrow={1} paddingLeft={1} paddingRight={1}>
@@ -117,9 +113,8 @@ export function TimelineView({
         <TimelineDayGroup
           key={group.dateStr}
           group={group}
-          selectedEntryIdx={selectedEntryIdx}
-          filterQuery={filterQuery}
-          onSelectEntry={onSelectEntry ?? (() => {})}
+          selectedEntryIdx={selection.selectedIndex}
+          onSelectEntry={selection.selectIndex}
         />
       ))}
     </scrollbox>

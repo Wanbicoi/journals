@@ -11,4 +11,3 @@ export * from "./modals/HelpModal.js";
 export * from "./modals/NewProjectModal.js";
 export * from "./modals/EditProjectSettingsModal.js";
 export * from "./modals/ActiveModal.js";
-export * from "./modals/useModalManager.js";

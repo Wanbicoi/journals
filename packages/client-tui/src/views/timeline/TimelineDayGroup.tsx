@@ -1,6 +1,6 @@
 import { useIcons } from "../../contexts/icons.js";
 import { useTheme } from "../../contexts/theme.js";
-import type { Entry } from "../../hooks/useJournalData.js";
+import type { Entry } from "../../hooks/queries.js";
 import { TimelineEntryRow } from "./TimelineEntryRow.js";
 
 export interface TimelineDateGroup {
@@ -11,14 +11,12 @@ export interface TimelineDateGroup {
 interface TimelineDayGroupProps {
   group: TimelineDateGroup;
   selectedEntryIdx: number;
-  filterQuery: string;
   onSelectEntry: (idx: number) => void;
 }
 
 export function TimelineDayGroup({
   group,
   selectedEntryIdx,
-  filterQuery,
   onSelectEntry,
 }: TimelineDayGroupProps) {
   const icons = useIcons();
@@ -41,7 +39,6 @@ export function TimelineDayGroup({
           key={entry.id}
           entry={entry}
           isSelected={globalIdx === selectedEntryIdx}
-          filterQuery={filterQuery}
           onSelect={() => onSelectEntry(globalIdx)}
         />
       ))}

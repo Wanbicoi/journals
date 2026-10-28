@@ -1,11 +1,14 @@
 import { useRenderer, useSelectionHandler } from "@opentui/react";
 import { copyToClipboard } from "../clipboard.js";
+import { useNotifications } from "../contexts/notification.js";
 
-/**
- * Copying a terminal selection belongs to the screen, not to every view that can show text.
- */
-export function useSelectionClipboard(onStatusMessage: (message: string) => void) {
+// @unit journals.hooks.clipboard
+// @summary Copy the terminal selection to the clipboard
+// @details Wraps the renderer's selection handler and reports a short preview through the global
+// | notification context.
+export function useSelectionClipboard() {
   const renderer = useRenderer();
+  const { notify } = useNotifications();
 
   useSelectionHandler((selection) => {
     const text = selection?.getSelectedText();
@@ -14,6 +17,6 @@ export function useSelectionClipboard(onStatusMessage: (message: string) => void
     copyToClipboard(text, renderer);
     const preview = text.trim().replace(/\s+/g, " ");
     const display = preview.length > 30 ? `${preview.slice(0, 30)}...` : preview;
-    onStatusMessage(`Copied to clipboard: "${display}"`);
+    notify(`Copied to clipboard: "${display}"`);
   });
 }

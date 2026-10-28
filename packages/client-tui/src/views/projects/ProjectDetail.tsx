@@ -1,6 +1,6 @@
 import { useIcons } from "../../contexts/icons.js";
 import { useTheme } from "../../contexts/theme.js";
-import type { Entry } from "../../hooks/useJournalData.js";
+import type { Entry } from "../../hooks/queries.js";
 import { useMarkdownSyntaxStyle } from "../../hooks/useMarkdownSyntaxStyle.js";
 import { ProjectNoteRow } from "./ProjectNoteRow.js";
 

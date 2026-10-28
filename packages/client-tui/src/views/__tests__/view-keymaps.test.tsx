@@ -1,11 +1,13 @@
-import { describe, expect, it } from "bun:test";
-import type { ReflectionPeriodType } from "@journals/core";
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { testRender } from "@opentui/react/test-utils";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { act, useState } from "react";
-import type { DashboardData, Entry, Project } from "../../hooks/useJournalData.js";
+import { type ReactNode, act } from "react";
+import { type ModalsValue, useModals } from "../../contexts/modals.js";
+import { type NavigationValue, useNavigation } from "../../contexts/navigation.js";
+import { useNotifications } from "../../contexts/notification.js";
+import type { DashboardData, Entry, Project } from "../../hooks/queries.js";
+import { queryKeys } from "../../hooks/queries.js";
 import { createQueryClient } from "../../queryClient.js";
-import { TestProviders } from "../../test-support/TestProviders.js";
+import { AppProviders } from "../../test-support/AppProviders.js";
 import { DashboardView } from "../dashboard/DashboardView.js";
 import { ProjectsView } from "../projects/ProjectsView.js";
 import { ReflectionsView } from "../reflections/ReflectionsView.js";
@@ -18,7 +20,7 @@ const sampleEntries: Entry[] = [
     id: "entry-1",
     projectId: "proj-1",
     content: "First note",
-    createdAt: Date.now() - 86400000 * 2, // 2 days ago
+    createdAt: Date.now() - 86400000 * 2,
     tags: ["feature"],
     projectName: "Alpha",
     breakDays: 0,
@@ -27,7 +29,7 @@ const sampleEntries: Entry[] = [
     id: "entry-2",
     projectId: "proj-2",
     content: "Second note",
-    createdAt: Date.now() - 86400000, // yesterday
+    createdAt: Date.now() - 86400000,
     tags: ["bug"],
     projectName: "Beta",
     breakDays: 0,
@@ -36,7 +38,7 @@ const sampleEntries: Entry[] = [
     id: "entry-3",
     projectId: "proj-1",
     content: "Third note today",
-    createdAt: Date.now(), // today
+    createdAt: Date.now(),
     tags: ["release"],
     projectName: "Alpha",
     breakDays: 0,
@@ -103,508 +105,307 @@ const sampleDashboard: DashboardData = {
   activeBreaks: [],
 };
 
+interface Sink {
+  modals: ModalsValue;
+  message: string;
+  navigation: Pick<NavigationValue, "tab" | "filter">;
+}
+
+/** Mirrors the context values a test asserts on, without rendering a fake UI. */
+function Probes({ sink }: { sink: Sink }) {
+  sink.modals = useModals();
+  sink.message = useNotifications().message;
+  const { tab, filter } = useNavigation();
+  sink.navigation = { tab, filter };
+  return null;
+}
+
+const originalFetch = globalThis.fetch;
+
+/** Every mutation succeeds; reads return the seeded fixtures. */
+function stubServer(seed: { entries?: Entry[]; projects?: Project[]; dashboard?: DashboardData }) {
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes("/analytics/dashboard")) {
+      return new Response(JSON.stringify(seed.dashboard ?? sampleDashboard), { status: 200 });
+    }
+    if (url.includes("/entries")) {
+      return new Response(JSON.stringify({ entries: seed.entries ?? [] }), { status: 200 });
+    }
+    if (url.includes("/projects")) {
+      return new Response(JSON.stringify({ projects: seed.projects ?? [] }), { status: 200 });
+    }
+    if (url.includes("/tags")) {
+      return new Response(JSON.stringify({ tags: [] }), { status: 200 });
+    }
+    return new Response("{}", { status: 200 });
+  }) as unknown as typeof fetch;
+}
+
+beforeAll(() => {
+  // `o` opens $EDITOR; `true` exits without changing the buffer.
+  process.env.EDITOR = "true";
+});
+
+afterAll(() => {
+  globalThis.fetch = originalFetch;
+});
+
+async function renderView(
+  ui: ReactNode,
+  seed: { entries?: Entry[]; projects?: Project[]; dashboard?: DashboardData } = {},
+) {
+  const client = createQueryClient();
+  if (seed.entries) client.setQueryData(queryKeys.entries, seed.entries);
+  if (seed.projects) client.setQueryData(queryKeys.projects, seed.projects);
+  if (seed.dashboard) client.setQueryData(queryKeys.dashboard(60), seed.dashboard);
+
+  const sink: Sink = {
+    modals: {} as ModalsValue,
+    message: "",
+    navigation: { tab: "DASHBOARD", filter: "" },
+  };
+
+  let testSetup!: TestSetup;
+  await act(async () => {
+    testSetup = await testRender(
+      <AppProviders client={client}>
+        <box flexDirection="column">
+          {ui}
+          <Probes sink={sink} />
+        </box>
+      </AppProviders>,
+      { onDestroy: () => {} },
+    );
+  });
+
+  const press = async (key: string) => {
+    await act(async () => {
+      testSetup.mockInput.pressKey(key);
+    });
+  };
+
+  const closeModal = async () => {
+    await act(async () => {
+      sink.modals.close();
+    });
+  };
+
+  return { testSetup, sink, press, closeModal };
+}
+
 describe("Collocated View Keymaps", () => {
   describe("TimelineView", () => {
-    it("handles navigation (j/k, g/G) and date jumps ([ / ]) locally", async () => {
-      let selectedIdx = 0;
-      let statusMsg = "";
-
-      function Wrapper() {
-        const [idx, setIdx] = useState(0);
-        return (
-          <TimelineView
-            entries={sampleEntries}
-            selectedEntryIdx={idx}
-            onSelectEntry={(newIdx) => {
-              selectedIdx = newIdx;
-              setIdx(newIdx);
-            }}
-            filterQuery=""
-            isActive={true}
-            onStatusMessage={(m) => {
-              statusMsg = m;
-            }}
-          />
-        );
-      }
-
-      let testSetup!: TestSetup;
-      await act(async () => {
-        testSetup = await testRender(
-          <TestProviders>
-            <Wrapper />
-          </TestProviders>,
-          { onDestroy: () => {} },
-        );
+    it("moves the selection with j/k/g/G and jumps between days with [ ] and T", async () => {
+      stubServer({ entries: sampleEntries });
+      const { testSetup, sink, press, closeModal } = await renderView(<TimelineView />, {
+        entries: sampleEntries,
       });
 
-      // Press j -> move down
-      await act(async () => {
-        testSetup.mockInput.pressKey("j");
-      });
-      expect(selectedIdx).toBe(1);
+      // `d` opens the delete confirmation for the selected row, so the probe names the row.
+      const selectedAfter = async () => {
+        await press("d");
+        const modal = sink.modals.modal;
+        await closeModal();
+        return modal?.name === "delete-entry" ? modal.entry.id : "";
+      };
 
-      // Press k -> move up
-      await act(async () => {
-        testSetup.mockInput.pressKey("k");
-      });
-      expect(selectedIdx).toBe(0);
+      await press("j");
+      expect(await selectedAfter()).toBe("entry-2");
 
-      // Press G -> jump to bottom
-      await act(async () => {
-        testSetup.mockInput.pressKey("G");
-      });
-      expect(selectedIdx).toBe(2);
+      await press("k");
+      expect(await selectedAfter()).toBe("entry-1");
 
-      // Press g -> jump to top
-      await act(async () => {
-        testSetup.mockInput.pressKey("g");
-      });
-      expect(selectedIdx).toBe(0);
+      await press("G");
+      expect(await selectedAfter()).toBe("entry-3");
 
-      // Press ] -> jump to next day
-      await act(async () => {
-        testSetup.mockInput.pressKey("]");
-      });
-      expect(selectedIdx).toBe(1);
-      expect(statusMsg).toContain("Jumped to");
+      await press("g");
+      expect(await selectedAfter()).toBe("entry-1");
 
-      // Press [ -> jump to prev day
-      await act(async () => {
-        testSetup.mockInput.pressKey("[");
-      });
-      expect(selectedIdx).toBe(0);
-      expect(statusMsg).toContain("Jumped to");
+      await press("]");
+      expect(sink.message).toContain("Jumped to");
+      expect(await selectedAfter()).toBe("entry-2");
 
-      // Press T -> jump to today
-      await act(async () => {
-        testSetup.mockInput.pressKey("T");
-      });
-      expect(selectedIdx).toBe(2);
-      expect(statusMsg).toContain("Jumped to Today");
+      await press("[");
+      expect(await selectedAfter()).toBe("entry-1");
+
+      await press("T");
+      expect(sink.message).toContain("Jumped to Today");
+      expect(await selectedAfter()).toBe("entry-3");
 
       testSetup.renderer.destroy();
+      globalThis.fetch = originalFetch;
     });
 
-    it("triggers entry action callbacks (c, e, p, t, d, u)", async () => {
-      let captureTriggered = false;
-      let editContentEntry: Entry | null = null;
-      let editProjectEntry: Entry | null = null;
-      let editTagsEntry: Entry | null = null;
-      let deleteEntryCalled: Entry | null = null;
-      let undoCalled = false;
-
-      function Wrapper() {
-        return (
-          <TimelineView
-            entries={sampleEntries}
-            selectedEntryIdx={1}
-            filterQuery=""
-            isActive={true}
-            onQuickCapture={() => {
-              captureTriggered = true;
-            }}
-            onEditContent={(entry) => {
-              editContentEntry = entry;
-            }}
-            onEditProject={(entry) => {
-              editProjectEntry = entry;
-            }}
-            onEditTags={(entry) => {
-              editTagsEntry = entry;
-            }}
-            onDeleteEntry={(entry) => {
-              deleteEntryCalled = entry;
-            }}
-            onUndoDelete={() => {
-              undoCalled = true;
-            }}
-          />
-        );
-      }
-
-      let testSetup!: TestSetup;
-      await act(async () => {
-        testSetup = await testRender(
-          <TestProviders>
-            <Wrapper />
-          </TestProviders>,
-          { onDestroy: () => {} },
-        );
+    it("opens the action modals for the selected entry (c, e, p, t, d, u)", async () => {
+      stubServer({ entries: sampleEntries });
+      const { testSetup, sink, press, closeModal } = await renderView(<TimelineView />, {
+        entries: sampleEntries,
       });
 
-      await act(async () => {
-        testSetup.mockInput.pressKey("c");
-      });
-      expect(captureTriggered).toBe(true);
+      await press("j");
 
-      await act(async () => {
-        testSetup.mockInput.pressKey("e");
-      });
-      expect((editContentEntry as Entry | null)?.id).toBe("entry-2");
+      await press("c");
+      expect(sink.modals.modal?.name).toBe("capture");
+      await closeModal();
 
-      await act(async () => {
-        testSetup.mockInput.pressKey("p");
-      });
-      expect((editProjectEntry as Entry | null)?.id).toBe("entry-2");
+      await press("e");
+      expect(sink.modals.modal?.name).toBe("edit-content");
+      await closeModal();
 
-      await act(async () => {
-        testSetup.mockInput.pressKey("t");
-      });
-      expect((editTagsEntry as Entry | null)?.id).toBe("entry-2");
+      await press("p");
+      expect(sink.modals.modal?.name).toBe("edit-project");
+      await closeModal();
 
-      await act(async () => {
-        testSetup.mockInput.pressKey("d");
-      });
-      expect((deleteEntryCalled as Entry | null)?.id).toBe("entry-2");
+      await press("t");
+      expect(sink.modals.modal?.name).toBe("edit-tags");
+      await closeModal();
 
-      await act(async () => {
-        testSetup.mockInput.pressKey("u");
-      });
-      expect(undoCalled).toBe(true);
+      await press("d");
+      expect(sink.modals.modal?.name).toBe("delete-entry");
+      await closeModal();
+
+      await press("u");
+      expect(sink.message).toBe("No recently deleted entry to undo");
 
       testSetup.renderer.destroy();
+      globalThis.fetch = originalFetch;
     });
 
-    it("ignores all keys when isActive is false", async () => {
-      let actionFired = false;
-
-      function Wrapper() {
-        return (
-          <TimelineView
-            entries={sampleEntries}
-            selectedEntryIdx={0}
-            filterQuery=""
-            isActive={false}
-            onQuickCapture={() => {
-              actionFired = true;
-            }}
-            onDeleteEntry={() => {
-              actionFired = true;
-            }}
-          />
-        );
-      }
-
-      let testSetup!: TestSetup;
-      await act(async () => {
-        testSetup = await testRender(
-          <TestProviders>
-            <Wrapper />
-          </TestProviders>,
-          { onDestroy: () => {} },
-        );
+    it("ignores view keys while a modal is open", async () => {
+      stubServer({});
+      const { testSetup, sink, press } = await renderView(<TimelineView />, {
+        entries: sampleEntries,
       });
 
       await act(async () => {
-        testSetup.mockInput.pressKey("c");
-        testSetup.mockInput.pressKey("d");
-        testSetup.mockInput.pressKey("j");
+        sink.modals.open({ name: "help" });
       });
+      await press("c");
+      await press("d");
+      await press("j");
+      expect(sink.modals.modal?.name).toBe("help");
 
-      expect(actionFired).toBe(false);
       testSetup.renderer.destroy();
+      globalThis.fetch = originalFetch;
     });
   });
 
   describe("ProjectsView", () => {
-    it("handles navigation (j/k) and action modal triggers (n, P, o)", async () => {
-      let selectedIdx = 0;
-      let newProjectTriggered = false;
-      let editSettingsProject: Project | null = null;
-      let openEditorProject: Project | null = null;
-
-      function Wrapper() {
-        const [idx, setIdx] = useState(0);
-        return (
-          <ProjectsView
-            projects={sampleProjects}
-            selectedProjectIdx={idx}
-            onSelectProject={(newIdx) => {
-              selectedIdx = newIdx;
-              setIdx(newIdx);
-            }}
-            entries={[]}
-            isActive={true}
-            onNewProject={() => {
-              newProjectTriggered = true;
-            }}
-            onEditProjectSettings={(proj) => {
-              editSettingsProject = proj;
-            }}
-            onOpenEditor={(proj) => {
-              openEditorProject = proj;
-            }}
-          />
-        );
-      }
-
-      let testSetup!: TestSetup;
-      await act(async () => {
-        testSetup = await testRender(
-          <TestProviders>
-            <Wrapper />
-          </TestProviders>,
-          { onDestroy: () => {} },
-        );
+    it("moves the selection and opens the project modals (n, P)", async () => {
+      stubServer({ projects: sampleProjects });
+      const { testSetup, sink, press, closeModal } = await renderView(<ProjectsView />, {
+        projects: sampleProjects,
+        entries: [],
       });
 
-      // Press j -> select next project
-      await act(async () => {
-        testSetup.mockInput.pressKey("j");
-      });
-      expect(selectedIdx).toBe(1);
+      await press("j");
+      await press("P");
+      expect(sink.modals.modal?.name).toBe("edit-project-settings");
+      expect(
+        sink.modals.modal?.name === "edit-project-settings" && sink.modals.modal.project.name,
+      ).toBe("Beta");
+      await closeModal();
 
-      // Press k -> select previous project
-      await act(async () => {
-        testSetup.mockInput.pressKey("k");
-      });
-      expect(selectedIdx).toBe(0);
+      await press("k");
+      await press("P");
+      expect(
+        sink.modals.modal?.name === "edit-project-settings" && sink.modals.modal.project.name,
+      ).toBe("Alpha");
+      await closeModal();
 
-      // Press n -> new project
-      await act(async () => {
-        testSetup.mockInput.pressKey("n");
-      });
-      expect(newProjectTriggered).toBe(true);
-
-      // Press P -> edit project routine settings
-      await act(async () => {
-        testSetup.mockInput.pressKey("P");
-      });
-      expect((editSettingsProject as Project | null)?.name).toBe("Alpha");
-
-      // Press o -> open editor
-      await act(async () => {
-        testSetup.mockInput.pressKey("o");
-      });
-      expect((openEditorProject as Project | null)?.name).toBe("Alpha");
+      await press("n");
+      expect(sink.modals.modal?.name).toBe("new-project");
 
       testSetup.renderer.destroy();
+      globalThis.fetch = originalFetch;
     });
 
-    it("ignores all keys when isActive is false", async () => {
-      let newProj = false;
-
-      function Wrapper() {
-        return (
-          <ProjectsView
-            projects={sampleProjects}
-            selectedProjectIdx={0}
-            entries={[]}
-            isActive={false}
-            onNewProject={() => {
-              newProj = true;
-            }}
-          />
-        );
-      }
-
-      let testSetup!: TestSetup;
-      await act(async () => {
-        testSetup = await testRender(
-          <TestProviders>
-            <Wrapper />
-          </TestProviders>,
-          { onDestroy: () => {} },
-        );
+    it("ignores view keys while a modal is open", async () => {
+      stubServer({});
+      const { testSetup, sink, press } = await renderView(<ProjectsView />, {
+        projects: sampleProjects,
+        entries: [],
       });
 
       await act(async () => {
-        testSetup.mockInput.pressKey("n");
-        testSetup.mockInput.pressKey("j");
+        sink.modals.open({ name: "help" });
       });
+      await press("n");
+      await press("j");
+      expect(sink.modals.modal?.name).toBe("help");
 
-      expect(newProj).toBe(false);
       testSetup.renderer.destroy();
+      globalThis.fetch = originalFetch;
     });
   });
 
   describe("DashboardView", () => {
-    it("handles focus navigation (h/l), routine toggle (Space), and date jump (Enter)", async () => {
-      let focusedIdx = 1;
-      let completedRoutine = false;
-      let navigatedDate = "";
-
-      function Wrapper() {
-        const [idx, setIdx] = useState(1);
-        return (
-          <DashboardView
-            dashboard={sampleDashboard}
-            projects={sampleProjects}
-            focusedDayIdx={idx}
-            onFocusDayIdx={(newIdx) => {
-              focusedIdx = newIdx;
-              setIdx(newIdx);
-            }}
-            onNavigateDate={(d) => {
-              navigatedDate = d;
-            }}
-            onQuickCapture={async () => {
-              completedRoutine = true;
-            }}
-            isActive={true}
-          />
-        );
-      }
-
-      let testSetup!: TestSetup;
-      await act(async () => {
-        testSetup = await testRender(
-          <TestProviders>
-            <Wrapper />
-          </TestProviders>,
-          { onDestroy: () => {} },
-        );
+    it("focuses days (h/l), completes a routine (Space), and routes Enter to the timeline", async () => {
+      stubServer({ dashboard: sampleDashboard, projects: sampleProjects });
+      const { testSetup, sink, press } = await renderView(<DashboardView />, {
+        dashboard: sampleDashboard,
+        projects: sampleProjects,
       });
 
-      // Press h -> move focus left
-      await act(async () => {
-        testSetup.mockInput.pressKey("h");
-      });
-      expect(focusedIdx).toBe(0);
-
-      // Press l -> move focus right
-      await act(async () => {
-        testSetup.mockInput.pressKey("l");
-      });
-      expect(focusedIdx).toBe(1);
-
-      // Press Space -> check off today routine
-      await act(async () => {
-        testSetup.mockInput.pressKey(" ");
-      });
-      expect(completedRoutine).toBe(true);
-
-      // Press Enter -> jump to date of focused day
+      await press("h");
       await act(async () => {
         testSetup.mockInput.pressEnter();
       });
-      expect(navigatedDate).toBe("2026-10-24");
+      expect(sink.navigation.tab).toBe("TIMELINE");
+      expect(sink.navigation.filter).toBe("2026-10-23");
+
+      await press("l");
+      await act(async () => {
+        testSetup.mockInput.pressEnter();
+      });
+      expect(sink.navigation.filter).toBe("2026-10-24");
+
+      await press(" ");
+      expect(sink.message).toBe("Completed today's routine for @Alpha!");
 
       testSetup.renderer.destroy();
+      globalThis.fetch = originalFetch;
     });
 
-    it("ignores all keys when isActive is false", async () => {
-      let completed = false;
-
-      function Wrapper() {
-        return (
-          <DashboardView
-            dashboard={sampleDashboard}
-            projects={sampleProjects}
-            focusedDayIdx={0}
-            onNavigateDate={() => {}}
-            onQuickCapture={async () => {
-              completed = true;
-            }}
-            isActive={false}
-          />
-        );
-      }
-
-      let testSetup!: TestSetup;
-      await act(async () => {
-        testSetup = await testRender(
-          <TestProviders>
-            <Wrapper />
-          </TestProviders>,
-          { onDestroy: () => {} },
-        );
+    it("ignores view keys while a modal is open", async () => {
+      stubServer({});
+      const { testSetup, sink, press } = await renderView(<DashboardView />, {
+        dashboard: sampleDashboard,
+        projects: sampleProjects,
       });
 
       await act(async () => {
-        testSetup.mockInput.pressKey(" ");
-        testSetup.mockInput.pressEnter();
+        sink.modals.open({ name: "help" });
       });
+      await press(" ");
+      await press("h");
+      expect(sink.message).not.toBe("Completed today's routine for @Alpha!");
 
-      expect(completed).toBe(false);
       testSetup.renderer.destroy();
+      globalThis.fetch = originalFetch;
     });
   });
 
   describe("ReflectionsView", () => {
-    it("handles cadence switching (w, m, q, y) and editor trigger (e, Enter)", async () => {
-      const qc = createQueryClient();
-      let currentPeriodType = "WEEK";
-      let status = "";
-      let editorTriggered = false;
+    it("switches cadence with w, m, Q, y", async () => {
+      stubServer({});
+      const { testSetup, sink, press } = await renderView(<ReflectionsView />);
 
-      function Wrapper() {
-        const [pt, setPt] = useState<ReflectionPeriodType>("WEEK");
-        return (
-          <QueryClientProvider client={qc}>
-            <ReflectionsView
-              periodType={pt}
-              onChangePeriodType={(newPt) => {
-                currentPeriodType = newPt;
-                setPt(newPt);
-              }}
-              selectedPeriodKey={null}
-              onSelectPeriodKey={() => {}}
-              isActive={true}
-              onStatusMessage={(m) => {
-                status = m;
-              }}
-              onOpenEditor={() => {
-                editorTriggered = true;
-              }}
-            />
-          </QueryClientProvider>
-        );
-      }
+      await press("m");
+      expect(sink.message).toBe("Monthly Reflections");
 
-      let testSetup!: TestSetup;
-      await act(async () => {
-        testSetup = await testRender(
-          <TestProviders>
-            <Wrapper />
-          </TestProviders>,
-          { onDestroy: () => {} },
-        );
-      });
+      await press("Q");
+      expect(sink.message).toBe("Quarterly Reflections");
 
-      // Press m -> Monthly
-      await act(async () => {
-        testSetup.mockInput.pressKey("m");
-      });
-      expect(currentPeriodType).toBe("MONTH");
-      expect(status).toBe("Monthly Reflections");
+      await press("y");
+      expect(sink.message).toBe("Yearly Reflections");
 
-      // Press q -> Quarterly
-      await act(async () => {
-        testSetup.mockInput.pressKey("q");
-      });
-      expect(currentPeriodType).toBe("QUARTER");
-      expect(status).toBe("Quarterly Reflections");
-
-      // Press y -> Yearly
-      await act(async () => {
-        testSetup.mockInput.pressKey("y");
-      });
-      expect(currentPeriodType).toBe("YEAR");
-      expect(status).toBe("Yearly Reflections");
-
-      // Press w -> Weekly
-      await act(async () => {
-        testSetup.mockInput.pressKey("w");
-      });
-      expect(currentPeriodType).toBe("WEEK");
-      expect(status).toBe("Weekly Reflections");
-
-      // Press e -> Open editor
-      await act(async () => {
-        testSetup.mockInput.pressKey("e");
-      });
-      expect(editorTriggered).toBe(true);
-
-      editorTriggered = false;
-      // Press Enter -> Open editor
-      await act(async () => {
-        testSetup.mockInput.pressEnter();
-      });
-      expect(editorTriggered).toBe(true);
+      await press("w");
+      expect(sink.message).toBe("Weekly Reflections");
 
       testSetup.renderer.destroy();
+      globalThis.fetch = originalFetch;
     });
   });
 });

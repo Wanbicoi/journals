@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import { config } from "../api/client.js";
 import { IconProvider } from "../contexts/icons.js";
 import { KeymapProvider } from "../contexts/keymaps.js";
+import { LayoutProvider } from "../contexts/layout.js";
+import { ModalsProvider } from "../contexts/modals.js";
 import { ThemeProvider } from "../contexts/theme.js";
 import { getTheme } from "../theme.js";
 
@@ -18,7 +20,11 @@ export function TestProviders({ children }: TestProvidersProps) {
   return (
     <ThemeProvider theme={getTheme("default")} dayStartHour={0}>
       <IconProvider value={PLAIN_ICONS}>
-        <KeymapProvider value={config.keymaps}>{children}</KeymapProvider>
+        <KeymapProvider value={config.keymaps}>
+          <LayoutProvider>
+            <ModalsProvider>{children}</ModalsProvider>
+          </LayoutProvider>
+        </KeymapProvider>
       </IconProvider>
     </ThemeProvider>
   );

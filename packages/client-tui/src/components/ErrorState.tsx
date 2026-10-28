@@ -1,5 +1,6 @@
 import { useKeymaps } from "../contexts/keymaps.js";
 import { useTheme } from "../contexts/theme.js";
+import { bindingLabel } from "../keymap.js";
 
 interface ErrorStateProps {
   error: unknown;
@@ -15,6 +16,9 @@ function messageOf(error: unknown): string {
 /**
  * A failed fetch is a render, not an empty screen: say what failed and how to retry.
  */
+
+// @unit journals.views.error-state
+// @summary Show a load error and offer a retry
 export function ErrorState({ error, onRetry }: ErrorStateProps) {
   const theme = useTheme();
   const keymaps = useKeymaps();
@@ -23,7 +27,9 @@ export function ErrorState({ error, onRetry }: ErrorStateProps) {
     <box flexDirection="column" padding={1}>
       <text fg={theme.error || "red"}>{`Could not load journals: ${messageOf(error)}`}</text>
       <box flexDirection="row" onMouseDown={onRetry}>
-        <text fg={theme.muted}>{`Press '${keymaps.refresh}' to retry, or click here. `}</text>
+        <text
+          fg={theme.muted}
+        >{`Press '${bindingLabel(keymaps.global.refresh)}' to retry, or click here. `}</text>
         <text fg={theme.primary}>{"[Retry]"}</text>
       </box>
     </box>

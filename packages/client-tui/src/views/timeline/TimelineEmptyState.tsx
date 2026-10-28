@@ -1,20 +1,19 @@
 import { useKeymaps } from "../../contexts/keymaps.js";
+import { useNavigation } from "../../contexts/navigation.js";
 import { useTheme } from "../../contexts/theme.js";
+import { bindingLabel } from "../../keymap.js";
 
-interface TimelineEmptyStateProps {
-  filterQuery: string;
-}
-
-export function TimelineEmptyState({ filterQuery }: TimelineEmptyStateProps) {
+export function TimelineEmptyState() {
   const theme = useTheme();
   const keymaps = useKeymaps();
+  const { filter } = useNavigation();
 
   return (
     <box padding={1}>
       <text fg={theme.muted}>
-        {filterQuery
-          ? `No notes matching filter "${filterQuery}". Press '/' or Esc to clear.`
-          : `No journal notes yet. Press '${keymaps.quick_capture}' to create one!`}
+        {filter
+          ? `No notes matching filter "${filter}". Press '${bindingLabel(keymaps.global.search_filter)}' or ${bindingLabel(keymaps.global.cancel)} to clear.`
+          : `No journal notes yet. Press '${bindingLabel(keymaps.timeline.quick_capture)}' to create one!`}
       </text>
     </box>
   );

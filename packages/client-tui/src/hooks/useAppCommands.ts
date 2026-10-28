@@ -1,65 +1,40 @@
-import { useCallback } from "react";
-import type { Tab } from "./useAppKeymaps.js";
-import { useGlobalCommands } from "./useGlobalCommands.js";
-import type { useJournalFilters } from "./useJournalFilters.js";
-import type { ModalManager } from "./useModalManager.js";
-
-interface UseAppCommandsOptions {
-  currentTab: Tab;
-  setCurrentTab: (tab: Tab) => void;
-  modal: ModalManager;
-  filters: ReturnType<typeof useJournalFilters>;
-  onQuit: () => void;
-  reloadData: () => Promise<void>;
-  onStatusMessage: (message: string) => void;
-}
+import { useModals } from "../contexts/modals.js";
+import type { Tab } from "../contexts/navigation.js";
+import { useNavigation } from "../contexts/navigation.js";
+import { useNotifications } from "../contexts/notification.js";
+import { useRefreshData } from "../hooks/useRefreshData.js";
+import { useAppKeymaps } from "./useAppKeymaps.js";
+import { useSelectionClipboard } from "./useSelectionClipboard.js";
 
 /**
- * Wires the global input surface to the screen's state, reports the outcome of each command, and
- * owns the tab label transition. Returns the tab selector the header uses.
+ * The screen-level input surface. Keymaps stay a pure dispatcher; this hook turns the global keys
+ * into route, modal, and refresh actions read from their contexts.
  */
 
 // @unit journals.hooks.commands
 // @summary Bind global keymaps and commands
-export function useAppCommands({
-  currentTab,
-  setCurrentTab,
-  modal,
-  filters,
-  onQuit,
-  reloadData,
-  onStatusMessage,
-}: UseAppCommandsOptions) {
-  const selectTab = useCallback(
-    (tab: Tab) => {
-      setCurrentTab(tab);
-      onStatusMessage(`${tab.charAt(0) + tab.slice(1).toLowerCase()} View`);
-    },
-    [onStatusMessage, setCurrentTab],
-  );
+export function useAppCommands(onQuit: () => void) {
+  const { tab, navigate, clearFilter } = useNavigation();
+  const { open } = useModals();
+  const { notify } = useNotifications();
+  const refresh = useRefreshData();
 
-  // @call journals.hooks.global-commands Wire the global input surface
-  useGlobalCommands({
-    currentTab,
-    modalOpen: modal.isOpen,
-    helpOpen: modal.inputMode === "HELP",
-    onSelectTab: selectTab,
-    onOpenFilter: modal.openFilter,
-    onOpenHelp: modal.openHelp,
-    onCloseHelp: () => modal.closeModal(),
+  // @call journals.hooks.clipboard Copy the terminal selection
+  useSelectionClipboard();
+
+  // @call journals.hooks.app-keymaps Dispatch the screen-level keys
+  useAppKeymaps({
+    currentTab: tab,
+    onSelectTab: (nextTab: Tab) => navigate(nextTab),
+    onOpenFilter: () => open({ name: "filter" }),
+    onOpenHelp: () => open({ name: "help" }),
     onRefresh: async () => {
-      await reloadData();
-      onStatusMessage("Refreshed data");
+      await refresh();
+      notify("Refreshed data");
     },
     onClearFilter: () => {
-      if (!filters.clearForTab(currentTab)) return;
-      onStatusMessage(
-        currentTab === "TIMELINE" ? "Timeline filter cleared" : "Projects filter cleared",
-      );
+      if (clearFilter()) notify("Filter cleared");
     },
     onQuit,
-    onStatusMessage,
   });
-
-  return selectTab;
 }

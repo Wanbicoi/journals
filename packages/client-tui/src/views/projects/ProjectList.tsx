@@ -2,25 +2,21 @@ import type { ScrollBoxRenderable } from "@opentui/core";
 import { useEffect, useRef } from "react";
 import { HighlightText } from "../../components/HighlightText.js";
 import { useIcons } from "../../contexts/icons.js";
+import { useNavigation } from "../../contexts/navigation.js";
 import { useTheme } from "../../contexts/theme.js";
-import type { Project } from "../../hooks/useJournalData.js";
+import type { Project } from "../../hooks/queries.js";
 
 interface ProjectListProps {
   projects: Project[];
   selectedProjectIdx: number;
-  filterQuery: string;
   onSelectProject: (idx: number) => void;
 }
 
-export function ProjectList({
-  projects,
-  selectedProjectIdx,
-  filterQuery,
-  onSelectProject,
-}: ProjectListProps) {
+export function ProjectList({ projects, selectedProjectIdx, onSelectProject }: ProjectListProps) {
   const scrollBoxRef = useRef<ScrollBoxRenderable | null>(null);
   const icons = useIcons();
   const theme = useTheme();
+  const { filter } = useNavigation();
 
   useEffect(() => {
     if (scrollBoxRef.current && projects[selectedProjectIdx]) {
@@ -61,7 +57,7 @@ export function ProjectList({
                 </text>
                 <HighlightText
                   text={project.name}
-                  query={filterQuery}
+                  query={filter}
                   theme={theme}
                   defaultFg={isSelected ? theme.primary : theme.fg}
                   selectable={false}

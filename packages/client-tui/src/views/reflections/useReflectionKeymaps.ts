@@ -1,12 +1,10 @@
 import type { PeriodDetail, PeriodItemStatus, ReflectionPeriodType } from "@journals/core";
-import { useKeyboard } from "@opentui/react";
-import { useKeymaps } from "../../contexts/keymaps.js";
-import { openExternalEditor } from "../../editor.js";
+import { useNotifications } from "../../contexts/notification.js";
+import { editInEditor } from "../../editor.js";
 import type { useSaveReflection } from "../../hooks/useSaveReflection.js";
-import { matchesAnyBinding } from "../../keymap.js";
+import { useScopedKeymaps } from "../../hooks/useScopedKeymaps.js";
 
 interface UseReflectionKeymapsOptions {
-  isActive: boolean;
   periodType: ReflectionPeriodType;
   periods: PeriodItemStatus[];
   selectedPeriodIdx: number;
@@ -15,14 +13,11 @@ interface UseReflectionKeymapsOptions {
   saveReflection: ReturnType<typeof useSaveReflection>;
   onChangePeriodType: (type: ReflectionPeriodType) => void;
   onSelectPeriodKey: (key: string) => void;
-  onStatusMessage?: (msg: string) => void;
-  onOpenEditor?: () => void;
 }
 
 // @unit journals.views.reflections-keys
 // @summary Route reflection keys to cadence, selection, and the editor
 export function useReflectionKeymaps({
-  isActive,
   periodType,
   periods,
   selectedPeriodIdx,
@@ -31,60 +26,62 @@ export function useReflectionKeymaps({
   saveReflection,
   onChangePeriodType,
   onSelectPeriodKey,
-  onStatusMessage,
-  onOpenEditor,
 }: UseReflectionKeymapsOptions) {
-  const keymaps = useKeymaps();
+  const { notify } = useNotifications();
 
-  // @call journals.server.save-reflection Save a reflection
-  useKeyboard(async (key) => {
-    if (!isActive) return;
+  const openEditor = async () => {
+    const currentPeriod = periods[selectedPeriodIdx];
+    if (!currentPeriod) return;
 
-    // Cadence switching: w, m, q, y
-    if (matchesAnyBinding(key, "w", "W")) {
+    try {
+      const { data: freshDetail } = await refetchDetail();
+      const detail = freshDetail ?? currentDetail;
+      const initialContent =
+        detail?.reflection?.content || `# Reflection: ${currentPeriod.label}\n\n`;
+
+      const saved = await editInEditor(initialContent, (content) =>
+        saveReflection.mutateAsync({
+          periodType,
+          periodKey: currentPeriod.periodKey,
+          content,
+        }),
+      );
+
+      if (saved) notify(`Saved reflection for ${currentPeriod.periodKey}`);
+    } catch (_e) {
+      notify("Failed to edit reflection");
+    }
+  };
+
+  // @call journals.actions.edit-in-editor Edit the reflection in $EDITOR
+  useScopedKeymaps("reflections", {
+    cadence_week: () => {
       onChangePeriodType("WEEK");
-      onStatusMessage?.("Weekly Reflections");
-    } else if (matchesAnyBinding(key, "m", "M")) {
+      notify("Weekly Reflections");
+    },
+    cadence_month: () => {
       onChangePeriodType("MONTH");
-      onStatusMessage?.("Monthly Reflections");
-    } else if (matchesAnyBinding(key, "q", "Q")) {
+      notify("Monthly Reflections");
+    },
+    cadence_quarter: () => {
       onChangePeriodType("QUARTER");
-      onStatusMessage?.("Quarterly Reflections");
-    } else if (matchesAnyBinding(key, "y", "Y")) {
+      notify("Quarterly Reflections");
+    },
+    cadence_year: () => {
       onChangePeriodType("YEAR");
-      onStatusMessage?.("Yearly Reflections");
-    } else if (matchesAnyBinding(key, "j", "down", keymaps.down)) {
+      notify("Yearly Reflections");
+    },
+
+    down: () => {
       const nextPeriod = periods[Math.min(selectedPeriodIdx + 1, Math.max(0, periods.length - 1))];
       if (nextPeriod) onSelectPeriodKey(nextPeriod.periodKey);
-    } else if (matchesAnyBinding(key, "k", "up", keymaps.up)) {
+    },
+
+    up: () => {
       const previousPeriod = periods[Math.max(0, selectedPeriodIdx - 1)];
       if (previousPeriod) onSelectPeriodKey(previousPeriod.periodKey);
-    } else if (matchesAnyBinding(key, "e", "return", keymaps.edit_project_content)) {
-      // External editor spawn: e, Enter
-      if (onOpenEditor) {
-        onOpenEditor();
-      } else {
-        try {
-          const currentP = periods[selectedPeriodIdx];
-          if (currentP) {
-            const { data: freshDetail } = await refetchDetail();
-            const detail = freshDetail ?? currentDetail;
-            const initialContent =
-              detail?.reflection?.content || `# Reflection: ${currentP.label}\n\n`;
-            const updated = openExternalEditor(initialContent);
-            if (updated !== initialContent) {
-              await saveReflection.mutateAsync({
-                periodType,
-                periodKey: currentP.periodKey,
-                content: updated,
-              });
-              onStatusMessage?.(`Saved reflection for ${currentP.periodKey}`);
-            }
-          }
-        } catch (_e) {
-          onStatusMessage?.("Failed to edit reflection");
-        }
-      }
-    }
+    },
+
+    open_reflection: () => void openEditor(),
   });
 }
