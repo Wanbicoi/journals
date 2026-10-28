@@ -350,9 +350,14 @@ describe("Collocated View Keymaps", () => {
         await testSetup.flush();
       });
       const frame = testSetup.captureCharFrame();
-      expect(frame).toContain("Routine:");
-      expect(frame).toContain("Every day");
-      expect(frame).toContain("Policy: Spike");
+      const lines = frame.split("\n");
+      const headerIdx = lines.findIndex((line) => line.includes("@Alpha"));
+      expect(headerIdx).toBeGreaterThanOrEqual(0);
+      expect(lines[headerIdx + 1]).toContain("Routine:");
+      expect(lines[headerIdx + 1]).toContain("Every day");
+      expect(lines[headerIdx + 1]).toContain("Policy: Spike");
+      expect(lines[headerIdx + 2]).not.toContain("Routine:");
+      expect(lines[headerIdx + 3]).toContain("┌");
 
       testSetup.renderer.destroy();
       globalThis.fetch = originalFetch;

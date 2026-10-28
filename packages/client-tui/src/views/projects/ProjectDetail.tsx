@@ -38,18 +38,17 @@ export function ProjectDetail({
   return (
     <box flexGrow={1} flexDirection="column">
       {/* Right Header: Project details banner */}
-      <box flexDirection="row" justifyContent="space-between" marginBottom={1}>
+      <box flexDirection="column" marginBottom={1}>
         <box flexDirection="row">
           <text fg={theme.secondary}>{`${icons.project} @${projectName}`}</text>
           <text
             fg={theme.muted}
           >{` ${icons.bullet} ${notes.length} associated note${notes.length === 1 ? "" : "s"}`}</text>
         </box>
-      </box>
-
-      <box flexDirection="row" marginBottom={1}>
-        <text fg={theme.muted}>{`${icons.calendar} Routine: ${routineLabel}`}</text>
-        <text fg={theme.muted}>{` ${icons.bullet} Policy: ${policyLabel(missedPolicy)}`}</text>
+        <box flexDirection="row">
+          <text fg={theme.muted}>{`${icons.calendar} Routine: ${routineLabel}`}</text>
+          <text fg={theme.muted}>{` ${icons.bullet} Policy: ${policyLabel(missedPolicy)}`}</text>
+        </box>
       </box>
 
       <scrollbox flexGrow={1}>
