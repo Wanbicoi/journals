@@ -5,9 +5,9 @@ import type { ThemePalette } from "../../theme.js";
 type DashboardStatus = DashboardData["status"];
 
 export function statusColor(status: DashboardStatus, theme: ThemePalette): string {
-  if (status === "NORMAL") return theme.success || "green";
-  if (status === "DEGRADED") return theme.warning || "yellow";
-  return theme.error || "red";
+  if (status === "NORMAL") return theme.success;
+  if (status === "DEGRADED") return theme.warning;
+  return theme.error;
 }
 
 export function statusLabel(status: DashboardStatus): string {

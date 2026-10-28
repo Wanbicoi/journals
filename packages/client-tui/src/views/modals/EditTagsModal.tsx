@@ -1,4 +1,5 @@
 import { Modal } from "../../components/Modal.js";
+import { SuggestionList } from "../../components/SuggestionList.js";
 import { useIcons } from "../../contexts/icons.js";
 import { useNotifications } from "../../contexts/notification.js";
 import { useTheme } from "../../contexts/theme.js";
@@ -26,7 +27,7 @@ export function EditTagsModal({ entry }: EditTagsModalProps) {
   const { notify } = useNotifications();
   const { updateEntryTags } = useEntryMutations();
 
-  const { buffer, setBuffer, suggestions, activeSuggestionIdx, submitBuffer } = useTextModalInput({
+  const { buffer, setBuffer, suggestions, activeSuggestionIdx, handleSubmit } = useTextModalInput({
     initialValue: entry.tags.join(", "),
     allowedSuggestions: ["tag"],
     // @call journals.hooks.update-entry-tags Replace the entry's tags
@@ -47,9 +48,7 @@ export function EditTagsModal({ entry }: EditTagsModalProps) {
           focused
           onChange={setBuffer}
           onInput={setBuffer}
-          onSubmit={(value: unknown) =>
-            void submitBuffer(typeof value === "string" ? value : buffer)
-          }
+          onSubmit={handleSubmit}
           placeholder="tag1, tag2, #tag3"
           textColor={theme.fg}
           focusedTextColor={theme.fg}
@@ -58,18 +57,7 @@ export function EditTagsModal({ entry }: EditTagsModalProps) {
       </box>
 
       {suggestions && suggestions.matches.length > 0 && (
-        <box flexDirection="row" marginTop={1}>
-          <text fg={theme.accent}>{"Suggestions: "}</text>
-          {suggestions.matches.slice(0, 4).map((m, idx) => (
-            <text
-              key={m}
-              fg={idx === activeSuggestionIdx ? theme.selectedFg : theme.muted}
-              bg={idx === activeSuggestionIdx ? theme.primary : undefined}
-            >
-              {`[#${m}] `}
-            </text>
-          ))}
-        </box>
+        <SuggestionList matches={suggestions.matches} activeIdx={activeSuggestionIdx} prefix="#" />
       )}
 
       <text fg={theme.muted} marginTop={1}>

@@ -128,78 +128,58 @@ export async function invalidateAfterMutation(
 
 // @unit journals.hooks.entries
 // @summary Query journal entries
-export function useEntries(options?: { refetchInterval?: number | false; enabled?: boolean }) {
+export function useEntries() {
   // @call journals.api.entries Fetch entries from the server
   return useQuery<Entry[]>({
     queryKey: queryKeys.entries,
     queryFn: async () => (await fetchEntries()) ?? [],
-    refetchInterval: options?.refetchInterval ?? false,
-    enabled: options?.enabled ?? true,
   });
 }
 
 // @unit journals.hooks.projects
 // @summary Query projects
-export function useProjects(options?: { refetchInterval?: number | false; enabled?: boolean }) {
+export function useProjects() {
   // @call journals.api.projects Fetch projects from the server
   return useQuery<Project[]>({
     queryKey: queryKeys.projects,
     queryFn: async () => (await fetchProjects()) ?? [],
-    refetchInterval: options?.refetchInterval ?? false,
-    enabled: options?.enabled ?? true,
   });
 }
 
 // @unit journals.hooks.tags
 // @summary Query tags
-export function useTags(options?: { refetchInterval?: number | false; enabled?: boolean }) {
+export function useTags() {
   // @call journals.api.tags Fetch tags from the server
   return useQuery<TagInfo[]>({
     queryKey: queryKeys.tags,
     queryFn: async () => (await fetchTags()) ?? [],
-    refetchInterval: options?.refetchInterval ?? false,
-    enabled: options?.enabled ?? true,
   });
 }
 
 // @unit journals.hooks.dashboard
 // @summary Query dashboard analytics
-export function useDashboardAnalytics(
-  days = 60,
-  options?: { enabled?: boolean; refetchInterval?: number | false },
-) {
-  const isEnabled = options?.enabled ?? true;
+export function useDashboardAnalytics(days = 60) {
   // @call journals.api.dashboard Fetch the dashboard summary from the server
   return useQuery<DashboardData>({
     queryKey: queryKeys.dashboard(days),
     queryFn: async () => await fetchDashboardAnalytics(days),
-    enabled: isEnabled,
-    refetchInterval: isEnabled ? (options?.refetchInterval ?? false) : false,
   });
 }
 
-export function useReflectionPeriods(
-  periodType: ReflectionPeriodType,
-  options?: { enabled?: boolean },
-) {
+export function useReflectionPeriods(periodType: ReflectionPeriodType) {
   return useQuery<PeriodItemStatus[]>({
     queryKey: queryKeys.reflections.periods(periodType),
     queryFn: async () => (await fetchPeriodsApi(periodType)) ?? [],
-    enabled: options?.enabled ?? true,
   });
 }
 
-export function useReflectionDetail(
-  periodType?: ReflectionPeriodType,
-  periodKey?: string | null,
-  options?: { enabled?: boolean },
-) {
+export function useReflectionDetail(periodType?: ReflectionPeriodType, periodKey?: string | null) {
   return useQuery<PeriodDetail | null>({
     queryKey: queryKeys.reflections.detail(periodType ?? "WEEK", periodKey ?? ""),
     queryFn: async () => {
       if (!periodType || !periodKey) return null;
       return await fetchPeriodDetailApi(periodType, periodKey);
     },
-    enabled: (options?.enabled ?? true) && Boolean(periodType && periodKey),
+    enabled: Boolean(periodType && periodKey),
   });
 }

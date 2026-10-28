@@ -4,13 +4,12 @@ import { useEffect, useMemo, useRef } from "react";
 import { ErrorState } from "../../components/ErrorState.js";
 import { useModals } from "../../contexts/modals.js";
 import { useNavigation } from "../../contexts/navigation.js";
-import { useNotifications } from "../../contexts/notification.js";
 import { useDayStartHour, useTheme } from "../../contexts/theme.js";
 import { useUndo } from "../../contexts/undo.js";
-import { editInEditor } from "../../editor.js";
 import { filterEntries } from "../../hooks/filterJournal.js";
 import type { Entry } from "../../hooks/queries.js";
 import { useEntries } from "../../hooks/queries.js";
+import { useEditInEditor } from "../../hooks/useEditInEditor.js";
 import { useEntryMutations } from "../../hooks/useEntryMutations.js";
 import { useSelectionById } from "../../hooks/useSelection.js";
 import { type TimelineDateGroup, TimelineDayGroup } from "./TimelineDayGroup.js";
@@ -44,8 +43,8 @@ export function TimelineView() {
   const { filter } = useNavigation();
   const { open } = useModals();
   const { undo } = useUndo();
-  const { notify } = useNotifications();
   const { updateEntryContent } = useEntryMutations();
+  const editInEditor = useEditInEditor();
 
   // @call journals.hooks.entries Load the timeline's journal entries
   const { data: entries = [], isLoading, isError, error, refetch } = useEntries();
@@ -55,10 +54,11 @@ export function TimelineView() {
   const selection = useSelectionById(filteredEntries);
 
   const editEntry = async (entry: Entry) => {
-    const saved = await editInEditor(entry.content, (content) =>
-      updateEntryContent(entry.id, content),
+    await editInEditor(
+      entry.content,
+      (content) => updateEntryContent(entry.id, content),
+      "Updated note content via editor!",
     );
-    if (saved) notify("Updated note content via editor!");
   };
 
   useTimelineKeymaps({

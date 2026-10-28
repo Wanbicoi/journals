@@ -11,7 +11,7 @@ function ViewErrorFallback({ viewName, error }: ViewErrorFallbackProps) {
 
   return (
     <box flexDirection="column" padding={1}>
-      <text fg={theme.error || "red"}>{`The ${viewName} view crashed.`}</text>
+      <text fg={theme.error}>{`The ${viewName} view crashed.`}</text>
       <text fg={theme.muted}>{error.message}</text>
       <text fg={theme.muted}>
         {"Press 1-4 to switch views; the rest of the app is still running."}

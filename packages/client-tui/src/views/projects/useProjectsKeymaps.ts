@@ -1,5 +1,6 @@
 import type { Project } from "../../hooks/queries.js";
 import { useScopedKeymaps } from "../../hooks/useScopedKeymaps.js";
+import { clampIndex } from "../../hooks/useSelection.js";
 
 interface UseProjectsKeymapsOptions {
   projects: Project[];
@@ -21,9 +22,8 @@ export function useProjectsKeymaps({
   const selected = projects[selectedProjectIdx];
 
   useScopedKeymaps("projects", {
-    down: () =>
-      onSelectProject?.(Math.min(selectedProjectIdx + 1, Math.max(0, projects.length - 1))),
-    up: () => onSelectProject?.(Math.max(0, selectedProjectIdx - 1)),
+    down: () => onSelectProject?.(clampIndex(selectedProjectIdx + 1, projects.length)),
+    up: () => onSelectProject?.(clampIndex(selectedProjectIdx - 1, projects.length)),
     new_project: () => onNewProject?.(),
     edit_project_settings: () => selected && onEditProjectSettings?.(selected),
     edit_project_content: () => selected && onEditProjectContent?.(selected),

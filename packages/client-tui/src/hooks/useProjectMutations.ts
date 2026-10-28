@@ -1,3 +1,4 @@
+import type { ProjectMissedPolicy } from "@journals/core";
 import { useQueryClient } from "@tanstack/react-query";
 import { client, updateProjectApi } from "../api/client.js";
 import { invalidateAfterMutation, invalidationKeys } from "./queries.js";
@@ -15,7 +16,7 @@ export function useProjectMutations() {
   async function createProject(
     name: string,
     recurrence: string | null = null,
-    missedPolicy: "accumulate" | "spike" | "mark_done" = "spike",
+    missedPolicy: ProjectMissedPolicy = "spike",
   ) {
     // @call journals.server.create-project Create the project
     await client.projects.$post({
@@ -37,7 +38,7 @@ export function useProjectMutations() {
       name?: string;
       content?: string;
       recurrence?: string | null;
-      missedPolicy?: "accumulate" | "spike" | "mark_done";
+      missedPolicy?: ProjectMissedPolicy;
     },
   ) {
     // @call journals.server.update-project Save the project's name, recurrence, and policy

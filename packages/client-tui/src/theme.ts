@@ -13,9 +13,9 @@ export interface ThemePalette {
   highlight: string;
   tag: string;
   project: string;
-  success?: string;
-  warning?: string;
-  error?: string;
+  success: string;
+  warning: string;
+  error: string;
 }
 
 export const themes: Record<string, ThemePalette> = {

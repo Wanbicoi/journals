@@ -14,7 +14,7 @@ export function NewProjectModal() {
   const { notify } = useNotifications();
   const { createProject } = useProjectMutations();
 
-  const { buffer, setBuffer, submitBuffer } = useTextModalInput({
+  const { buffer, setBuffer, handleSubmit } = useTextModalInput({
     // @call journals.hooks.create-project Create the project
     submit: async (value) => {
       const spec = parseProjectSpec(value);
@@ -38,9 +38,7 @@ export function NewProjectModal() {
           focused
           onChange={setBuffer}
           onInput={setBuffer}
-          onSubmit={(value: unknown) =>
-            void submitBuffer(typeof value === "string" ? value : buffer)
-          }
+          onSubmit={handleSubmit}
           placeholder="Project name [/every cadence] [/policy:...]"
           textColor={theme.fg}
           focusedTextColor={theme.fg}

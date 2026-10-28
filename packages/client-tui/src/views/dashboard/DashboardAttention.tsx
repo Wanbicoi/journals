@@ -34,7 +34,7 @@ export function DashboardAttention({ dashboard }: DashboardAttentionProps) {
       {dashboard.activeDebts.map((debt) => (
         <box key={debt.projectId} flexDirection="row" justifyContent="space-between">
           <text fg={theme.secondary}>{`${icons.overdue} @${debt.projectName}`}</text>
-          <text fg={theme.error || "red"}>{`${debt.accumulatedDebt} to catch up`}</text>
+          <text fg={theme.error}>{`${debt.accumulatedDebt} to catch up`}</text>
         </box>
       ))}
       {dashboard.activeBreaks.map((activeBreak, index) => (
@@ -49,7 +49,7 @@ export function DashboardAttention({ dashboard }: DashboardAttentionProps) {
             </text>
             <text fg={theme.muted}>{truncate(activeBreak.content, 32)}</text>
           </box>
-          <text fg={theme.warning || "yellow"}>{`${activeBreak.remainingDays}d left`}</text>
+          <text fg={theme.warning}>{`${activeBreak.remainingDays}d left`}</text>
         </box>
       ))}
     </box>

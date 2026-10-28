@@ -131,7 +131,7 @@ export function ReflectionsView() {
                   </box>
 
                   {p.hasReflection ? (
-                    <text fg={theme.success || theme.secondary}>{`${icons.done} done`}</text>
+                    <text fg={theme.success}>{`${icons.done} done`}</text>
                   ) : (
                     <text fg={theme.muted}>{`${icons.todo} todo`}</text>
                   )}

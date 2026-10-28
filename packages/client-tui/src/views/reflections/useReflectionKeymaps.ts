@@ -1,8 +1,9 @@
 import type { PeriodDetail, PeriodItemStatus, ReflectionPeriodType } from "@journals/core";
 import { useNotifications } from "../../contexts/notification.js";
-import { editInEditor } from "../../editor.js";
+import { useEditInEditor } from "../../hooks/useEditInEditor.js";
 import type { useSaveReflection } from "../../hooks/useSaveReflection.js";
 import { useScopedKeymaps } from "../../hooks/useScopedKeymaps.js";
+import { clampIndex } from "../../hooks/useSelection.js";
 
 interface UseReflectionKeymapsOptions {
   periodType: ReflectionPeriodType;
@@ -28,6 +29,7 @@ export function useReflectionKeymaps({
   onSelectPeriodKey,
 }: UseReflectionKeymapsOptions) {
   const { notify } = useNotifications();
+  const editInEditor = useEditInEditor();
 
   const openEditor = async () => {
     const currentPeriod = periods[selectedPeriodIdx];
@@ -39,15 +41,16 @@ export function useReflectionKeymaps({
       const initialContent =
         detail?.reflection?.content || `# Reflection: ${currentPeriod.label}\n\n`;
 
-      const saved = await editInEditor(initialContent, (content) =>
-        saveReflection.mutateAsync({
-          periodType,
-          periodKey: currentPeriod.periodKey,
-          content,
-        }),
+      await editInEditor(
+        initialContent,
+        (content) =>
+          saveReflection.mutateAsync({
+            periodType,
+            periodKey: currentPeriod.periodKey,
+            content,
+          }),
+        `Saved reflection for ${currentPeriod.periodKey}`,
       );
-
-      if (saved) notify(`Saved reflection for ${currentPeriod.periodKey}`);
     } catch (_e) {
       notify("Failed to edit reflection");
     }
@@ -73,12 +76,12 @@ export function useReflectionKeymaps({
     },
 
     down: () => {
-      const nextPeriod = periods[Math.min(selectedPeriodIdx + 1, Math.max(0, periods.length - 1))];
+      const nextPeriod = periods[clampIndex(selectedPeriodIdx + 1, periods.length)];
       if (nextPeriod) onSelectPeriodKey(nextPeriod.periodKey);
     },
 
     up: () => {
-      const previousPeriod = periods[Math.max(0, selectedPeriodIdx - 1)];
+      const previousPeriod = periods[clampIndex(selectedPeriodIdx - 1, periods.length)];
       if (previousPeriod) onSelectPeriodKey(previousPeriod.periodKey);
     },
 

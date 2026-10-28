@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { testRender } from "@opentui/react/test-utils";
 import { act } from "react";
 import { TestProviders } from "../../test-support/TestProviders.js";
-import { type SelectionById, useSelectionById } from "../useSelection.js";
+import { type SelectionById, clampIndex, useSelectionById } from "../useSelection.js";
 
 type TestSetup = Awaited<ReturnType<typeof testRender>>;
 type Row = { id: string };
@@ -40,5 +40,14 @@ describe("useSelectionById", () => {
     expect(selection.selected?.id).toBe("a");
 
     testSetup.renderer.destroy();
+  });
+});
+
+describe("clampIndex", () => {
+  it("clamps to the list bounds", () => {
+    expect(clampIndex(0, 0)).toBe(0);
+    expect(clampIndex(-1, 3)).toBe(0);
+    expect(clampIndex(5, 3)).toBe(2);
+    expect(clampIndex(1, 3)).toBe(1);
   });
 });

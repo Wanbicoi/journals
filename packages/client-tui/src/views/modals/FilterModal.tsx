@@ -11,7 +11,7 @@ export function FilterModal() {
   const { tab, filter, setFilter, clearFilter } = useNavigation();
   const { notify } = useNotifications();
 
-  const { buffer, setBuffer, submitBuffer } = useTextModalInput({
+  const { buffer, setBuffer, handleSubmit } = useTextModalInput({
     initialValue: filter,
     // @call journals.contexts.navigation Save the search filter
     submit: (value) => {
@@ -33,9 +33,7 @@ export function FilterModal() {
           focused
           onChange={setBuffer}
           onInput={setBuffer}
-          onSubmit={(value: unknown) =>
-            void submitBuffer(typeof value === "string" ? value : buffer)
-          }
+          onSubmit={handleSubmit}
           placeholder="Search query..."
           textColor={theme.fg}
           focusedTextColor={theme.fg}

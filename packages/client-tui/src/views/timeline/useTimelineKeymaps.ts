@@ -3,6 +3,7 @@ import { useNotifications } from "../../contexts/notification.js";
 import { useDayStartHour } from "../../contexts/theme.js";
 import type { Entry } from "../../hooks/queries.js";
 import { useScopedKeymaps } from "../../hooks/useScopedKeymaps.js";
+import { clampIndex } from "../../hooks/useSelection.js";
 
 interface UseTimelineKeymapsOptions {
   entries: Entry[];
@@ -34,10 +35,10 @@ export function useTimelineKeymaps({
   const selected = entries[selectedEntryIdx];
 
   useScopedKeymaps("timeline", {
-    down: () => onSelectEntry?.(Math.min(selectedEntryIdx + 1, Math.max(0, entries.length - 1))),
-    up: () => onSelectEntry?.(Math.max(0, selectedEntryIdx - 1)),
+    down: () => onSelectEntry?.(clampIndex(selectedEntryIdx + 1, entries.length)),
+    up: () => onSelectEntry?.(clampIndex(selectedEntryIdx - 1, entries.length)),
     move_top: () => onSelectEntry?.(0),
-    move_bottom: () => onSelectEntry?.(Math.max(0, entries.length - 1)),
+    move_bottom: () => onSelectEntry?.(clampIndex(entries.length - 1, entries.length)),
 
     jump_today: () => {
       const todayStr = getEffectiveDateStr(Date.now(), dayStartHour);

@@ -61,6 +61,9 @@ export function useTextModalInput({
     }
   };
 
+  const handleSubmit = (value: unknown) =>
+    void submitBuffer(typeof value === "string" ? value : buffer);
+
   // @call journals.contexts.modals Close the modal
   useKeyboard(async (key) => {
     if (matchesBinding(key, "return")) {
@@ -98,5 +101,6 @@ export function useTextModalInput({
     suggestions,
     activeSuggestionIdx,
     submitBuffer,
+    handleSubmit,
   };
 }

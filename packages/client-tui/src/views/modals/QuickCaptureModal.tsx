@@ -1,4 +1,5 @@
 import { Modal } from "../../components/Modal.js";
+import { SuggestionList } from "../../components/SuggestionList.js";
 import { useIcons } from "../../contexts/icons.js";
 import { useNotifications } from "../../contexts/notification.js";
 import { useTheme } from "../../contexts/theme.js";
@@ -14,7 +15,7 @@ export function QuickCaptureModal() {
   const { quickCapture } = useEntryMutations();
 
   // @call journals.modals.text-input Handle the capture input, suggestions, and draft
-  const { buffer, setBuffer, suggestions, activeSuggestionIdx, submitBuffer } = useTextModalInput({
+  const { buffer, setBuffer, suggestions, activeSuggestionIdx, handleSubmit } = useTextModalInput({
     allowedSuggestions: ["project", "tag", "break"],
     draftInEditor: true,
     // @call journals.hooks.capture Save the captured line
@@ -38,9 +39,7 @@ export function QuickCaptureModal() {
           focused
           onChange={setBuffer}
           onInput={setBuffer}
-          onSubmit={(value: unknown) =>
-            void submitBuffer(typeof value === "string" ? value : buffer)
-          }
+          onSubmit={handleSubmit}
           placeholder="Note text @project #tags..."
           textColor={theme.fg}
           focusedTextColor={theme.fg}
@@ -49,18 +48,11 @@ export function QuickCaptureModal() {
       </box>
 
       {suggestions && suggestions.matches.length > 0 && (
-        <box flexDirection="row" marginTop={1}>
-          <text fg={theme.accent}>{"Suggestions: "}</text>
-          {suggestions.matches.slice(0, 4).map((m, idx) => (
-            <text
-              key={m}
-              fg={idx === activeSuggestionIdx ? theme.selectedFg : theme.muted}
-              bg={idx === activeSuggestionIdx ? theme.primary : undefined}
-            >
-              {`[${suggestions.type === "project" ? "@" : suggestions.type === "tag" ? "#" : ""}${m}] `}
-            </text>
-          ))}
-        </box>
+        <SuggestionList
+          matches={suggestions.matches}
+          activeIdx={activeSuggestionIdx}
+          prefix={suggestions.type === "project" ? "@" : suggestions.type === "tag" ? "#" : ""}
+        />
       )}
 
       <text fg={theme.muted} marginTop={1}>

@@ -1,4 +1,5 @@
 import { Modal } from "../../components/Modal.js";
+import { SuggestionList } from "../../components/SuggestionList.js";
 import { useIcons } from "../../contexts/icons.js";
 import { useNotifications } from "../../contexts/notification.js";
 import { useTheme } from "../../contexts/theme.js";
@@ -18,7 +19,7 @@ export function EditProjectModal({ entry }: EditProjectModalProps) {
   const { notify } = useNotifications();
   const { updateEntryProject } = useEntryMutations();
 
-  const { buffer, setBuffer, suggestions, activeSuggestionIdx, submitBuffer } = useTextModalInput({
+  const { buffer, setBuffer, suggestions, activeSuggestionIdx, handleSubmit } = useTextModalInput({
     initialValue: `@${entry.projectName || ""}`,
     allowedSuggestions: ["project"],
     // @call journals.hooks.update-entry-project Reassign the entry
@@ -41,9 +42,7 @@ export function EditProjectModal({ entry }: EditProjectModalProps) {
           focused
           onChange={setBuffer}
           onInput={setBuffer}
-          onSubmit={(value: unknown) =>
-            void submitBuffer(typeof value === "string" ? value : buffer)
-          }
+          onSubmit={handleSubmit}
           placeholder="@projectName"
           textColor={theme.fg}
           focusedTextColor={theme.fg}
@@ -52,18 +51,7 @@ export function EditProjectModal({ entry }: EditProjectModalProps) {
       </box>
 
       {suggestions && suggestions.matches.length > 0 && (
-        <box flexDirection="row" marginTop={1}>
-          <text fg={theme.accent}>{"Suggestions: "}</text>
-          {suggestions.matches.slice(0, 4).map((m, idx) => (
-            <text
-              key={m}
-              fg={idx === activeSuggestionIdx ? theme.selectedFg : theme.muted}
-              bg={idx === activeSuggestionIdx ? theme.primary : undefined}
-            >
-              {`[@${m}] `}
-            </text>
-          ))}
-        </box>
+        <SuggestionList matches={suggestions.matches} activeIdx={activeSuggestionIdx} prefix="@" />
       )}
 
       <text fg={theme.muted} marginTop={1}>

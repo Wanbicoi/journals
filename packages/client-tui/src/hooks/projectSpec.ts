@@ -1,12 +1,10 @@
-import { normalizeRecurrenceRule } from "@journals/core";
-
-export type MissedPolicy = "accumulate" | "spike" | "mark_done";
+import { type ProjectMissedPolicy, normalizeRecurrenceRule } from "@journals/core";
 
 export interface ProjectSpec {
   name: string;
   /** `undefined` when the input said nothing, `null` when it asked to clear the routine. */
   recurrence: string | null | undefined;
-  missedPolicy: MissedPolicy | undefined;
+  missedPolicy: ProjectMissedPolicy | undefined;
 }
 
 /**

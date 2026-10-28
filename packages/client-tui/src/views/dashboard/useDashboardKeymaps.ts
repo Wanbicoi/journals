@@ -1,6 +1,7 @@
 import { useNotifications } from "../../contexts/notification.js";
 import type { DashboardData } from "../../hooks/queries.js";
 import { useScopedKeymaps } from "../../hooks/useScopedKeymaps.js";
+import { clampIndex } from "../../hooks/useSelection.js";
 
 type Routine = NonNullable<DashboardData["todayRoutines"]>[number];
 
@@ -32,8 +33,8 @@ export function useDashboardKeymaps({
   };
 
   useScopedKeymaps("dashboard", {
-    day_prev: () => onFocusDayIdx?.(Math.max(0, focusedDayIdx - 1)),
-    day_next: () => onFocusDayIdx?.(Math.min(dayCount - 1, focusedDayIdx + 1)),
+    day_prev: () => onFocusDayIdx?.(clampIndex(focusedDayIdx - 1, dayCount)),
+    day_next: () => onFocusDayIdx?.(clampIndex(focusedDayIdx + 1, dayCount)),
 
     toggle_routine: async () => {
       const pending = dashboard?.todayRoutines?.find((r) => r.isDueToday && !r.isCompletedToday);

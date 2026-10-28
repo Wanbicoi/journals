@@ -58,7 +58,7 @@ export function DashboardTodayPanel({ dashboard, onCompleteRoutine }: DashboardT
           >
             <box flexDirection="row">
               <text
-                fg={isDone ? theme.success || "green" : theme.muted}
+                fg={isDone ? theme.success : theme.muted}
               >{`${isDone ? icons.checked : icons.unchecked} `}</text>
               <text fg={isDone ? theme.muted : theme.secondary}>{`@${routine.projectName} `}</text>
             </box>

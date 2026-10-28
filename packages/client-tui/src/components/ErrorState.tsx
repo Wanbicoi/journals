@@ -25,7 +25,7 @@ export function ErrorState({ error, onRetry }: ErrorStateProps) {
 
   return (
     <box flexDirection="column" padding={1}>
-      <text fg={theme.error || "red"}>{`Could not load journals: ${messageOf(error)}`}</text>
+      <text fg={theme.error}>{`Could not load journals: ${messageOf(error)}`}</text>
       <box flexDirection="row" onMouseDown={onRetry}>
         <text
           fg={theme.muted}

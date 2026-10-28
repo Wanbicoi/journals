@@ -2,12 +2,11 @@ import { useMemo } from "react";
 import { ErrorState } from "../../components/ErrorState.js";
 import { useModals } from "../../contexts/modals.js";
 import { useNavigation } from "../../contexts/navigation.js";
-import { useNotifications } from "../../contexts/notification.js";
 import { useTheme } from "../../contexts/theme.js";
-import { editInEditor } from "../../editor.js";
 import { filterProjects } from "../../hooks/filterJournal.js";
 import type { Entry, Project } from "../../hooks/queries.js";
 import { useEntries, useProjects } from "../../hooks/queries.js";
+import { useEditInEditor } from "../../hooks/useEditInEditor.js";
 import { useProjectMutations } from "../../hooks/useProjectMutations.js";
 import { useSelectionById } from "../../hooks/useSelection.js";
 import { ProjectDetail } from "./ProjectDetail.js";
@@ -22,8 +21,8 @@ export function ProjectsView() {
   const theme = useTheme();
   const { filter } = useNavigation();
   const { open } = useModals();
-  const { notify } = useNotifications();
   const { updateProjectContent } = useProjectMutations();
+  const editInEditor = useEditInEditor();
 
   // @call journals.hooks.projects Load the project list
   const { data: projects = [], isLoading, isError, error, refetch } = useProjects();
@@ -35,10 +34,11 @@ export function ProjectsView() {
   const selection = useSelectionById(filteredProjects);
 
   const editProjectContent = async (project: Project) => {
-    const saved = await editInEditor(project.content, (content) =>
-      updateProjectContent(project.id, content),
+    await editInEditor(
+      project.content,
+      (content) => updateProjectContent(project.id, content),
+      `Updated content for @${project.name}`,
     );
-    if (saved) notify(`Updated content for @${project.name}`);
   };
 
   useProjectsKeymaps({

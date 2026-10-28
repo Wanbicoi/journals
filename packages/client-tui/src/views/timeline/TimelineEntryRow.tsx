@@ -30,7 +30,7 @@ export function TimelineEntryRow({ entry, isSelected, onSelect }: TimelineEntryR
             : `${icons.global} GLOBAL `}
         </text>
         {entry.breakDays > 0 && (
-          <text fg={theme.warning || "yellow"}>{`${icons.break} ${entry.breakDays}d break `}</text>
+          <text fg={theme.warning}>{`${icons.break} ${entry.breakDays}d break `}</text>
         )}
         {entry.tags.map((t) => (
           <text key={t} fg={theme.tag}>{`${icons.tag} #${t} `}</text>

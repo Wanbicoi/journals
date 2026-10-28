@@ -22,7 +22,7 @@ export function EditProjectSettingsModal({ project }: EditProjectSettingsModalPr
   const recurStr = project.recurrence ? ` /recur ${project.recurrence}` : "";
   const policyStr = ` /policy:${project.missedPolicy || "spike"}`;
 
-  const { buffer, setBuffer, submitBuffer } = useTextModalInput({
+  const { buffer, setBuffer, handleSubmit } = useTextModalInput({
     initialValue: `${project.name}${recurStr}${policyStr}`,
     // @call journals.hooks.update-project Save the project settings
     submit: async (value) => {
@@ -57,9 +57,7 @@ export function EditProjectSettingsModal({ project }: EditProjectSettingsModalPr
           focused
           onChange={setBuffer}
           onInput={setBuffer}
-          onSubmit={(value: unknown) =>
-            void submitBuffer(typeof value === "string" ? value : buffer)
-          }
+          onSubmit={handleSubmit}
           placeholder="/every cadence [/policy:accumulate|spike|mark_done]"
           textColor={theme.fg}
           focusedTextColor={theme.fg}
@@ -70,7 +68,7 @@ export function EditProjectSettingsModal({ project }: EditProjectSettingsModalPr
         <text fg={theme.accent}>{`Detected Recurrence: ${recurrencePreview}`}</text>
       )}
       {spec.missedPolicy && (
-        <text fg={theme.warning || "yellow"}>{`Detected Policy: ${spec.missedPolicy}`}</text>
+        <text fg={theme.warning}>{`Detected Policy: ${spec.missedPolicy}`}</text>
       )}
       <text fg={theme.muted}>
         {"Recurrence: Add /every <cadence> (e.g. /every weekday, /recur daily, /recur:none)"}

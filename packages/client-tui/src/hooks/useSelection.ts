@@ -30,6 +30,11 @@ export function resolveSelectedIndexBy<T>(
   return index === -1 ? 0 : index;
 }
 
+/** Keep a selection index inside `[0, length - 1]`, including for empty lists. */
+export function clampIndex(index: number, length: number): number {
+  return Math.min(Math.max(index, 0), Math.max(0, length - 1));
+}
+
 export interface SelectionById<T extends Identifiable> {
   selectedId: string | null;
   selectedIndex: number;
