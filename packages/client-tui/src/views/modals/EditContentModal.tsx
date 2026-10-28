@@ -4,7 +4,7 @@ import {
   defaultTextareaKeyBindings,
 } from "@opentui/core";
 import { useEffect, useMemo, useRef } from "react";
-import { Modal } from "../../components/Modal.js";
+import { Modal, ModalFooter, ModalPanel } from "../../components/Modal.js";
 import { useKeymaps } from "../../contexts/keymaps.js";
 import { useModals } from "../../contexts/modals.js";
 import { useNotifications } from "../../contexts/notification.js";
@@ -49,26 +49,13 @@ export function EditContentModal({ entry }: EditContentModalProps) {
   }, [keymaps.modal.submit]);
 
   return (
-    <Modal theme={theme} borderColor={theme.primary}>
-      <text bg={theme.primary} fg={theme.selectedFg}>
-        {" EDIT NOTE CONTENT "}
-      </text>
-      <text fg={theme.muted}>
-        {`Modify note text. ${bindingLabel(keymaps.modal.submit)} to save, Shift+Enter or Alt+Enter for newline:`}
-      </text>
-
-      <box
-        marginTop={1}
-        borderStyle="single"
-        borderColor={theme.primary}
-        paddingLeft={1}
-        paddingRight={1}
-      >
+    <Modal maxWidth={72}>
+      <ModalPanel theme={theme} title="Edit note content" borderColor={theme.primary}>
         <textarea
           ref={textareaRef}
           focused
           initialValue={entry.content}
-          height={4}
+          height={6}
           wrapMode="word"
           textColor={theme.fg}
           focusedTextColor={theme.fg}
@@ -92,15 +79,14 @@ export function EditContentModal({ entry }: EditContentModalProps) {
             }
           }}
         />
-      </box>
-
-      <box marginTop={1} flexDirection="row">
-        <text fg={theme.accent}>{`[${bindingLabel(keymaps.modal.submit)}: Save]`}</text>
-        <text> </text>
-        <text fg={theme.muted}>{"[Shift+Enter / Alt+Enter: Newline]"}</text>
-        <text> </text>
-        <text fg={theme.muted}>{`[${bindingLabel(keymaps.modal.cancel)}: Cancel]`}</text>
-      </box>
+      </ModalPanel>
+      <ModalFooter
+        theme={theme}
+        title="Tips"
+        hints={[
+          `[${bindingLabel(keymaps.modal.submit)}] Save   [Shift+Enter / Alt+Enter] Newline   [${bindingLabel(keymaps.modal.cancel)}] Cancel`,
+        ]}
+      />
     </Modal>
   );
 }

@@ -59,7 +59,7 @@ describe("Analytics & Dashboard Slice", () => {
       .values({
         id: "entry-2",
         projectId: null, // global break
-        content: "Sick leave /break 2d",
+        content: "Sick leave",
         breakDays: 2,
         createdAt: twoDaysAgo,
         updatedAt: twoDaysAgo,

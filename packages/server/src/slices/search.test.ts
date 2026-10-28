@@ -31,14 +31,16 @@ describe("Search Endpoints (FTS5)", () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        raw: "@Work #meeting Discussed SQLite FTS5 full text search indexing",
+        raw: "Discussed SQLite FTS5 full text search indexing /project:Work /tag:meeting",
       }),
     });
 
     await app.request("/capture", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ raw: "@Personal #health Gym workout and hydration" }),
+      body: JSON.stringify({
+        raw: "Gym workout and hydration /project:Personal /tag:health",
+      }),
     });
 
     // 2. Query /entries/search?q=SQLite
@@ -97,7 +99,7 @@ describe("Search Endpoints (FTS5)", () => {
     const createRes = await app.request("/capture", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ raw: "@Demo #draft Initial unedited text snippet" }),
+      body: JSON.stringify({ raw: "Initial unedited text snippet /project:Demo /tag:draft" }),
     });
     const entry = (await createRes.json()) as { id: string };
 

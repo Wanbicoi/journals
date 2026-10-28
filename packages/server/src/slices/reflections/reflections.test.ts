@@ -40,8 +40,8 @@ describe("Reflections Slice", () => {
     const db = initDb(":memory:", false, true);
 
     // Create some entries
-    handleQuickCapture(db, "Reflecting on project architecture @core #design");
-    handleQuickCapture(db, "Finished weekly goals @core #goals");
+    handleQuickCapture(db, "Reflecting on project architecture /project:core /tag:design");
+    handleQuickCapture(db, "Finished weekly goals /project:core /tag:goals");
 
     // Check weekly periods
     const weeklyStatuses = listPeriodStatuses(db, "WEEK");

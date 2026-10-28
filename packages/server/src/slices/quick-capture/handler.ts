@@ -11,7 +11,7 @@ export function handleQuickCapture(
   raw: string,
   defaultProject: string | null = "Inbox",
 ) {
-  // @call journals.core.capture-parse Parse @project, #tags, /date, and /break
+  // @call journals.core.capture-parse Parse /project:, /tag:, /date:, and /break: commands
   const parsed = parseCaptureLine(raw, defaultProject);
   const entryTime = parsed.date ?? Date.now();
 

@@ -34,6 +34,15 @@ const projects: Project[] = [
     createdAt: Date.now(),
     entryCount: 0,
   },
+  {
+    id: "p3",
+    name: "Reading list",
+    content: "",
+    recurrence: null,
+    missedPolicy: "spike",
+    createdAt: Date.now(),
+    entryCount: 0,
+  },
 ];
 
 const tags: TagInfo[] = [{ name: "work", count: 5 }];
@@ -125,7 +134,7 @@ describe("ActiveModal dispatcher", () => {
     stubServer();
     const { testSetup, frame } = await renderModal();
 
-    expect(await frame()).not.toContain("QUICK CAPTURE");
+    expect(await frame()).not.toContain("Quick capture");
     testSetup.renderer.destroy();
   });
 
@@ -136,17 +145,17 @@ describe("ActiveModal dispatcher", () => {
     await act(async () => {
       harness.api.open({ name: "capture" });
     });
-    expect(await frame()).toContain("QUICK CAPTURE");
+    expect(await frame()).toContain("Quick capture");
 
     await act(async () => {
-      testSetup.mockInput.typeText("Wrote tests @Alpha #work");
+      testSetup.mockInput.typeText("Wrote tests /project:Alpha /tag:work");
     });
     await act(async () => {
       testSetup.mockInput.pressEnter();
     });
 
     const capture = calls.find((call) => call.url.includes("/capture"));
-    expect((capture?.body as { raw: string }).raw).toBe("Wrote tests @Alpha #work");
+    expect((capture?.body as { raw: string }).raw).toBe("Wrote tests /project:Alpha /tag:work");
     expect(harness.api.isOpen).toBe(false);
     expect(harness.message).toBe("Captured new journal entry!");
 
@@ -161,10 +170,47 @@ describe("ActiveModal dispatcher", () => {
       harness.api.open({ name: "capture" });
     });
     await act(async () => {
-      testSetup.mockInput.typeText("Quick note @Al");
+      testSetup.mockInput.typeText("Quick note /project:Al");
     });
 
-    expect(await frame()).toContain("[@Alpha]");
+    expect(await frame()).toContain("/project:Alpha");
+    testSetup.renderer.destroy();
+  });
+
+  it("quotes multi-word project suggestions when inserted", async () => {
+    stubServer();
+    const { testSetup, harness, frame } = await renderModal();
+
+    await act(async () => {
+      harness.api.open({ name: "capture" });
+    });
+    await act(async () => {
+      testSetup.mockInput.typeText("Quick note /project:Rea");
+    });
+    await act(async () => {
+      testSetup.mockInput.pressTab();
+    });
+
+    expect(await frame()).toContain('/project:"Reading list"');
+    testSetup.renderer.destroy();
+  });
+
+  it("lists the capture command prefixes on a bare slash", async () => {
+    stubServer();
+    const { testSetup, harness, frame } = await renderModal();
+
+    await act(async () => {
+      harness.api.open({ name: "capture" });
+    });
+    await act(async () => {
+      testSetup.mockInput.typeText("/");
+    });
+
+    const commands = await frame();
+    expect(commands).toContain("/project:");
+    expect(commands).toContain("/tag:");
+    expect(commands).toContain("/break:");
+    expect(commands).toContain("/date:");
     testSetup.renderer.destroy();
   });
 
@@ -184,20 +230,44 @@ describe("ActiveModal dispatcher", () => {
 
   it("confirms the opened entry before deleting it", async () => {
     const calls = stubServer();
-    const { testSetup, harness, press, frame } = await renderModal();
+    const { testSetup, harness, frame } = await renderModal();
 
     await act(async () => {
       harness.api.open({ name: "delete-entry", entry });
     });
-    expect(await frame()).toContain("DELETE NOTE");
+    expect(await frame()).toContain("Delete note");
 
-    await press("y");
+    await act(async () => {
+      testSetup.mockInput.pressEnter();
+    });
 
     expect(calls.some((call) => call.method === "DELETE" && call.url.includes("/entries/e1"))).toBe(
       true,
     );
     expect(harness.api.isOpen).toBe(false);
     expect(harness.message).toContain("Press 'u' to undo");
+
+    testSetup.renderer.destroy();
+  });
+
+  it("cancels the delete confirmation on Escape instead of deleting", async () => {
+    const calls = stubServer();
+    const { testSetup, harness } = await renderModal();
+
+    await act(async () => {
+      harness.api.open({ name: "delete-entry", entry });
+    });
+    await act(async () => {
+      testSetup.mockInput.pressEscape();
+    });
+    // The terminal parser waits to distinguish a lone Escape from an escape sequence.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 30));
+    });
+
+    expect(calls.some((call) => call.method === "DELETE")).toBe(false);
+    expect(harness.api.isOpen).toBe(false);
+    expect(harness.message).toBe("Delete cancelled");
 
     testSetup.renderer.destroy();
   });
@@ -223,6 +293,76 @@ describe("ActiveModal dispatcher", () => {
       missedPolicy: "accumulate",
     });
     expect(harness.api.isOpen).toBe(false);
+
+    testSetup.renderer.destroy();
+  });
+
+  it("suggests recurrence presets when editing project settings", async () => {
+    stubServer();
+    const { testSetup, harness, frame } = await renderModal("PROJECTS");
+
+    await act(async () => {
+      harness.api.open({ name: "edit-project-settings", project: projects[0] });
+    });
+    await act(async () => {
+      testSetup.mockInput.typeText(" /recur:every w");
+    });
+
+    const settings = await frame();
+    expect(settings).toContain("Suggestions");
+    expect(settings).toContain("/recur:every weekday");
+
+    testSetup.renderer.destroy();
+  });
+
+  it("suggests plain project names when reassigning an entry", async () => {
+    stubServer();
+    const { testSetup, harness, frame } = await renderModal();
+
+    await act(async () => {
+      harness.api.open({ name: "edit-project", entry });
+    });
+
+    const reassign = await frame();
+    expect(reassign).toContain("Suggestions");
+    expect(reassign).toContain("Alpha");
+    expect(reassign).not.toContain("@Alpha");
+
+    testSetup.renderer.destroy();
+  });
+
+  it("suggests plain tag names when editing tags", async () => {
+    stubServer();
+    const { testSetup, harness, frame } = await renderModal();
+
+    await act(async () => {
+      harness.api.open({ name: "edit-tags", entry });
+    });
+
+    const tags = await frame();
+    expect(tags).toContain("Suggestions");
+    expect(tags).toContain("work");
+    expect(tags).not.toContain("#work");
+
+    testSetup.renderer.destroy();
+  });
+
+  it("keeps project settings open when a command value is invalid", async () => {
+    stubServer();
+    const { testSetup, harness } = await renderModal("PROJECTS");
+
+    await act(async () => {
+      harness.api.open({ name: "edit-project-settings", project: projects[0] });
+    });
+    await act(async () => {
+      testSetup.mockInput.typeText(" /policy:nope");
+    });
+    await act(async () => {
+      testSetup.mockInput.pressEnter();
+    });
+
+    expect(harness.api.isOpen).toBe(true);
+    expect(harness.message).toContain("Invalid /policy value");
 
     testSetup.renderer.destroy();
   });
@@ -255,7 +395,7 @@ describe("ActiveModal dispatcher", () => {
       harness.api.open({ name: "help" });
     });
     const help = await frame();
-    expect(help).toContain("KEYBOARD SHORTCUTS");
+    expect(help).toContain("Keyboard shortcuts");
     expect(help).toContain("Ctrl+C");
 
     await press("x");

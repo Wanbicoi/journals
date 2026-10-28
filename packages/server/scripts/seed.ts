@@ -127,21 +127,21 @@ async function seed() {
       dayOffset: 28,
       breakDays: 4,
       projectName: null, // Global break
-      content: "Annual beach vacation with family /break 4d",
+      content: "Annual beach vacation with family",
       tags: ["vacation", "holiday"],
     },
     {
       dayOffset: 12,
       breakDays: 3,
       projectName: null, // Global break
-      content: "Fever and flu, staying in bed to rest /break 3d",
+      content: "Fever and flu, staying in bed to rest",
       tags: ["sick", "health"],
     },
     {
       dayOffset: 42,
       breakDays: 3,
       projectName: "Fitness",
-      content: "Sprained ankle during sprint, pausing workouts @Fitness /break 3d",
+      content: "Sprained ankle during sprint, pausing workouts",
       tags: ["injury", "recovery"],
     },
   ];

@@ -1,7 +1,6 @@
 import { useKeyboard } from "@opentui/react";
-import { Modal } from "../../components/Modal.js";
+import { Modal, ModalFooter, ModalPanel } from "../../components/Modal.js";
 import { useKeymaps } from "../../contexts/keymaps.js";
-import { useLayout } from "../../contexts/layout.js";
 import { useModals } from "../../contexts/modals.js";
 import { useTheme } from "../../contexts/theme.js";
 import { useMouseClick } from "../../hooks/useMouseClick.js";
@@ -14,7 +13,6 @@ import { bindingLabel } from "../../keymap.js";
 export function HelpModal() {
   const theme = useTheme();
   const keymaps = useKeymaps();
-  const { width } = useLayout();
   const { close } = useModals();
   const key = bindingLabel;
 
@@ -51,30 +49,27 @@ export function HelpModal() {
     },
     {
       label: "MODALS       ",
-      text: `[${key(keymaps.modal.submit)}] Save  [${key(keymaps.modal.cancel)}] Cancel  [${key(keymaps.modal.confirm)}/${key(keymaps.modal.decline)}] Confirm/Decline  [${key(keymaps.modal.suggestion_accept)}] Suggest  [Ctrl+${key(keymaps.modal.draft_in_editor)}] Draft`,
+      text: `[${key(keymaps.modal.submit)}] Save/Confirm  [${key(keymaps.modal.cancel)}] Cancel  [${key(keymaps.modal.suggestion_accept)}] Suggest  [Ctrl+${key(keymaps.modal.draft_in_editor)}] Draft`,
     },
   ];
 
   return (
-    <Modal theme={theme} borderColor={theme.primary} maxWidth={74}>
-      <box flexDirection="row" justifyContent="space-between" marginBottom={1}>
-        <text fg={theme.primary}>{"KEYBOARD SHORTCUTS"}</text>
-        <text fg={theme.muted}>{`[${key(keymaps.global.cancel)} to close]`}</text>
-      </box>
-      <text fg={theme.border}>{"─".repeat(Math.min(70, width - 12))}</text>
-
-      <box flexDirection="column" marginTop={1}>
-        {groups.map((group) => (
-          <box key={group.label} flexDirection="row">
-            <text fg={theme.accent}>{group.label}</text>
-            <text fg={theme.fg}>{group.text}</text>
-          </box>
-        ))}
-      </box>
-
-      <text fg={theme.muted} marginTop={1}>
-        {"Press any key or click to dismiss"}
-      </text>
+    <Modal maxWidth={74}>
+      <ModalPanel theme={theme} title="Keyboard shortcuts" borderColor={theme.primary}>
+        <box flexDirection="column">
+          {groups.map((group) => (
+            <box key={group.label} flexDirection="row">
+              <text fg={theme.accent}>{group.label}</text>
+              <text fg={theme.fg}>{group.text}</text>
+            </box>
+          ))}
+        </box>
+      </ModalPanel>
+      <ModalFooter
+        theme={theme}
+        title="Dismiss"
+        hints={[`[${key(keymaps.global.cancel)}] Close   Press any key or click to dismiss`]}
+      />
     </Modal>
   );
 }

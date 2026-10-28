@@ -14,12 +14,16 @@ export function useEntryMutations() {
   // @summary Capture a line into an entry
   async function quickCapture(content: string) {
     // @call journals.server.capture Parse and store the captured line
-    await client.capture.$post({
+    const res = await client.capture.$post({
       json: {
         raw: content,
         defaultProject: config.quick_add.default_project,
       },
     });
+    if (!res.ok) {
+      const body = (await res.json().catch(() => null)) as { error?: string } | null;
+      throw new Error(body?.error ?? `Capture failed: ${res.statusText}`);
+    }
     await invalidateAfterMutation(queryClient, invalidationKeys.capture);
   }
 

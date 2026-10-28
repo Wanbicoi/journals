@@ -1,3 +1,4 @@
+import { quoteProjectNameForCapture } from "@journals/core";
 import { useNotifications } from "../../contexts/notification.js";
 import type { DashboardData } from "../../hooks/queries.js";
 import { useScopedKeymaps } from "../../hooks/useScopedKeymaps.js";
@@ -28,7 +29,9 @@ export function useDashboardKeymaps({
   // Mark a routine done by logging the capture that completes it.
   const completeRoutine = async (routine: Routine) => {
     if (!onQuickCapture) return;
-    await onQuickCapture(`Completed @${routine.projectName} routine`);
+    await onQuickCapture(
+      `Completed routine /project:${quoteProjectNameForCapture(routine.projectName)}`,
+    );
     notify(`Completed today's routine for @${routine.projectName}!`);
   };
 

@@ -64,7 +64,7 @@ Journals terminal client
         │       ├── 4.1.2.4.2. Load projects to count configured routines *(4.1.2.3.1.)*
         │       ├── 4.1.2.4.3. Capture a routine completion
         │       │   └── 4.1.2.4.3.1. Parse and store the captured line
-        │       │       └── 4.1.2.4.3.1.1. Parse @project, #tags, /date, and /break
+        │       │       └── 4.1.2.4.3.1.1. Parse /project:, /tag:, /date:, and /break:
         │       ├── 4.1.2.4.4. Focus a day in the chart
         │       ├── 4.1.2.4.5. Navigate to the selected day *(4.1.1.2.1.1.)*
         │       ├── 4.1.2.4.6. Open the quick capture modal *(4.1.2.1.4.)*

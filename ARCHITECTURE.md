@@ -6,7 +6,7 @@ A monorepo-based Journal system structured around a **Client-Server** architectu
 - **Server:** Bun / TypeScript backend using SQLite (`bun:sqlite` + `drizzle-orm/bun-sqlite`), Hono lightweight HTTP router (`Bun.serve`), schema validation with `zod` (`z`), and YAML configuration support. Designed following **Vertical Slice Architecture** (feature-oriented slices: `quick-capture`, `entries`, `projects`, `tags`).
 - **Client:** Terminal User Interface (TUI) with a daily grouped continuous stream and project preview pane built on **OpenTUI React**, communicating with the server over local HTTP using Hono's zero-codegen type-safe RPC client (`hono/client`).
 - **External Editor:** Editing project markdown content or extensive notes spawns `$EDITOR` (fallback to `$VISUAL` or `nano`/`nvim`) using temporary files, restoring the TUI immediately on save/exit.
-- **Auto-Suggestions:** Real-time inline/dropdown suggestions when typing `@` (projects) and `#` (tags) during quick capture, project editing (`p`), and tag editing (`t`).
+- **Auto-Suggestions:** Real-time inline/dropdown suggestions for `/project:`, `/tag:`, `/break:`, and `/date:` commands during quick capture, plus plain project/tag suggestions in the entry-edit modals and `/recur:`/`/policy:` suggestions in project settings.
 - **Tooling & Package Management:** Bun workspace monorepo, Biome for ultra-fast linting and formatting, `simple-git-hooks` for pre-commit formatting, and TypeScript strict mode throughout.
 
 ```mermaid
@@ -15,8 +15,8 @@ graph TD
         UI[Terminal UI Router]
         StreamView["[1] Timeline Stream (Daily Grouped)"]
         ProjectView["[2] Projects & Markdown Preview"]
-        Capture["Quick Capture (1-line: @project #tags)"]
-        Suggest["Suggest Engine (@projects, #tags)"]
+        Capture["Quick Capture (1-line: /project: /tag: /date: /break:)"]
+        Suggest["Suggest Engine (/project: /tag: /date: /break: /recur: /policy:)"]
         EditorSpawn["Spawn $EDITOR (Temp Markdown)"]
         ClientConfig[YAML Config & Nerd Fonts]
     end

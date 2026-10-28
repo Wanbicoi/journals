@@ -1,10 +1,13 @@
-import { Modal } from "../../components/Modal.js";
+import { Modal, ModalFooter, ModalInput } from "../../components/Modal.js";
+import { SuggestionList } from "../../components/SuggestionList.js";
 import { useIcons } from "../../contexts/icons.js";
+import { useKeymaps } from "../../contexts/keymaps.js";
 import { useNotifications } from "../../contexts/notification.js";
 import { useTheme } from "../../contexts/theme.js";
 import { parseProjectSpec } from "../../hooks/projectSpec.js";
 import type { Project } from "../../hooks/queries.js";
 import { useProjectMutations } from "../../hooks/useProjectMutations.js";
+import { bindingLabel } from "../../keymap.js";
 import { useTextModalInput } from "./useTextModalInput.js";
 
 interface EditProjectSettingsModalProps {
@@ -16,17 +19,19 @@ interface EditProjectSettingsModalProps {
 export function EditProjectSettingsModal({ project }: EditProjectSettingsModalProps) {
   const theme = useTheme();
   const icons = useIcons();
+  const keymaps = useKeymaps();
   const { notify } = useNotifications();
   const { updateProject } = useProjectMutations();
 
-  const recurStr = project.recurrence ? ` /recur ${project.recurrence}` : "";
+  const recurStr = project.recurrence ? ` /recur:${project.recurrence}` : "";
   const policyStr = ` /policy:${project.missedPolicy || "spike"}`;
 
-  const { buffer, setBuffer, handleSubmit } = useTextModalInput({
+  const { buffer, setBuffer, suggestions, activeSuggestionIdx, handleSubmit } = useTextModalInput({
     initialValue: `${project.name}${recurStr}${policyStr}`,
+    allowedSuggestions: ["recurrence", "policy"],
     // @call journals.hooks.update-project Save the project settings
     submit: async (value) => {
-      const spec = parseProjectSpec(value);
+      const spec = parseProjectSpec(value, { strict: true });
       await updateProject(project.id, {
         name: spec.name || project.name,
         recurrence: spec.recurrence,
@@ -45,38 +50,43 @@ export function EditProjectSettingsModal({ project }: EditProjectSettingsModalPr
         ? "None (Remove Routine)"
         : spec.recurrence;
 
+  const hasSuggestions = suggestions !== null && suggestions.matches.length > 0;
+
   return (
-    <Modal theme={theme} borderColor={theme.primary}>
-      <text
-        fg={theme.primary}
-      >{`${icons.project} EDIT PROJECT ROUTINE & SETTINGS: @${project.name}`}</text>
-      <box flexDirection="row">
-        <text fg={theme.fg}>{"Input: "}</text>
-        <input
-          value={buffer}
-          focused
-          onChange={setBuffer}
-          onInput={setBuffer}
-          onSubmit={handleSubmit}
-          placeholder="/every cadence [/policy:accumulate|spike|mark_done]"
-          textColor={theme.fg}
-          focusedTextColor={theme.fg}
-          placeholderColor={theme.muted}
+    <Modal maxWidth={72}>
+      <ModalInput
+        theme={theme}
+        title={`${icons.project} Edit project @${project.name}`}
+        borderColor={theme.primary}
+        value={buffer}
+        onChange={setBuffer}
+        onSubmit={handleSubmit}
+        placeholder="Project name /recur:daily /policy:spike"
+      />
+      {hasSuggestions ? (
+        <ModalFooter
+          theme={theme}
+          title={`Suggestions (press ${bindingLabel(keymaps.modal.suggestion_accept)} to insert)`}
+          borderColor={theme.primary}
+          bottomTitle={`${activeSuggestionIdx + 1} of ${suggestions.matches.length}`}
+        >
+          <SuggestionList matches={suggestions.matches} activeIdx={activeSuggestionIdx} />
+        </ModalFooter>
+      ) : (
+        <ModalFooter
+          theme={theme}
+          title="Tips"
+          borderColor={theme.border}
+          bottomTitle={spec.missedPolicy ? `Policy: ${spec.missedPolicy}` : undefined}
+          hints={[
+            recurrencePreview
+              ? `Detected recurrence: ${recurrencePreview}`
+              : "Recurrence: /recur:every weekday or /recur:none",
+            "Policy: /policy:accumulate | /policy:spike | /policy:mark_done",
+            `[${bindingLabel(keymaps.modal.submit)}] Save changes   [${bindingLabel(keymaps.modal.cancel)}] Cancel`,
+          ]}
         />
-      </box>
-      {recurrencePreview && (
-        <text fg={theme.accent}>{`Detected Recurrence: ${recurrencePreview}`}</text>
       )}
-      {spec.missedPolicy && (
-        <text fg={theme.warning}>{`Detected Policy: ${spec.missedPolicy}`}</text>
-      )}
-      <text fg={theme.muted}>
-        {"Recurrence: Add /every <cadence> (e.g. /every weekday, /recur daily, /recur:none)"}
-      </text>
-      <text fg={theme.muted}>
-        {"Policy: Add /policy:accumulate | /policy:spike | /policy:mark_done"}
-      </text>
-      <text fg={theme.muted}>{"[Enter: Save Changes] [Esc: Cancel]"}</text>
     </Modal>
   );
 }

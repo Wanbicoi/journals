@@ -11,8 +11,8 @@ describe("Tags Slice", () => {
     expect(listTags(db)).toEqual([]);
 
     // Seed tags via capture
-    handleQuickCapture(db, "Task 1 #backend #perf");
-    handleQuickCapture(db, "Task 2 #backend #security");
+    handleQuickCapture(db, "Task 1 /tag:backend /tag:perf");
+    handleQuickCapture(db, "Task 2 /tag:backend /tag:security");
 
     // Deliberate initial failing expectation for TDD Red phase
     const tags = listTags(db);

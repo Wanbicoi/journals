@@ -24,7 +24,7 @@ The accumulated tally of missed routine obligations for projects using `missedPo
 
 ### Break (`breakDays`)
 An intentional pause lasting $N$ consecutive days starting from entry `createdAt`. Represented as a downward (-Y) bar on the monitor. Freezes routine tracking and debt accumulation:
-- **Project Break**: Attached to an explicit `@project`. Pauses only that project's routine.
+- **Project Break**: Attached to an explicit `/project:` command. Pauses only that project's routine.
 - **Global Break**: Has `projectId: null` (no project assigned). Pauses all project routines system-wide.
 
 ---
@@ -38,9 +38,12 @@ An atomic journal record storing markdown text, tags, creation timestamp, and op
 
 ### Quick Capture
 Single-line capture syntax parsed into structured records:
-- `@project`: Reassigns or creates target project.
-- `#tag`: Associates a normalized alphanumeric tag.
-- `/break <N>d` (or `/break:N`): Sets break duration in days and defaults `projectId` to `null` if no `@project` is specified.
+- `/project:<name>`: Reassigns or creates the target project. Quote names with spaces: `/project:"My Project"`.
+- `/tag:<tag>`: Associates a normalized tag. Repeat the command for multiple tags.
+- `/break:<N>d` (or `/break:<N>`): Sets break duration in days and defaults `projectId` to `null` if no `/project:` is specified.
+- `/date:<YYYY-MM-DD|today|yesterday>`: Sets the entry timestamp.
+
+Removed syntax: `@project`, `#tag`, and bare `/yesterday` are ordinary note text.
 
 ---
 

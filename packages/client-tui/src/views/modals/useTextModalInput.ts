@@ -4,12 +4,14 @@ import { useNotifications } from "../../contexts/notification.js";
 import { useProjects, useTags } from "../../hooks/queries.js";
 import { useModalKeymaps } from "../../hooks/useModalKeymaps.js";
 import { useSuggestions } from "../../hooks/useSuggestions.js";
-import type { SuggestionType } from "../../suggest.js";
+import type { SuggestionMode, SuggestionType } from "../../suggest.js";
 import { useDraftInEditor } from "./useDraftInEditor.js";
 
 interface UseTextModalInputOptions {
   initialValue?: string;
   allowedSuggestions?: SuggestionType[];
+  /** `commands` parses `/<type>:`; `plain` matches the whole field or current comma token. */
+  suggestionMode?: SuggestionMode;
   /** Offer Ctrl+E to write the buffer in `$EDITOR`. */
   draftInEditor?: boolean;
   /** Run on Enter. A thrown error keeps the modal open and reports the failure. */
@@ -29,6 +31,7 @@ function failureMessage(error: unknown): string {
 export function useTextModalInput({
   initialValue = "",
   allowedSuggestions,
+  suggestionMode = "commands",
   draftInEditor = false,
   submit,
   onCancel,
@@ -42,7 +45,9 @@ export function useTextModalInput({
   const { activeSuggestionIdx, setActiveSuggestionIdx, getSuggestions, applySuggestion } =
     useSuggestions(projects, tags);
 
-  const suggestions = allowedSuggestions ? getSuggestions(buffer, allowedSuggestions) : null;
+  const suggestions = allowedSuggestions
+    ? getSuggestions(buffer, allowedSuggestions, suggestionMode)
+    : null;
 
   // @call journals.modals.draft Draft the buffer in $EDITOR on Ctrl+E
   useDraftInEditor(draftInEditor, buffer, setBuffer);

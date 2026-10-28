@@ -34,7 +34,7 @@ Send inputs, pauses, and actions with `--keys`:
 python3 .agents/skills/run-tui/scripts/interact_tui.py --keys "2" "SLEEP:0.5" "1" "q"
 
 # Quick Capture: open note modal (n), type text, submit (ENTER), wait, quit (q)
-python3 .agents/skills/run-tui/scripts/interact_tui.py --keys "n" "Automated note @Inbox #agent" "ENTER" "SLEEP:0.5" "q"
+python3 .agents/skills/run-tui/scripts/interact_tui.py --keys "n" "Automated note /project:Inbox /tag:agent" "ENTER" "SLEEP:0.5" "q"
 
 # Filter: search notes (/)
 python3 .agents/skills/run-tui/scripts/interact_tui.py --keys "/" "Journals" "ENTER" "SLEEP:0.5" "q"

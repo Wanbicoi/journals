@@ -179,8 +179,6 @@ const DEFAULT_KEYMAPS = {
     suggestion_next: "down",
     suggestion_prev: "up",
     suggestion_accept: "tab",
-    confirm: "y",
-    decline: "n",
     draft_in_editor: "e",
   },
 } satisfies Record<string, Record<string, Binding>>;

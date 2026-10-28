@@ -18,7 +18,7 @@ describe("Entries Slice", () => {
     expect(listEntries(db)).toEqual([]);
 
     // Seed entry using quick capture
-    const captured = handleQuickCapture(db, "Finish presentation @Work #prep");
+    const captured = handleQuickCapture(db, "Finish presentation /project:Work /tag:prep");
 
     expect(captured.content).toBe("Finish presentation");
     const entryId = captured.id;

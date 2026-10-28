@@ -118,15 +118,13 @@ keymaps:
     suggestion_next: "down"        # Highlight the next suggestion
     suggestion_prev: "up"          # Highlight the previous suggestion
     suggestion_accept: "tab"       # Complete with the highlighted suggestion
-    confirm: "y"                   # Confirm a destructive action
-    decline: "n"                   # Decline a destructive action
     draft_in_editor: "e"           # Ctrl+E: write the buffer in $EDITOR
 
 # ==========================================
 # QUICK ADD DEFAULTS
 # ==========================================
 quick_add:
-  default_project: "Inbox"         # Default project if @project is omitted in quick capture
+  default_project: "Inbox"         # Default project if /project: is omitted in quick capture
 
 # ==========================================
 # PERIODIC REFLECTIONS

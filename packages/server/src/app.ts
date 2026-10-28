@@ -1,5 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 import {
+  CaptureParseError,
   CreateProjectInputSchema,
   QuickCaptureInputSchema,
   SearchEntriesQuerySchema,
@@ -44,8 +45,15 @@ export function createApp(db: DatabaseInstance) {
     // Quick Capture
     .post("/capture", zValidator("json", QuickCaptureInputSchema), (c) => {
       const data = c.req.valid("json");
-      const result = handleQuickCapture(db, data.raw, data.defaultProject ?? null);
-      return c.json(result);
+      try {
+        const result = handleQuickCapture(db, data.raw, data.defaultProject ?? null);
+        return c.json(result);
+      } catch (error) {
+        if (error instanceof CaptureParseError) {
+          return c.json({ error: error.message }, 400);
+        }
+        throw error;
+      }
     })
 
     // Entries

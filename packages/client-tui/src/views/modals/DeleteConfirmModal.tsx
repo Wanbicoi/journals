@@ -1,4 +1,4 @@
-import { Modal } from "../../components/Modal.js";
+import { Modal, ModalFooter, ModalPanel } from "../../components/Modal.js";
 import { useIcons } from "../../contexts/icons.js";
 import { useKeymaps } from "../../contexts/keymaps.js";
 import { useModals } from "../../contexts/modals.js";
@@ -30,7 +30,7 @@ export function DeleteConfirmModal({ entry }: DeleteConfirmModalProps) {
   const { deleteEntry } = useEntryMutations();
 
   useModalKeymaps({
-    confirm: async () => {
+    submit: async () => {
       rememberDeleted(entry);
       try {
         await deleteEntry(entry.id);
@@ -44,30 +44,26 @@ export function DeleteConfirmModal({ entry }: DeleteConfirmModalProps) {
       notify("Delete cancelled");
       close();
     },
-    decline: () => {
-      notify("Delete cancelled");
-      close();
-    },
   });
 
   return (
-    <Modal theme={theme} borderColor={theme.highlight} maxWidth={64}>
-      <text bg={theme.highlight} fg={theme.selectedFg}>
-        {` ${icons.warning} DELETE NOTE `}
-      </text>
-      <text fg={theme.fg} marginTop={1}>
-        {"Are you sure you want to delete:"}
-      </text>
-      <text fg={theme.muted}>{`"${entry.content.slice(0, 48)}..."`}</text>
-      <box marginTop={1} flexDirection="row">
-        <text
-          fg={theme.highlight}
-        >{`[${bindingLabel(keymaps.modal.confirm)}: Confirm Delete]`}</text>
-        <text> </text>
-        <text
-          fg={theme.muted}
-        >{`[${bindingLabel(keymaps.modal.decline)} / ${bindingLabel(keymaps.modal.cancel)}: Cancel]`}</text>
-      </box>
+    <Modal maxWidth={64}>
+      <ModalPanel
+        theme={theme}
+        title={`${icons.warning} Delete note`}
+        borderColor={theme.highlight}
+      >
+        <text fg={theme.fg}>{"Are you sure you want to delete:"}</text>
+        <text fg={theme.muted}>{`"${entry.content.slice(0, 48)}..."`}</text>
+      </ModalPanel>
+      <ModalFooter
+        theme={theme}
+        title="Confirm"
+        borderColor={theme.highlight}
+        hints={[
+          `[${bindingLabel(keymaps.modal.submit)}] Delete   [${bindingLabel(keymaps.modal.cancel)}] Cancel`,
+        ]}
+      />
     </Modal>
   );
 }

@@ -1,9 +1,11 @@
-import { Modal } from "../../components/Modal.js";
+import { Modal, ModalFooter, ModalInput } from "../../components/Modal.js";
 import { SuggestionList } from "../../components/SuggestionList.js";
 import { useIcons } from "../../contexts/icons.js";
+import { useKeymaps } from "../../contexts/keymaps.js";
 import { useNotifications } from "../../contexts/notification.js";
 import { useTheme } from "../../contexts/theme.js";
 import { useEntryMutations } from "../../hooks/useEntryMutations.js";
+import { bindingLabel } from "../../keymap.js";
 import { useTextModalInput } from "./useTextModalInput.js";
 
 // @unit journals.modals.quick-capture
@@ -11,12 +13,13 @@ import { useTextModalInput } from "./useTextModalInput.js";
 export function QuickCaptureModal() {
   const theme = useTheme();
   const icons = useIcons();
+  const keymaps = useKeymaps();
   const { notify } = useNotifications();
   const { quickCapture } = useEntryMutations();
 
   // @call journals.modals.text-input Handle the capture input, suggestions, and draft
   const { buffer, setBuffer, suggestions, activeSuggestionIdx, handleSubmit } = useTextModalInput({
-    allowedSuggestions: ["project", "tag", "break"],
+    allowedSuggestions: ["project", "tag", "break", "date"],
     draftInEditor: true,
     // @call journals.hooks.capture Save the captured line
     submit: async (value) => {
@@ -26,38 +29,41 @@ export function QuickCaptureModal() {
     },
   });
 
-  return (
-    <Modal theme={theme} borderColor={theme.primary}>
-      <text bg={theme.primary} fg={theme.selectedFg}>{` ${icons.quick} QUICK CAPTURE `}</text>
-      <text fg={theme.muted}>
-        {"Syntax: Note text @project #tags /date YYYY-MM-DD /yesterday /break 3d"}
-      </text>
-      <box flexDirection="row">
-        <text fg={theme.accent}>{"> "}</text>
-        <input
-          value={buffer}
-          focused
-          onChange={setBuffer}
-          onInput={setBuffer}
-          onSubmit={handleSubmit}
-          placeholder="Note text @project #tags..."
-          textColor={theme.fg}
-          focusedTextColor={theme.fg}
-          placeholderColor={theme.muted}
-        />
-      </box>
+  const hasSuggestions = suggestions !== null && suggestions.matches.length > 0;
+  const suggestionsLabel = suggestions?.type === "command" ? "Commands" : "Suggestions";
 
-      {suggestions && suggestions.matches.length > 0 && (
-        <SuggestionList
-          matches={suggestions.matches}
-          activeIdx={activeSuggestionIdx}
-          prefix={suggestions.type === "project" ? "@" : suggestions.type === "tag" ? "#" : ""}
+  return (
+    <Modal maxWidth={72}>
+      <ModalInput
+        theme={theme}
+        title={`${icons.quick} Quick capture`}
+        borderColor={theme.primary}
+        value={buffer}
+        onChange={setBuffer}
+        onSubmit={handleSubmit}
+        placeholder="Note text /project:Name /tag:tag /date:today"
+      />
+
+      {hasSuggestions ? (
+        <ModalFooter
+          theme={theme}
+          title={`${suggestionsLabel} (press ${bindingLabel(keymaps.modal.suggestion_accept)} to insert)`}
+          borderColor={theme.accent}
+          bottomTitle={`${activeSuggestionIdx + 1} of ${suggestions.matches.length}`}
+        >
+          <SuggestionList matches={suggestions.matches} activeIdx={activeSuggestionIdx} />
+        </ModalFooter>
+      ) : (
+        <ModalFooter
+          theme={theme}
+          title="Tips"
+          hints={[
+            "Commands: /project:Name /tag:tag /break:3d /date:YYYY-MM-DD",
+            'Quote names with spaces: /project:"My Project"',
+            `[${bindingLabel(keymaps.modal.submit)}] Save   [${bindingLabel(keymaps.modal.cancel)}] Cancel   [Ctrl+${bindingLabel(keymaps.modal.draft_in_editor)}] Open $EDITOR`,
+          ]}
         />
       )}
-
-      <text fg={theme.muted} marginTop={1}>
-        {"[Enter: Save] [Ctrl+E: Open $EDITOR] [Tab: Suggest] [Esc: Cancel]"}
-      </text>
     </Modal>
   );
 }

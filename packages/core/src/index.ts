@@ -65,67 +65,159 @@ export function formatRecurrenceRule(rruleStr: string | null | undefined): strin
   }
 }
 
+/**
+ * Raised when a recognized capture command has a missing or invalid value.
+ * The server maps it to a 400 so the modal can stay open and show the message.
+ */
+export class CaptureParseError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "CaptureParseError";
+  }
+}
+
+/** Quote a project name only when it needs spaces to survive capture tokenization. */
+export function quoteProjectNameForCapture(name: string): string {
+  return /\s/.test(name) ? `"${name}"` : name;
+}
+
+export interface CaptureToken {
+  /** Original token, including quotes, used when the token is ordinary note text. */
+  raw: string;
+  /** Unquoted token, used for command parsing and values. */
+  value: string;
+  /** False when the token opened a quote and never closed it. */
+  quoteClosed: boolean;
+}
+
+/** Split a capture line while keeping quoted values (and note quotes) intact. */
+export function tokenizeCaptureLine(raw: string): CaptureToken[] {
+  const tokens: CaptureToken[] = [];
+  let rawToken = "";
+  let valueToken = "";
+  let quote: string | null = null;
+  let quoteClosed = true;
+
+  const push = () => {
+    if (!rawToken && !valueToken) return;
+    tokens.push({ raw: rawToken, value: valueToken, quoteClosed });
+    rawToken = "";
+    valueToken = "";
+    quoteClosed = true;
+  };
+
+  for (const char of raw.trim()) {
+    if (quote) {
+      rawToken += char;
+      if (char === quote) {
+        quote = null;
+        quoteClosed = true;
+      } else {
+        valueToken += char;
+      }
+    } else if (char === '"') {
+      quote = char;
+      quoteClosed = false;
+      rawToken += char;
+    } else if (/\s/.test(char)) {
+      push();
+    } else {
+      rawToken += char;
+      valueToken += char;
+    }
+  }
+
+  push();
+  return tokens;
+}
+
+const CAPTURE_COMMANDS = new Set(["project", "tag", "break", "date"]);
+
+function parseCaptureDate(value: string): number {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "today") return Date.now();
+
+  if (normalized === "yesterday") {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    return yesterday.getTime();
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+    throw new CaptureParseError(
+      `Invalid /date value "${value}" (use YYYY-MM-DD, today, or yesterday)`,
+    );
+  }
+
+  const [year, month, day] = normalized.split("-").map(Number);
+  const parsed = new Date();
+  parsed.setFullYear(year, month - 1, day);
+  if (
+    parsed.getFullYear() !== year ||
+    parsed.getMonth() !== month - 1 ||
+    parsed.getDate() !== day
+  ) {
+    throw new CaptureParseError(`Invalid /date value "${value}"`);
+  }
+  return parsed.getTime();
+}
+
+function parseCaptureBreak(value: string): number {
+  const match = /^(\d+)(?:d)?$/i.exec(value.trim());
+  const days = match ? Number(match[1]) : 0;
+  if (!match || days <= 0) {
+    throw new CaptureParseError(`Invalid /break value "${value}" (use a positive number of days)`);
+  }
+  return days;
+}
+
 // @unit journals.core.capture-parse
-// @summary Parse @project, #tags, /date, and /break from a capture line
+// @summary Parse /project:, /tag:, /date:, and /break: commands from a capture line
 export function parseCaptureLine(
   raw: string,
   defaultProject: string | null = "Inbox",
 ): ParsedCapture {
-  const tokens = raw.trim().split(/\s+/);
+  const tokens = tokenizeCaptureLine(raw);
   let explicitProject: string | null = null;
   let breakDays = 0;
   let explicitDate: number | null = null;
   const tags: string[] = [];
   const textWords: string[] = [];
 
-  for (let i = 0; i < tokens.length; i++) {
-    const token = tokens[i];
-    if (token.startsWith("@") && token.length > 1) {
-      explicitProject = token.slice(1);
-    } else if (token.startsWith("#") && token.length > 1) {
-      tags.push(token.slice(1).toLowerCase());
-    } else if (token.toLowerCase() === "/yesterday") {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      explicitDate = yesterday.getTime();
-    } else if (token.toLowerCase().startsWith("/date")) {
-      let dateString: string | null = null;
-      if (token.includes(":")) {
-        dateString = token.split(":")[1];
-      } else if (i + 1 < tokens.length && /^\d{4}-\d{2}-\d{2}$/.test(tokens[i + 1])) {
-        dateString = tokens[i + 1];
-        i++; // consume date token
+  for (const token of tokens) {
+    const command = token.raw.startsWith("/") ? /^\/([a-zA-Z]+):(.*)$/s.exec(token.value) : null;
+    const type = command?.[1].toLowerCase();
+
+    if (command && type && CAPTURE_COMMANDS.has(type)) {
+      if (!token.quoteClosed) {
+        throw new CaptureParseError(`Unclosed quote in /${type} command`);
       }
-      if (dateString && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-        const [y, m, d] = dateString.split("-").map(Number);
-        const parsed = new Date();
-        parsed.setFullYear(y, m - 1, d);
-        explicitDate = parsed.getTime();
-      }
-    } else if (token.toLowerCase().startsWith("/break")) {
-      // Check syntax: "/break 3d", "/break 3", "/break:3d", "/break:3"
-      let days = 1;
-      if (token.includes(":")) {
-        const afterColon = token.split(":")[1];
-        const parsedNum = Number.parseInt(afterColon.replace(/[^0-9]/g, ""), 10);
-        if (!Number.isNaN(parsedNum) && parsedNum > 0) {
-          days = parsedNum;
+
+      const value = command[2].trim();
+      if (type === "project") {
+        if (!value) throw new CaptureParseError("Missing /project value");
+        explicitProject = value;
+      } else if (type === "tag") {
+        if (!value) throw new CaptureParseError("Missing /tag value");
+        const tag = value.toLowerCase();
+        if (tag.length > 50 || !/^[a-z0-9-_]+$/.test(tag)) {
+          throw new CaptureParseError(
+            `Invalid /tag value "${value}" (use letters, numbers, hyphens, and underscores)`,
+          );
         }
-      } else if (i + 1 < tokens.length && /^\d+d?$/i.test(tokens[i + 1])) {
-        const nextToken = tokens[i + 1];
-        const parsedNum = Number.parseInt(nextToken.replace(/[^0-9]/g, ""), 10);
-        if (!Number.isNaN(parsedNum) && parsedNum > 0) {
-          days = parsedNum;
-          i++; // consume next token
-        }
+        tags.push(tag);
+      } else if (type === "break") {
+        breakDays = parseCaptureBreak(value);
+      } else {
+        explicitDate = parseCaptureDate(value);
       }
-      breakDays = days;
-    } else {
-      textWords.push(token);
+      continue;
     }
+
+    textWords.push(token.raw);
   }
 
-  // If a break is requested without an explicit @project, it's global (projectName = null)
+  // If a break is requested without an explicit project, it's global (projectName = null)
   let resolvedProject = explicitProject;
   if (resolvedProject === null) {
     if (breakDays > 0) {
