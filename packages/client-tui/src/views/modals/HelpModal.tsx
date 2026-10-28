@@ -45,7 +45,9 @@ export function HelpModal() {
     },
     {
       label: "GLOBAL       ",
-      text: `[${key(keymaps.global.search_filter)}] Search/filter  [${key(keymaps.global.refresh)}] Refresh  [${key(keymaps.global.cancel)}] Back  [${key(keymaps.global.quit)}] Quit`,
+      // Ctrl+C is deliberately absent from the keymap config: it is the fixed escape hatch,
+      // dispatched before the scoped keymaps so it quits even while a modal is open.
+      text: `[${key(keymaps.global.search_filter)}] Search/filter  [${key(keymaps.global.refresh)}] Refresh  [${key(keymaps.global.cancel)}] Back  [${key(keymaps.global.quit)}] Quit  [Ctrl+C] Quit anywhere`,
     },
     {
       label: "MODALS       ",

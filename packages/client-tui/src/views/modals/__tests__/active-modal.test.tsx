@@ -254,7 +254,9 @@ describe("ActiveModal dispatcher", () => {
     await act(async () => {
       harness.api.open({ name: "help" });
     });
-    expect(await frame()).toContain("KEYBOARD SHORTCUTS");
+    const help = await frame();
+    expect(help).toContain("KEYBOARD SHORTCUTS");
+    expect(help).toContain("Ctrl+C");
 
     await press("x");
     expect(harness.api.isOpen).toBe(false);
