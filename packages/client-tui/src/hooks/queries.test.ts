@@ -84,6 +84,25 @@ describe("TanStack Query Configuration & Keys", () => {
     expect(entriesQuery?.isStale()).toBe(false);
   });
 
+  it("refreshes project entry counts when an entry is deleted", async () => {
+    const testClient = createQueryClient();
+
+    testClient.setQueryData(queryKeys.projects, [{ id: "p1", name: "proj", entryCount: 3 }]);
+    testClient.setQueryData(queryKeys.entries, [{ id: "1", content: "entry 1" }]);
+    testClient.setQueryData(queryKeys.tags, [{ name: "work", count: 1 }]);
+    testClient.setQueryData(queryKeys.dashboard(60), { status: "NORMAL" });
+    testClient.setQueryData(queryKeys.reflections.periods("WEEK"), [{ periodKey: "2026-W42" }]);
+
+    await invalidateAfterMutation(testClient, invalidationKeys.entryDeleted);
+
+    const cache = testClient.getQueryCache();
+    expect(cache.find({ queryKey: queryKeys.projects })?.isStale()).toBe(true);
+    expect(cache.find({ queryKey: queryKeys.entries })?.isStale()).toBe(true);
+    expect(cache.find({ queryKey: queryKeys.tags })?.isStale()).toBe(true);
+    expect(cache.find({ queryKey: queryKeys.dashboard(60) })?.isStale()).toBe(true);
+    expect(cache.find({ queryKey: queryKeys.reflections.periods("WEEK") })?.isStale()).toBe(true);
+  });
+
   it("invalidates every cache scope a mutation declares through one helper", async () => {
     const testClient = createQueryClient();
 

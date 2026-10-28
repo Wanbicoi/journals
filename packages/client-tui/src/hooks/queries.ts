@@ -111,6 +111,7 @@ export const invalidationKeys = {
   entryContent: [queryKeys.entries, queryKeys.reflections.all],
   entryDeleted: [
     queryKeys.entries,
+    queryKeys.projects,
     queryKeys.tags,
     queryKeys.dashboardAll,
     queryKeys.reflections.all,

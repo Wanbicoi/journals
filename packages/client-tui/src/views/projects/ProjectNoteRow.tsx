@@ -1,4 +1,6 @@
+import { HighlightText } from "../../components/HighlightText.js";
 import { useIcons } from "../../contexts/icons.js";
+import { useNavigation } from "../../contexts/navigation.js";
 import { useTheme } from "../../contexts/theme.js";
 import type { Entry } from "../../hooks/queries.js";
 
@@ -26,6 +28,7 @@ interface ProjectNoteRowProps {
 export function ProjectNoteRow({ entry }: ProjectNoteRowProps) {
   const icons = useIcons();
   const theme = useTheme();
+  const { filter } = useNavigation();
 
   return (
     <box flexDirection="column" marginBottom={1} paddingLeft={1}>
@@ -38,9 +41,7 @@ export function ProjectNoteRow({ entry }: ProjectNoteRowProps) {
         ))}
       </box>
       <box paddingLeft={2} marginTop={0}>
-        <text fg={theme.fg} selectable>
-          {entry.content}
-        </text>
+        <HighlightText text={entry.content} query={filter} theme={theme} defaultFg={theme.fg} />
       </box>
     </box>
   );
