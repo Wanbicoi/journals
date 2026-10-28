@@ -73,24 +73,6 @@ export async function restoreEntryApi(id: string) {
   return await res.json();
 }
 
-export async function searchEntriesApi(query: string, limit = 50) {
-  const res = await client.entries.search.$get({
-    query: { q: query, limit: String(limit) },
-  });
-  if (!res.ok) return [];
-  const data = await res.json();
-  return data.entries;
-}
-
-export async function searchProjectsApi(query: string, limit = 50) {
-  const res = await client.projects.search.$get({
-    query: { q: query, limit: String(limit) },
-  });
-  if (!res.ok) return [];
-  const data = await res.json();
-  return data.projects;
-}
-
 export async function fetchPeriodsApi(periodType: "WEEK" | "MONTH" | "QUARTER" | "YEAR") {
   const res = await client.reflections[":periodType"].$get({
     param: { periodType },

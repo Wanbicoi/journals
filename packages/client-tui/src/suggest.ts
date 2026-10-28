@@ -1,11 +1,5 @@
 export type SuggestionType = "project" | "tag" | "break";
 
-export interface SuggestionMatch {
-  type: SuggestionType;
-  value: string;
-  triggerIndex: number;
-}
-
 export function detectSuggestionQuery(
   input: string,
 ): { type: SuggestionType; query: string; triggerIndex: number } | null {

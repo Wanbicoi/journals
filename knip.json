@@ -1,0 +1,26 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreExportsUsedInFile": true,
+  "ignoreDependencies": ["react-reconciler"],
+  "workspaces": {
+    "packages/core": {
+      "entry": ["src/**/*.test.ts"],
+      "project": ["src/**/*.ts"]
+    },
+    "packages/server": {
+      "entry": ["src/**/*.test.ts", "scripts/**/*.ts"],
+      "project": ["src/**/*.ts", "scripts/**/*.ts"]
+    },
+    "packages/client-tui": {
+      "entry": ["src/**/*.test.ts", "src/**/*.test.tsx"],
+      "project": ["src/**/*.{ts,tsx}"]
+    }
+  },
+  "rules": {
+    "files": "error",
+    "dependencies": "warn",
+    "exports": "error",
+    "types": "error",
+    "duplicates": "off"
+  }
+}
