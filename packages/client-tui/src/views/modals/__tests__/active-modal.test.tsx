@@ -1,6 +1,8 @@
 import { afterAll, describe, expect, it } from "bun:test";
 import { testRender } from "@opentui/react/test-utils";
 import { act } from "react";
+import { config } from "../../../api/client.js";
+import type { Keymaps } from "../../../contexts/keymaps.js";
 import type { ModalsValue } from "../../../contexts/modals.js";
 import { useModals } from "../../../contexts/modals.js";
 import { useNavigation } from "../../../contexts/navigation.js";
@@ -78,7 +80,7 @@ interface Harness {
   filter: string;
 }
 
-async function renderModal(initialTab: "TIMELINE" | "PROJECTS" = "TIMELINE") {
+async function renderModal(initialTab: "TIMELINE" | "PROJECTS" = "TIMELINE", keymaps?: Keymaps) {
   const client = createQueryClient();
   client.setQueryData(queryKeys.projects, projects);
   client.setQueryData(queryKeys.tags, tags);
@@ -95,7 +97,7 @@ async function renderModal(initialTab: "TIMELINE" | "PROJECTS" = "TIMELINE") {
   let testSetup!: TestSetup;
   await act(async () => {
     testSetup = await testRender(
-      <AppProviders client={client} initialTab={initialTab}>
+      <AppProviders client={client} initialTab={initialTab} keymaps={keymaps}>
         <Probe />
       </AppProviders>,
       { onDestroy: () => {} },
@@ -163,6 +165,20 @@ describe("ActiveModal dispatcher", () => {
     });
 
     expect(await frame()).toContain("[@Alpha]");
+    testSetup.renderer.destroy();
+  });
+
+  it("cancels the capture modal on a rebound key", async () => {
+    stubServer();
+    const keymaps = { ...config.keymaps, modal: { ...config.keymaps.modal, cancel: "x" } };
+    const { testSetup, harness, press } = await renderModal("TIMELINE", keymaps);
+
+    await act(async () => {
+      harness.api.open({ name: "capture" });
+    });
+    await press("x");
+    expect(harness.api.isOpen).toBe(false);
+
     testSetup.renderer.destroy();
   });
 

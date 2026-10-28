@@ -1,10 +1,9 @@
-import { useKeyboard } from "@opentui/react";
 import { useRef, useState } from "react";
 import { useModals } from "../../contexts/modals.js";
 import { useNotifications } from "../../contexts/notification.js";
 import { useProjects, useTags } from "../../hooks/queries.js";
+import { useModalKeymaps } from "../../hooks/useModalKeymaps.js";
 import { useSuggestions } from "../../hooks/useSuggestions.js";
-import { matchesBinding } from "../../keymap.js";
 import type { SuggestionType } from "../../suggest.js";
 import { useDraftInEditor } from "./useDraftInEditor.js";
 
@@ -65,34 +64,29 @@ export function useTextModalInput({
     void submitBuffer(typeof value === "string" ? value : buffer);
 
   // @call journals.contexts.modals Close the modal
-  useKeyboard(async (key) => {
-    if (matchesBinding(key, "return")) {
-      await submitBuffer();
-      return;
-    }
+  useModalKeymaps({
+    submit: () => submitBuffer(),
 
-    if (matchesBinding(key, "escape")) {
+    cancel: () => {
       onCancel?.();
       close();
-      return;
-    }
+    },
 
-    if (suggestions && suggestions.matches.length > 1) {
-      if (matchesBinding(key, "down")) {
-        setActiveSuggestionIdx((prev) => (prev + 1) % suggestions.matches.length);
-        return;
-      }
-      if (matchesBinding(key, "up")) {
-        setActiveSuggestionIdx(
-          (prev) => (prev - 1 + suggestions.matches.length) % suggestions.matches.length,
-        );
-        return;
-      }
-    }
+    suggestion_next: () => {
+      if (!suggestions || suggestions.matches.length <= 1) return;
+      setActiveSuggestionIdx((prev) => (prev + 1) % suggestions.matches.length);
+    },
 
-    if (matchesBinding(key, "tab")) {
+    suggestion_prev: () => {
+      if (!suggestions || suggestions.matches.length <= 1) return;
+      setActiveSuggestionIdx(
+        (prev) => (prev - 1 + suggestions.matches.length) % suggestions.matches.length,
+      );
+    },
+
+    suggestion_accept: () => {
       setBuffer((prev) => applySuggestion(prev, suggestions));
-    }
+    },
   });
 
   return {

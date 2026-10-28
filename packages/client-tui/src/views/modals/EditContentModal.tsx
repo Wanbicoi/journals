@@ -5,12 +5,13 @@ import {
 } from "@opentui/core";
 import { useEffect, useMemo, useRef } from "react";
 import { Modal } from "../../components/Modal.js";
+import { useKeymaps } from "../../contexts/keymaps.js";
 import { useModals } from "../../contexts/modals.js";
 import { useNotifications } from "../../contexts/notification.js";
 import { useTheme } from "../../contexts/theme.js";
 import type { Entry } from "../../hooks/queries.js";
 import { useEntryMutations } from "../../hooks/useEntryMutations.js";
-import { matchesBinding } from "../../keymap.js";
+import { actionForKey, bindingLabel } from "../../keymap.js";
 
 interface EditContentModalProps {
   entry: Entry;
@@ -20,11 +21,14 @@ interface EditContentModalProps {
 // @summary Edit an entry's content in a textarea
 export function EditContentModal({ entry }: EditContentModalProps) {
   const theme = useTheme();
+  const keymaps = useKeymaps();
   const { close } = useModals();
   const { notify } = useNotifications();
   // @call journals.hooks.update-entry-content Save the edited content
   const { updateEntryContent } = useEntryMutations();
   const textareaRef = useRef<TextareaRenderable | null>(null);
+  const submitKeys =
+    typeof keymaps.modal.submit === "string" ? [keymaps.modal.submit] : keymaps.modal.submit;
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -37,12 +41,11 @@ export function EditContentModal({ entry }: EditContentModalProps) {
       ...defaultTextareaKeyBindings.filter((b) => b.action !== "newline" && b.action !== "submit"),
       { name: "return", shift: true, action: "newline" },
       { name: "return", meta: true, action: "newline" },
-      { name: "return", action: "submit" },
       { name: "kpenter", shift: true, action: "newline" },
       { name: "kpenter", meta: true, action: "newline" },
-      { name: "kpenter", action: "submit" },
+      ...submitKeys.map((name) => ({ name, action: "submit" as const })),
     ],
-    [],
+    [submitKeys],
   );
 
   return (
@@ -84,7 +87,7 @@ export function EditContentModal({ entry }: EditContentModalProps) {
             })();
           }}
           onKeyDown={(key) => {
-            if (matchesBinding(key, "escape")) {
+            if (actionForKey(key, keymaps.modal) === "cancel") {
               close();
             }
           }}
@@ -92,11 +95,11 @@ export function EditContentModal({ entry }: EditContentModalProps) {
       </box>
 
       <box marginTop={1} flexDirection="row">
-        <text fg={theme.accent}>{"[Enter: Save]"}</text>
+        <text fg={theme.accent}>{`[${bindingLabel(keymaps.modal.submit)}: Save]`}</text>
         <text> </text>
         <text fg={theme.muted}>{"[Shift+Enter / Alt+Enter: Newline]"}</text>
         <text> </text>
-        <text fg={theme.muted}>{"[Esc: Cancel]"}</text>
+        <text fg={theme.muted}>{`[${bindingLabel(keymaps.modal.cancel)}: Cancel]`}</text>
       </box>
     </Modal>
   );

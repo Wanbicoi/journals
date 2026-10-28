@@ -118,7 +118,8 @@ function binding(value: Binding) {
 /**
  * Default keys, grouped by the screen that answers them. A scope owns its own bindings, so the
  * same action name (`down`, `quick_capture`) can appear in several scopes with the same or a
- * different key. The global scope is dispatched everywhere; the others only by their view.
+ * different key. The global scope is dispatched everywhere; the view scopes only while their view
+ * is active and no modal is open, and the `modal` scope only while a modal is open.
  */
 const DEFAULT_KEYMAPS = {
   global: {
@@ -172,6 +173,16 @@ const DEFAULT_KEYMAPS = {
     cadence_year: ["y", "Y"],
     open_reflection: ["e", "return"],
   },
+  modal: {
+    submit: ["return", "kpenter"],
+    cancel: "escape",
+    suggestion_next: "down",
+    suggestion_prev: "up",
+    suggestion_accept: "tab",
+    confirm: "y",
+    decline: "n",
+    draft_in_editor: "e",
+  },
 } satisfies Record<string, Record<string, Binding>>;
 
 function scopeSchema<T extends Record<string, Binding>>(defaults: T) {
@@ -188,6 +199,7 @@ export const KeymapsSchema = z.object({
   projects: scopeSchema(DEFAULT_KEYMAPS.projects),
   dashboard: scopeSchema(DEFAULT_KEYMAPS.dashboard),
   reflections: scopeSchema(DEFAULT_KEYMAPS.reflections),
+  modal: scopeSchema(DEFAULT_KEYMAPS.modal),
 });
 
 export type Keymaps = z.infer<typeof KeymapsSchema>;

@@ -1,4 +1,3 @@
-import { useKeyboard } from "@opentui/react";
 import { Modal } from "../../components/Modal.js";
 import { useIcons } from "../../contexts/icons.js";
 import { useModals } from "../../contexts/modals.js";
@@ -7,7 +6,7 @@ import { useTheme } from "../../contexts/theme.js";
 import { useUndo } from "../../contexts/undo.js";
 import type { Entry } from "../../hooks/queries.js";
 import { useEntryMutations } from "../../hooks/useEntryMutations.js";
-import { matchesAnyBinding, matchesBinding } from "../../keymap.js";
+import { useModalKeymaps } from "../../hooks/useModalKeymaps.js";
 
 interface DeleteConfirmModalProps {
   entry: Entry;
@@ -27,8 +26,8 @@ export function DeleteConfirmModal({ entry }: DeleteConfirmModalProps) {
   // @call journals.hooks.delete-entry Soft-delete the opened entry
   const { deleteEntry } = useEntryMutations();
 
-  useKeyboard(async (key) => {
-    if (matchesBinding(key, "y")) {
+  useModalKeymaps({
+    confirm: async () => {
       rememberDeleted(entry);
       try {
         await deleteEntry(entry.id);
@@ -37,10 +36,15 @@ export function DeleteConfirmModal({ entry }: DeleteConfirmModalProps) {
         notify(`Delete failed: ${error instanceof Error ? error.message : String(error)}`);
       }
       close();
-    } else if (matchesAnyBinding(key, "n", "escape")) {
+    },
+    cancel: () => {
       notify("Delete cancelled");
       close();
-    }
+    },
+    decline: () => {
+      notify("Delete cancelled");
+      close();
+    },
   });
 
   return (

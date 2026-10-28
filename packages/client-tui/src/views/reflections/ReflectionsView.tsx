@@ -2,12 +2,14 @@ import type { ReflectionPeriodType } from "@journals/core";
 import type { ScrollBoxRenderable } from "@opentui/core";
 import { useEffect, useRef } from "react";
 import { useIcons } from "../../contexts/icons.js";
+import { useKeymaps } from "../../contexts/keymaps.js";
 import { useTheme } from "../../contexts/theme.js";
 import { useReflectionDetail, useReflectionPeriods } from "../../hooks/queries.js";
 import { useMarkdownSyntaxStyle } from "../../hooks/useMarkdownSyntaxStyle.js";
 import { useReflectionSelection } from "../../hooks/useReflectionSelection.js";
 import { useSaveReflection } from "../../hooks/useSaveReflection.js";
 import { resolveSelectedIndexBy } from "../../hooks/useSelection.js";
+import { bindingLabel } from "../../keymap.js";
 import { useReflectionKeymaps } from "./useReflectionKeymaps.js";
 
 // @unit journals.views.reflections
@@ -18,6 +20,7 @@ export function ReflectionsView() {
   const scrollBoxRef = useRef<ScrollBoxRenderable | null>(null);
   const icons = useIcons();
   const theme = useTheme();
+  const keymaps = useKeymaps();
   const syntaxStyle = useMarkdownSyntaxStyle(theme);
   const saveReflection = useSaveReflection();
   // @call journals.hooks.reflection Track the cadence and the selected period
@@ -61,10 +64,10 @@ export function ReflectionsView() {
   const loading = loadingDetail;
 
   const subTabs: { type: ReflectionPeriodType; key: string; label: string }[] = [
-    { type: "WEEK", key: "W", label: "Weekly" },
-    { type: "MONTH", key: "M", label: "Monthly" },
-    { type: "QUARTER", key: "Q", label: "Quarterly" },
-    { type: "YEAR", key: "Y", label: "Yearly" },
+    { type: "WEEK", key: bindingLabel(keymaps.reflections.cadence_week), label: "Weekly" },
+    { type: "MONTH", key: bindingLabel(keymaps.reflections.cadence_month), label: "Monthly" },
+    { type: "QUARTER", key: bindingLabel(keymaps.reflections.cadence_quarter), label: "Quarterly" },
+    { type: "YEAR", key: bindingLabel(keymaps.reflections.cadence_year), label: "Yearly" },
   ];
 
   return (

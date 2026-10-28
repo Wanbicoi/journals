@@ -1,7 +1,6 @@
-import { useKeyboard } from "@opentui/react";
 import { useNotifications } from "../../contexts/notification.js";
 import { editInEditor } from "../../editor.js";
-import { matchesBinding } from "../../keymap.js";
+import { useModalKeymaps } from "../../hooks/useModalKeymaps.js";
 
 // @unit journals.modals.draft
 // @summary Draft the modal buffer in $EDITOR
@@ -14,12 +13,16 @@ export function useDraftInEditor(
 ) {
   const { notify } = useNotifications();
 
-  useKeyboard(async (key) => {
-    if (!enabled || !key.ctrl || !matchesBinding(key, "e")) return;
+  // The binding names the letter; the modifier stays a code concern because `Binding` cannot
+  // express one.
+  useModalKeymaps({
+    draft_in_editor: async (key) => {
+      if (!enabled || !key.ctrl) return;
 
-    const saved = await editInEditor(buffer, async (content) => {
-      setBuffer(content);
-    });
-    if (saved) notify("Drafted in external editor");
+      const saved = await editInEditor(buffer, async (content) => {
+        setBuffer(content);
+      });
+      if (saved) notify("Drafted in external editor");
+    },
   });
 }
