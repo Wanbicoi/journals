@@ -13,7 +13,7 @@
     "lint": "bunx biome check .",
     "lint:fix": "bunx biome check --write .",
     "typecheck": "bunx tsc -b --noEmit",
-    "test": "bun test --parallel=2",
+    "test": "bun test --parallel=2 --path-ignore-patterns='**/dist/**'",
     "deadcode": "knip",
     "check": "bun run format && bun run lint && bun run typecheck && bun run test && bun run deadcode",
     "prepare": "bunx simple-git-hooks"
