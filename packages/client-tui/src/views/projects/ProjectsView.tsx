@@ -85,6 +85,8 @@ export function ProjectsView() {
       <ProjectDetail
         projectName={selectedProject?.name ?? "None"}
         content={selectedProject?.content ?? ""}
+        recurrence={selectedProject?.recurrence ?? null}
+        missedPolicy={selectedProject?.missedPolicy ?? "spike"}
         notes={projectNotes}
       />
     </box>

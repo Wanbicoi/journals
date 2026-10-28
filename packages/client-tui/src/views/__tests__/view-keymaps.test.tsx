@@ -339,6 +339,25 @@ describe("Collocated View Keymaps", () => {
       globalThis.fetch = originalFetch;
     });
 
+    it("shows the selected project's routine and policy", async () => {
+      stubServer({ projects: sampleProjects });
+      const { testSetup } = await renderView(<ProjectsView />, {
+        projects: sampleProjects,
+        entries: [],
+      });
+
+      await act(async () => {
+        await testSetup.flush();
+      });
+      const frame = testSetup.captureCharFrame();
+      expect(frame).toContain("Routine:");
+      expect(frame).toContain("Every day");
+      expect(frame).toContain("Policy: Spike");
+
+      testSetup.renderer.destroy();
+      globalThis.fetch = originalFetch;
+    });
+
     it("ignores view keys while a modal is open", async () => {
       stubServer({});
       const { testSetup, sink, press } = await renderView(<ProjectsView />, {
