@@ -195,6 +195,21 @@ describe("ActiveModal dispatcher", () => {
     testSetup.renderer.destroy();
   });
 
+  it("filters the command prefixes as the user types", async () => {
+    stubServer();
+    const { testSetup, harness, frame } = await renderModal();
+
+    await act(async () => {
+      harness.api.open({ name: "capture" });
+    });
+    await act(async () => {
+      testSetup.mockInput.typeText("Note /ta");
+    });
+
+    expect(await frame()).toContain("/tag:");
+    testSetup.renderer.destroy();
+  });
+
   it("lists the capture command prefixes on a bare slash", async () => {
     stubServer();
     const { testSetup, harness, frame } = await renderModal();

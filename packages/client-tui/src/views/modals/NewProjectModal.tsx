@@ -35,7 +35,7 @@ export function NewProjectModal() {
   const hasSuggestions = suggestions !== null && suggestions.matches.length > 0;
 
   return (
-    <Modal maxWidth={72}>
+    <Modal maxWidth={100}>
       <ModalInput
         theme={theme}
         title={`${icons.project} New project`}

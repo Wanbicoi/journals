@@ -49,7 +49,7 @@ export function EditContentModal({ entry }: EditContentModalProps) {
   }, [keymaps.modal.submit]);
 
   return (
-    <Modal maxWidth={72}>
+    <Modal maxWidth={100}>
       <ModalPanel theme={theme} title="Edit note content" borderColor={theme.primary}>
         <textarea
           ref={textareaRef}

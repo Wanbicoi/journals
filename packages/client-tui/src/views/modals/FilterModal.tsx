@@ -27,7 +27,7 @@ export function FilterModal() {
   });
 
   return (
-    <Modal maxWidth={72}>
+    <Modal maxWidth={100}>
       <ModalInput
         theme={theme}
         title={`Filter ${tab.toLowerCase()}`}

@@ -33,7 +33,7 @@ export function QuickCaptureModal() {
   const suggestionsLabel = suggestions?.type === "command" ? "Commands" : "Suggestions";
 
   return (
-    <Modal maxWidth={72}>
+    <Modal maxWidth={100}>
       <ModalInput
         theme={theme}
         title={`${icons.quick} Quick capture`}
