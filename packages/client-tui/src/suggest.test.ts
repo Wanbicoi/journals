@@ -48,6 +48,14 @@ describe("detectSuggestionQuery", () => {
     });
   });
 
+  it("points at a trailing bare command after an earlier complete command", () => {
+    expect(detectSuggestionQuery("/policy:spike /recu")).toEqual({
+      type: "command",
+      query: "recu",
+      triggerIndex: 14,
+    });
+  });
+
   it("points at the last command when a line has several", () => {
     expect(detectSuggestionQuery("/project:Al /tag:wo")).toEqual({
       type: "tag",

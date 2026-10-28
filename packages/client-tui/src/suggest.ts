@@ -53,6 +53,17 @@ function stripValueQuote(value: string): string {
  * pointing at the tag that is actually being edited.
  */
 export function detectSuggestionQuery(input: string): SuggestionQuery | null {
+  // A trailing bare slash token wins over earlier complete commands, so `/policy:x /recu`
+  // keeps suggesting `/recur:` instead of treating `/recu` as the previous command's value.
+  const bareCommand = /(?:^|\s)\/([a-zA-Z]*)$/.exec(input);
+  if (bareCommand) {
+    return {
+      type: "command",
+      query: bareCommand[1].toLowerCase(),
+      triggerIndex: input.lastIndexOf("/"),
+    };
+  }
+
   const commandRe = /(?:^|\s)\/([a-zA-Z]+):/g;
   let commandMatch: RegExpExecArray | null = null;
   while (true) {
@@ -70,15 +81,6 @@ export function detectSuggestionQuery(input: string): SuggestionQuery | null {
       type,
       query: stripValueQuote(input.slice(valueStart).trim()),
       triggerIndex,
-    };
-  }
-
-  const bareCommand = /(?:^|\s)\/([a-zA-Z]*)$/.exec(input);
-  if (bareCommand) {
-    return {
-      type: "command",
-      query: bareCommand[1].toLowerCase(),
-      triggerIndex: input.lastIndexOf("/"),
     };
   }
 

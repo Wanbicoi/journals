@@ -330,6 +330,22 @@ describe("ActiveModal dispatcher", () => {
     testSetup.renderer.destroy();
   });
 
+  it("suggests a recurrence command after an existing policy", async () => {
+    stubServer();
+    const { testSetup, harness, frame } = await renderModal("PROJECTS");
+
+    await act(async () => {
+      harness.api.open({ name: "edit-project-settings", project: projects[0] });
+    });
+    await act(async () => {
+      testSetup.mockInput.typeText(" /recu");
+    });
+
+    const settings = await frame();
+    expect(settings).toContain("/recur:");
+    testSetup.renderer.destroy();
+  });
+
   it("suggests plain project names when reassigning an entry", async () => {
     stubServer();
     const { testSetup, harness, frame } = await renderModal();
