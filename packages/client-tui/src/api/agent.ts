@@ -1,4 +1,4 @@
-import type { AgentEntry, AgentEntrySearchResult } from "@journals/core";
+import type { AgentEntry, AgentEntryDetail, AgentEntrySearchResult } from "@journals/core";
 import { client } from "./client.js";
 
 // Helper accessor for dynamically routed agent-entries slice on Hono client
@@ -17,15 +17,17 @@ const rpc = client as unknown as DynamicClient;
 // @unit journals.api.agent.create
 // @summary Create an agent entry over HTTP
 // @returns Created entry
-// @details Posts the whole note as one content string; the server splits nothing.
+// @details Posts the whole note as one content string, plus the ids it
+// | supersedes; the server resolves the project and rewrites the links.
 export async function createAgentEntryApi(
   content: string,
   projectName?: string,
   projectId?: string,
-): Promise<AgentEntry> {
+  supersedes: string[] = [],
+): Promise<AgentEntryDetail> {
   // @call journals.server.agent-create Log an agent entry
   const res = await rpc["agent-entries"].$post({
-    json: { content, projectName, projectId },
+    json: { content, projectName, projectId, supersedes },
   });
   if (!res.ok) {
     const text = await res.text();
@@ -40,10 +42,15 @@ export async function createAgentEntryApi(
 export async function searchAgentEntriesApi(
   query: string,
   limit = 20,
+  includeSuperseded = false,
 ): Promise<{ entries: AgentEntrySearchResult[] }> {
   // @call journals.server.agent-search Search the FTS5 index
   const res = await rpc["agent-entries"].search.$get({
-    query: { q: query, limit: String(limit) },
+    query: {
+      q: query,
+      limit: String(limit),
+      includeSuperseded: String(includeSuperseded),
+    },
   });
   if (!res.ok) {
     const text = await res.text();
@@ -54,8 +61,10 @@ export async function searchAgentEntriesApi(
 
 // @unit journals.api.agent.show
 // @summary Fetch agent entries by id over HTTP
-// @returns Full entries in the requested order
-export async function getAgentEntriesBatchApi(ids: string[]): Promise<{ entries: AgentEntry[] }> {
+// @returns Full entries with hit logs and supersession links
+export async function getAgentEntriesBatchApi(ids: string[]): Promise<{
+  entries: AgentEntryDetail[];
+}> {
   // @call journals.server.agent-get Load the entries by id
   const res = await rpc["agent-entries"].batch.$get({
     query: { ids: ids.join(",") },
@@ -68,16 +77,19 @@ export async function getAgentEntriesBatchApi(ids: string[]): Promise<{ entries:
 }
 
 // @unit journals.api.agent.hit
-// @summary Increment hit counters over HTTP
-// @returns Number of ids the server updated
-export async function incrementAgentHitsApi(ids: string[]): Promise<{ updated: number }> {
-  // @call journals.server.agent-hit Bump hit_time for the ids
+// @summary Log a hit over HTTP
+// @returns Number of ids the server logged
+export async function incrementAgentHitsApi(
+  ids: string[],
+  content: string,
+): Promise<{ updated: number }> {
+  // @call journals.server.agent-hit Write the hit log
   const res = await rpc["agent-entries"].hit.$post({
-    json: { ids },
+    json: { ids, content },
   });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Failed to update hit count (${res.status}): ${text}`);
+    throw new Error(`Failed to log hit (${res.status}): ${text}`);
   }
   return res.json();
 }
@@ -88,8 +100,12 @@ export async function incrementAgentHitsApi(ids: string[]): Promise<{ updated: n
 export async function listAgentEntriesApi(
   projectId?: string,
   limit = 20,
+  includeSuperseded = false,
 ): Promise<{ entries: AgentEntry[] }> {
-  const queryParam: Record<string, string> = { limit: String(limit) };
+  const queryParam: Record<string, string> = {
+    limit: String(limit),
+    includeSuperseded: String(includeSuperseded),
+  };
   if (projectId) queryParam.projectId = projectId;
 
   // @call journals.server.agent-list Read the recent entries

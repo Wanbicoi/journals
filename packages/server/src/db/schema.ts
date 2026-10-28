@@ -1,4 +1,11 @@
-import { integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+  type AnySQLiteColumn,
+  index,
+  integer,
+  primaryKey,
+  sqliteTable,
+  text,
+} from "drizzle-orm/sqlite-core";
 
 export const projects = sqliteTable("projects", {
   id: text("id").primaryKey(),
@@ -12,7 +19,9 @@ export const projects = sqliteTable("projects", {
 
 export const entries = sqliteTable("entries", {
   id: text("id").primaryKey(),
-  projectId: text("project_id").references(() => projects.id, { onDelete: "cascade" }),
+  projectId: text("project_id").references(() => projects.id, {
+    onDelete: "cascade",
+  }),
   content: text("content").notNull(),
   breakDays: integer("break_days").notNull().default(0),
   deletedAt: integer("deleted_at"),
@@ -26,10 +35,26 @@ export const agentEntries = sqliteTable("agent_entries", {
     .notNull()
     .references(() => projects.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
-  hitTime: integer("hit_time").notNull().default(0),
+  supersededByAgentEntryId: text("superseded_by_agent_entry_id").references(
+    (): AnySQLiteColumn => agentEntries.id,
+    { onDelete: "set null" },
+  ),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
+
+export const hitLog = sqliteTable(
+  "hit_log",
+  {
+    id: text("id").primaryKey(),
+    agentEntryId: text("agent_entry_id")
+      .notNull()
+      .references(() => agentEntries.id, { onDelete: "cascade" }),
+    content: text("content").notNull(),
+    createdAt: integer("created_at").notNull(),
+  },
+  (table) => [index("hit_log_agent_entry_idx").on(table.agentEntryId, table.createdAt)],
+);
 
 export const tags = sqliteTable("tags", {
   name: text("name").primaryKey(),
@@ -43,7 +68,10 @@ export const entryTags = sqliteTable(
       .references(() => entries.id, { onDelete: "cascade" }),
     tagName: text("tag_name")
       .notNull()
-      .references(() => tags.name, { onDelete: "cascade", onUpdate: "cascade" }),
+      .references(() => tags.name, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
   },
   (table) => [primaryKey({ columns: [table.entryId, table.tagName] })],
 );

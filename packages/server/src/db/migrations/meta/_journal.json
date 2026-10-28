@@ -50,6 +50,13 @@
       "when": 1792827863493,
       "tag": "0006_grey_zombie",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1793199337270,
+      "tag": "0007_agent_hit_log",
+      "breakpoints": true
     }
   ]
 }

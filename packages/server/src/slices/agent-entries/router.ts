@@ -19,12 +19,13 @@ export function createAgentEntriesRouter(db: DatabaseInstance) {
     .get("/", (c) => {
       const projectId = c.req.query("projectId");
       const limit = c.req.query("limit") ? Number(c.req.query("limit")) : 20;
-      const entries = listAgentEntries(db, projectId, limit);
+      const includeSuperseded = c.req.query("includeSuperseded") === "true";
+      const entries = listAgentEntries(db, projectId, limit, includeSuperseded);
       return c.json({ entries });
     })
     .get("/search", zValidator("query", SearchAgentEntriesQuerySchema), (c) => {
-      const { q, limit } = c.req.valid("query");
-      const results = searchAgentEntries(db, q, limit);
+      const { q, limit, includeSuperseded } = c.req.valid("query");
+      const results = searchAgentEntries(db, q, limit, includeSuperseded);
       return c.json({ entries: results });
     })
     .get("/batch", (c) => {
@@ -37,13 +38,13 @@ export function createAgentEntriesRouter(db: DatabaseInstance) {
       return c.json({ entries });
     })
     .post("/", zValidator("json", CreateAgentEntryInputSchema), (c) => {
-      const { content, projectId, projectName } = c.req.valid("json");
-      const entry = createAgentEntry(db, content, projectId, projectName);
+      const { content, projectId, projectName, supersedes } = c.req.valid("json");
+      const entry = createAgentEntry(db, content, projectId, projectName, supersedes);
       return c.json(entry, 201);
     })
     .post("/hit", zValidator("json", IncrementAgentEntryHitSchema), (c) => {
-      const { ids } = c.req.valid("json");
-      const res = incrementAgentEntryHits(db, ids);
+      const { ids, content } = c.req.valid("json");
+      const res = incrementAgentEntryHits(db, ids, content);
       return c.json(res);
     });
 }

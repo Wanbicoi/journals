@@ -97,25 +97,45 @@ export const ProjectSearchResultSchema = z.object({
   rank: z.number().optional(),
 });
 
+export const HitLogSchema = z.object({
+  id: z.string(),
+  agentEntryId: z.string(),
+  content: z.string(),
+  createdAt: z.number(),
+});
+
 export const AgentEntrySchema = z.object({
   id: z.string(),
   projectId: z.string(),
   projectName: z.string().optional(),
   content: z.string(),
-  hitTime: z.number().int().nonnegative().default(0),
+  hitCount: z.number().int().nonnegative().default(0),
+  supersededByEntryId: z.string().nullable(),
   createdAt: z.number(),
   updatedAt: z.number(),
+});
+
+export const AgentEntryDetailSchema = AgentEntrySchema.extend({
+  hitLogs: z.array(HitLogSchema).default([]),
+  supersedes: z.array(z.string()).default([]),
 });
 
 export const CreateAgentEntryInputSchema = z.object({
   projectId: z.string().optional(),
   projectName: z.string().optional(),
   content: z.string().min(1),
+  supersedes: z.array(z.string().min(1)).optional().default([]),
 });
+
+const IncludeSupersededSchema = z
+  .enum(["true", "false"])
+  .optional()
+  .transform((value) => value === "true");
 
 export const SearchAgentEntriesQuerySchema = z.object({
   q: z.string().min(1),
   limit: z.coerce.number().int().positive().default(20),
+  includeSuperseded: IncludeSupersededSchema,
 });
 
 export const AgentEntrySearchResultSchema = z.object({
@@ -125,7 +145,8 @@ export const AgentEntrySearchResultSchema = z.object({
   content: z.string(),
   snippet: z.string(),
   preview: z.string().optional(),
-  hitTime: z.number(),
+  hitCount: z.number(),
+  supersededByEntryId: z.string().nullable(),
   createdAt: z.number(),
   updatedAt: z.number(),
   rank: z.number().optional(),
@@ -133,6 +154,7 @@ export const AgentEntrySearchResultSchema = z.object({
 
 export const IncrementAgentEntryHitSchema = z.object({
   ids: z.array(z.string().min(1)).min(1),
+  content: z.string().trim().min(1),
 });
 
 export type SearchEntriesQuery = z.infer<typeof SearchEntriesQuerySchema>;
@@ -141,6 +163,8 @@ export type EntrySearchResult = z.infer<typeof EntrySearchResultSchema>;
 export type ProjectSearchResult = z.infer<typeof ProjectSearchResultSchema>;
 
 export type AgentEntry = z.infer<typeof AgentEntrySchema>;
+export type AgentEntryDetail = z.infer<typeof AgentEntryDetailSchema>;
+export type HitLog = z.infer<typeof HitLogSchema>;
 export type CreateAgentEntryInput = z.infer<typeof CreateAgentEntryInputSchema>;
 export type SearchAgentEntriesQuery = z.infer<typeof SearchAgentEntriesQuerySchema>;
 export type AgentEntrySearchResult = z.infer<typeof AgentEntrySearchResultSchema>;

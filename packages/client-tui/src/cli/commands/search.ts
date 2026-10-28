@@ -13,6 +13,11 @@ export const searchCommand = defineCommand({
       description: "Max number of results to return",
       default: "20",
     },
+    "include-superseded": {
+      type: "boolean",
+      description: "Include entries that have been superseded",
+      default: false,
+    },
     query: {
       type: "positional",
       description: "Search keywords or pattern",
@@ -31,7 +36,7 @@ async function runSearchCommand({
   args,
   rawArgs,
 }: {
-  args: { limit: string; query: string };
+  args: { limit: string; "include-superseded": boolean; query: string };
   rawArgs: string[];
 }) {
   const positionalTokens = rawArgs.filter((arg, idx) => {
@@ -51,7 +56,7 @@ async function runSearchCommand({
 
   const limit = Number(args.limit) || 20;
   // @call journals.api.agent.search Search agent entries
-  const { entries } = await searchAgentEntriesApi(query, limit);
+  const { entries } = await searchAgentEntriesApi(query, limit, args["include-superseded"]);
 
   if (!entries || entries.length === 0) {
     console.log(`No agent entries matching "${query}".`);
@@ -60,7 +65,9 @@ async function runSearchCommand({
 
   console.log(`Found ${entries.length} matching agent entries:\n`);
   for (const entry of entries) {
-    console.log(`━━━ [ID: ${entry.id}] (hits: ${entry.hitTime}) Project: ${entry.projectName} ━━━`);
+    console.log(
+      `━━━ [ID: ${entry.id}] (hits: ${entry.hitCount}) Project: ${entry.projectName} ━━━`,
+    );
     if (entry.preview) {
       console.log(entry.preview);
     } else {

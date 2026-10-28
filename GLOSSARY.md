@@ -70,7 +70,7 @@ A nested reflection roll-up from smaller child periods within an active parent p
 Feature-oriented backend module in `packages/server/src/slices/<feature>/` (`entries`, `projects`, `quick-capture`, `tags`, `agent-entries`, `analytics`). Each slice houses its own database handlers, schemas, and routes.
 
 ### Agent Entries
-Dedicated storage slice (`agent-entries`) and CLI (`journals agent`) for autonomous agents to record episodic observations, procedural runbooks, and tool call traces. Kept distinct from human journal entries.
+Dedicated storage slice (`agent-entries`) and CLI (`journals agent`) for autonomous agents to record fixes, runbooks, and tool call traces. Kept distinct from human journal entries.
 
 ### Zero-Codegen RPC
 End-to-end typed HTTP client in `packages/client-tui/src/api/client.ts` using Hono's `hc<AppType>`, sharing route types without build code generation.

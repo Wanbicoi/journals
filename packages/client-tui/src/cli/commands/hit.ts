@@ -4,12 +4,18 @@ import { incrementAgentHitsApi } from "../../api/agent.js";
 export const hitCommand = defineCommand({
   meta: {
     name: "hit",
-    description: "Increment hit_time counter for one or more entry IDs",
+    description: "Log that an entry helped, with a note explaining why",
   },
   args: {
+    note: {
+      type: "string",
+      alias: "n",
+      description: "Why the entry helped (required)",
+      required: true,
+    },
     ids: {
       type: "positional",
-      description: "Entry ID(s) to increment hit count",
+      description: "Entry ID(s) that helped",
       required: true,
     },
   },
@@ -17,17 +23,39 @@ export const hitCommand = defineCommand({
 });
 
 // @unit journals.cli.agent.hit
-// @summary Reinforce entries that solved a task
-// @returns Count of updated entries
-async function runHitCommand({ rawArgs }: { rawArgs: string[] }) {
-  // When multiple positional args are provided, gather all trailing positional arguments
-  const idList = rawArgs.filter((arg) => !arg.startsWith("-"));
-  if (idList.length === 0) {
-    console.error("Error: At least one ID required. Usage: journals agent hit <id...>");
+// @summary Log a hit with a note
+// @returns Count of entries that received a hit log row
+async function runHitCommand({
+  args,
+  rawArgs,
+}: {
+  args: { note: string; ids: string };
+  rawArgs: string[];
+}) {
+  const note = (args.note ?? "").trim();
+  if (!note) {
+    console.error(
+      'Error: A note is required. Usage: journals agent hit <id...> --note "<why it helped>"',
+    );
     process.exit(1);
   }
 
-  // @call journals.api.agent.hit Increment the hit counters
-  const data = await incrementAgentHitsApi(idList);
-  console.log(`Updated hit count for ${data.updated} entry/entries.`);
+  // Gather every positional token except the note's value.
+  const idList = rawArgs.filter((arg, idx) => {
+    if (arg.startsWith("-")) return false;
+    const prev = rawArgs[idx - 1];
+    if (prev === "-n" || prev === "--note") return false;
+    return true;
+  });
+
+  if (idList.length === 0) {
+    console.error(
+      'Error: At least one ID required. Usage: journals agent hit <id...> --note "<why it helped>"',
+    );
+    process.exit(1);
+  }
+
+  // @call journals.api.agent.hit Log the hit
+  const data = await incrementAgentHitsApi(idList, note);
+  console.log(`Logged a hit for ${data.updated} entry/entries.`);
 }

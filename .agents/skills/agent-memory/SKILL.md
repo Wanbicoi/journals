@@ -1,54 +1,58 @@
 ---
 name: agent-memory
 description: >-
-  Record, search, inspect, and reinforce agent memory (episodic runtime observations
-  and procedural runbooks) using the `journals agent` CLI.
+  Record, search, inspect, and reinforce agent memory (fixes, root causes, and
+  runbooks) using the `journals agent` CLI.
 ---
 
 # Agent Memory (`journals agent`)
 
-Persistent cross-session memory for AI agents. Record runbooks and debugging observations, search previous solutions, and boost verified answers.
+Persistent cross-session memory for AI agents. Record fixes and recipes, search previous solutions, and boost verified answers.
 
-## Memory Types
+## Entry Format
 
-- **Episodic**: Runtime context, transient error stack traces, root cause findings. Tag content with `[episodic]`.
-- **Procedural**: Repeatable recipes, build/deploy instructions, runbooks. Tag content with `[procedural]`.
+Every entry uses one template. The issue description stays short — one line on the symptom, then cause, then resolution:
+
+```
+<title>: <one-line description of the issue>
+Cause: <root cause> — why it happened (the change or condition that introduced it)
+Resolution: <fix>
+```
+
+- **Cause**: name the root cause and the reason behind it, not just the surface error. If an earlier change introduced it, name that change.
+- **Resolution**: what was done to fix it. For a repeatable recipe, write the resolution as numbered steps.
 
 ---
 
 ## Commands
 
-Executable via `journals agent <command>` (or `bun packages/client-tui/src/index.tsx agent <command>`):
+Executable via `journals agent <command>:
 
 ### Search Memory (`search`)
 Search solutions before starting debugging or complex tasks:
 ```bash
-journals agent search <query...> [--limit <n>]
+journals agent search <query...> [--limit <n>] [--include-superseded]
 ```
 
 ### Reinforce Solutions (`hit`)
-When an existing entry or recipe successfully solves your task, increment its hit counter to boost its ranking in future searches:
+When an existing entry or recipe successfully solves your task, log a hit with the reason it helped. Hits boost its ranking in future searches:
 ```bash
-journals agent hit <id...>
+journals agent hit <id...> --note "<why it helped>"
 ```
 
 ### Record New Memory (`log`)
-Save a validated recipe or debugging discovery:
+Save a validated fix or recipe:
 ```bash
-# Procedural runbook
-journals agent log --project <name> "[procedural] <title>
-Step 1: ...
-Step 2: ..."
-
-# Episodic observation
-journals agent log --project <name> "[episodic] <error/cause/resolution>"
+journals agent log [--project <name>] [--supersedes <ids>] "<title>: <symptom>
+Cause: <root cause> — <why it happened>
+Resolution: <fix>"
 ```
-*(Defaults to project `Agent` if `--project` is omitted.)*
+*(`--supersedes` retires stale entries in the same project; omit `--project` to inherit the superseded entry's project, or fall back to `Agent`.)*
 
 ### Inspect & List (`show`, `list`)
 ```bash
 journals agent show <id...> [--json]
-journals agent list [--project <name>] [--limit <n>] [--json]
+journals agent list [--project <name>] [--limit <n>] [--include-superseded] [--json]
 ```
 
 ---
@@ -56,5 +60,6 @@ journals agent list [--project <name>] [--limit <n>] [--json]
 ## Agent Workflow
 
 1. **Recall**: Search memory for prior solutions to unfamiliar errors, build steps, or commands (`journals agent search "<error or task>"`).
-2. **Reinforce**: When a returned entry solves the issue, run `journals agent hit <id>`.
-3. **Record**: Log new solutions and multi-step recipes so future agents inherit them.
+2. **Reinforce**: When a returned entry solves the issue, run `journals agent hit <id> --note "<why it helped>"`.
+3. **Record**: Log new fixes and repeatable recipes so future agents inherit them.
+4. **Consolidate**: When a note is stale, log the merged replacement with `--supersedes <old-id...>`.

@@ -4,7 +4,7 @@ import { listAgentEntriesApi } from "../../api/agent.js";
 export const listCommand = defineCommand({
   meta: {
     name: "list",
-    description: "List recent agent entries ordered by priority/hit_time and recency",
+    description: "List recent agent entries ordered by hit count and recency",
   },
   args: {
     project: {
@@ -17,6 +17,11 @@ export const listCommand = defineCommand({
       alias: "n",
       description: "Number of entries to return",
       default: "20",
+    },
+    "include-superseded": {
+      type: "boolean",
+      description: "Include entries that have been superseded",
+      default: false,
     },
     json: {
       type: "boolean",
@@ -33,11 +38,11 @@ export const listCommand = defineCommand({
 async function runListCommand({
   args,
 }: {
-  args: { project?: string; limit: string; json: boolean };
+  args: { project?: string; limit: string; "include-superseded": boolean; json: boolean };
 }) {
   const limit = Number(args.limit) || 20;
   // @call journals.api.agent.list List agent entries
-  const { entries } = await listAgentEntriesApi(args.project, limit);
+  const { entries } = await listAgentEntriesApi(args.project, limit, args["include-superseded"]);
 
   if (!entries || entries.length === 0) {
     console.log("No agent entries found.");
@@ -53,7 +58,7 @@ async function runListCommand({
   for (const entry of entries) {
     const firstLine = entry.content.split("\n")[0].slice(0, 80);
     console.log(
-      `[${entry.id}] (hits: ${String(entry.hitTime).padStart(2, " ")}) [${entry.projectName}] ${firstLine}`,
+      `[${entry.id}] (hits: ${String(entry.hitCount).padStart(2, " ")}) [${entry.projectName}] ${firstLine}`,
     );
   }
 }
