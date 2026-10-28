@@ -128,7 +128,7 @@ function binding(value: Binding) {
  * same action name (`down`, `quick_capture`) can appear in several scopes with the same or a
  * different key. The global scope is dispatched everywhere; the others only by their view.
  */
-export const DEFAULT_KEYMAPS = {
+const DEFAULT_KEYMAPS = {
   global: {
     view_dashboard: "1",
     view_timeline: "2",
@@ -181,8 +181,6 @@ export const DEFAULT_KEYMAPS = {
     open_reflection: ["e", "return"],
   },
 } satisfies Record<string, Record<string, Binding>>;
-
-export type KeymapScope = keyof typeof DEFAULT_KEYMAPS;
 
 function scopeSchema<T extends Record<string, Binding>>(defaults: T) {
   const shape = Object.fromEntries(
