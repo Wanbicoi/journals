@@ -7,8 +7,8 @@ Self-contained, view-level keyboard navigation and action handling. Each tab vie
 
 **Status:** closed
 
-- [x] `TimelineView` handles its own navigation keys (`j`/`k`, `g`/`G`), date jumps (`t`, `[`, `]`), soft-delete undo (`u`), and entry actions (`c`, `e`, `p`, `t`, `d`).
+- [x] `TimelineView` handles its own navigation keys (`j`/`k`, `g`/`G`), date jumps (`T` for today, `[`/`]` for adjacent days), soft-delete undo (`u`), and entry actions (`c`, `e`, `p`, `t`, `d`).
 - [x] `ProjectsView` handles project list navigation (`j`/`k`), new project modal trigger (`n`), routine settings modal (`P`), and external editor launch (`o`).
-- [x] `DashboardView` handles routine telemetry focus navigation (`h`/`l`) and today's checklist completion toggle (`Space`).
+- [x] `DashboardView` handles routine telemetry focus navigation (`h`/`l`) and today's routine completion (`Space`).
 - [x] `ReflectionsView` handles cadence switching (`w`, `m`, `Q`, `y`; `q` is reserved for global quit) and external editor reflection editing (`e`, `Enter`).
-- [x] Root keyboard listener only handles global actions: application tabs (`1`, `2`, `3`, `4`, `Tab`), global help (`?`), and exit (`Ctrl+C`).
+- [x] Root keyboard listener only handles global actions: application tabs (`1`, `2`, `3`, `4`, `Tab`), global help (`?`), and exit (`q` or `Ctrl+C`).
