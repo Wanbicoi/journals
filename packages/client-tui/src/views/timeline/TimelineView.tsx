@@ -8,7 +8,7 @@ import { useDayStartHour, useTheme } from "../../contexts/theme.js";
 import { useUndo } from "../../contexts/undo.js";
 import { filterEntries } from "../../hooks/filterJournal.js";
 import type { Entry } from "../../hooks/queries.js";
-import { useEntries } from "../../hooks/queries.js";
+import { TIMELINE_POLL_INTERVAL_MS, useEntries } from "../../hooks/queries.js";
 import { useEditInEditor } from "../../hooks/useEditInEditor.js";
 import { useEntryMutations } from "../../hooks/useEntryMutations.js";
 import { useSelectionById } from "../../hooks/useSelection.js";
@@ -47,7 +47,15 @@ export function TimelineView() {
   const editInEditor = useEditInEditor();
 
   // @call journals.hooks.entries Load the timeline's journal entries
-  const { data: entries = [], isLoading, isError, error, refetch } = useEntries();
+  const {
+    data: entries = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useEntries({
+    refetchInterval: TIMELINE_POLL_INTERVAL_MS,
+  });
   // @call journals.hooks.filter-entries Filter entries by the search query
   const filteredEntries = useMemo(() => filterEntries(entries, filter), [entries, filter]);
   // @call journals.hooks.selection Keep the selected entry by id

@@ -128,11 +128,12 @@ export async function invalidateAfterMutation(
 
 // @unit journals.hooks.entries
 // @summary Query journal entries
-export function useEntries() {
+export function useEntries(options?: { refetchInterval?: number | false }) {
   // @call journals.api.entries Fetch entries from the server
   return useQuery<Entry[]>({
     queryKey: queryKeys.entries,
     queryFn: async () => (await fetchEntries()) ?? [],
+    refetchInterval: options?.refetchInterval ?? false,
   });
 }
 
@@ -156,8 +157,9 @@ export function useTags() {
   });
 }
 
-/** The dashboard is the only view that polls: 60-day telemetry while the tab is on screen. */
+/** Poll cadences for the views that stay fresh while their tab is on screen. */
 export const DASHBOARD_POLL_INTERVAL_MS = 5_000;
+export const TIMELINE_POLL_INTERVAL_MS = 3_000;
 
 // @unit journals.hooks.dashboard
 // @summary Query dashboard analytics

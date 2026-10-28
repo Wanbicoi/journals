@@ -5,7 +5,11 @@ import { type ModalsValue, useModals } from "../../contexts/modals.js";
 import { type NavigationValue, type Tab, useNavigation } from "../../contexts/navigation.js";
 import { useNotifications } from "../../contexts/notification.js";
 import type { DashboardData, Entry, Project } from "../../hooks/queries.js";
-import { DASHBOARD_POLL_INTERVAL_MS, queryKeys } from "../../hooks/queries.js";
+import {
+  DASHBOARD_POLL_INTERVAL_MS,
+  TIMELINE_POLL_INTERVAL_MS,
+  queryKeys,
+} from "../../hooks/queries.js";
 import { createQueryClient } from "../../queryClient.js";
 import { AppProviders } from "../../test-support/AppProviders.js";
 import { DashboardView } from "../dashboard/DashboardView.js";
@@ -286,6 +290,19 @@ describe("Collocated View Keymaps", () => {
       await press("d");
       await press("j");
       expect(sink.modals.modal?.name).toBe("help");
+
+      testSetup.renderer.destroy();
+      globalThis.fetch = originalFetch;
+    });
+
+    it("polls entries every 3 seconds while mounted", async () => {
+      stubServer({ entries: sampleEntries });
+      const { testSetup, client } = await renderView(<TimelineView />, {
+        entries: sampleEntries,
+      });
+
+      const entriesQuery = client.getQueryCache().find({ queryKey: queryKeys.entries });
+      expect(entriesQuery?.observers[0]?.options.refetchInterval).toBe(TIMELINE_POLL_INTERVAL_MS);
 
       testSetup.renderer.destroy();
       globalThis.fetch = originalFetch;

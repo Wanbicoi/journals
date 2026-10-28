@@ -9,6 +9,6 @@ Fine-grained, decoupled client state caching and invalidation using TanStack Que
 
 - [x] TanStack Query (`@tanstack/react-query`) is configured with TUI-safe terminal defaults (`networkMode: "always"`, `refetchOnWindowFocus: false`, sensible `staleTime`).
 - [x] Monolithic 2-second `Promise.all` polling in `useJournalData` is decomposed into isolated query hooks: `useEntries`, `useProjects`, `useTags`, `useDashboardAnalytics`, and `useReflections`.
-- [x] Heavy 60-day dashboard telemetry is only queried/polled when the Dashboard tab is active (5s refetch interval while mounted; no other view polls — they rely on mutation invalidation).
+- [x] Heavy 60-day dashboard telemetry polls only while the Dashboard tab is active (5s), and timeline entries poll only while the Timeline tab is active (3s); no other view polls — they rely on mutation invalidation.
 - [x] Mutations trigger targeted cache invalidation rather than full state reloads.
 - [x] The `reflectionsRefreshSignal` counter prop-drilled between `App` and `ReflectionsView` is removed; reflections refresh automatically via query invalidation.
