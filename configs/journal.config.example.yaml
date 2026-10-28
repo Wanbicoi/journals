@@ -58,7 +58,8 @@ icons:
 # ==========================================
 # Each screen answers its own scope; the same action name can appear in several
 # scopes with the same or a different key. `global` is dispatched everywhere,
-# the others only while their view is on screen, and never while a modal is open.
+# the view scopes only while their view is on screen and no modal is open, and
+# `modal` only while a modal is open.
 keymaps:
   global:
     view_dashboard: "1"            # Switch to 60-day routine dashboard
@@ -110,6 +111,16 @@ keymaps:
     cadence_quarter: "Q"
     cadence_year: ["y", "Y"]
     open_reflection: ["e", "return"] # Write the reflection in $EDITOR
+
+  modal:
+    submit: ["return", "kpenter"]  # Save the modal input
+    cancel: "escape"               # Close the modal without saving
+    suggestion_next: "down"        # Highlight the next suggestion
+    suggestion_prev: "up"          # Highlight the previous suggestion
+    suggestion_accept: "tab"       # Complete with the highlighted suggestion
+    confirm: "y"                   # Confirm a destructive action
+    decline: "n"                   # Decline a destructive action
+    draft_in_editor: "e"           # Ctrl+E: write the buffer in $EDITOR
 
 # ==========================================
 # QUICK ADD DEFAULTS

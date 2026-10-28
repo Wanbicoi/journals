@@ -27,8 +27,6 @@ export function EditContentModal({ entry }: EditContentModalProps) {
   // @call journals.hooks.update-entry-content Save the edited content
   const { updateEntryContent } = useEntryMutations();
   const textareaRef = useRef<TextareaRenderable | null>(null);
-  const submitKeys =
-    typeof keymaps.modal.submit === "string" ? [keymaps.modal.submit] : keymaps.modal.submit;
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -36,17 +34,19 @@ export function EditContentModal({ entry }: EditContentModalProps) {
     }
   }, []);
 
-  const keyBindings: KeyBinding[] = useMemo(
-    () => [
+  const keyBindings: KeyBinding[] = useMemo(() => {
+    const submitKeys =
+      typeof keymaps.modal.submit === "string" ? [keymaps.modal.submit] : keymaps.modal.submit;
+
+    return [
       ...defaultTextareaKeyBindings.filter((b) => b.action !== "newline" && b.action !== "submit"),
       { name: "return", shift: true, action: "newline" },
       { name: "return", meta: true, action: "newline" },
       { name: "kpenter", shift: true, action: "newline" },
       { name: "kpenter", meta: true, action: "newline" },
       ...submitKeys.map((name) => ({ name, action: "submit" as const })),
-    ],
-    [submitKeys],
-  );
+    ];
+  }, [keymaps.modal.submit]);
 
   return (
     <Modal theme={theme} borderColor={theme.primary}>
@@ -54,7 +54,7 @@ export function EditContentModal({ entry }: EditContentModalProps) {
         {" EDIT NOTE CONTENT "}
       </text>
       <text fg={theme.muted}>
-        {"Modify note text. Enter to save, Shift+Enter or Alt+Enter for newline:"}
+        {`Modify note text. ${bindingLabel(keymaps.modal.submit)} to save, Shift+Enter or Alt+Enter for newline:`}
       </text>
 
       <box

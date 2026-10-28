@@ -47,6 +47,10 @@ export function HelpModal() {
       label: "GLOBAL       ",
       text: `[${key(keymaps.global.search_filter)}] Search/filter  [${key(keymaps.global.refresh)}] Refresh  [${key(keymaps.global.cancel)}] Back  [${key(keymaps.global.quit)}] Quit`,
     },
+    {
+      label: "MODALS       ",
+      text: `[${key(keymaps.modal.submit)}] Save  [${key(keymaps.modal.cancel)}] Cancel  [${key(keymaps.modal.confirm)}/${key(keymaps.modal.decline)}] Confirm/Decline  [${key(keymaps.modal.suggestion_accept)}] Suggest  [Ctrl+${key(keymaps.modal.draft_in_editor)}] Draft`,
+    },
   ];
 
   return (

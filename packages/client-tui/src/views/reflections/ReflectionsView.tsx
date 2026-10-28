@@ -21,6 +21,11 @@ export function ReflectionsView() {
   const icons = useIcons();
   const theme = useTheme();
   const keymaps = useKeymaps();
+  const openReflectionKeys =
+    typeof keymaps.reflections.open_reflection === "string"
+      ? [keymaps.reflections.open_reflection]
+      : keymaps.reflections.open_reflection;
+  const editHint = openReflectionKeys.map(bindingLabel).join(" or ");
   const syntaxStyle = useMarkdownSyntaxStyle(theme);
   const saveReflection = useSaveReflection();
   // @call journals.hooks.reflection Track the cadence and the selected period
@@ -160,7 +165,7 @@ export function ReflectionsView() {
               <text fg={theme.secondary}>
                 {selectedPeriod ? `REFLECTION: ${selectedPeriod.label}` : "SELECT A PERIOD"}
               </text>
-              {selectedPeriod && <text fg={theme.muted}>{"[Press 'e' or Enter to edit]"}</text>}
+              {selectedPeriod && <text fg={theme.muted}>{`[Press ${editHint} to edit]`}</text>}
             </box>
 
             <scrollbox flexGrow={1}>
@@ -172,7 +177,7 @@ export function ReflectionsView() {
                     {`No reflection note written for this ${periodType.toLowerCase()} yet.`}
                   </text>
                   <text fg={theme.muted}>
-                    {"Press 'e' or 'Enter' to open $EDITOR and write your reflection."}
+                    {`Press ${editHint} to open $EDITOR and write your reflection.`}
                   </text>
                 </box>
               )}

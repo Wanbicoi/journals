@@ -1,5 +1,6 @@
 import { Modal } from "../../components/Modal.js";
 import { useIcons } from "../../contexts/icons.js";
+import { useKeymaps } from "../../contexts/keymaps.js";
 import { useModals } from "../../contexts/modals.js";
 import { useNotifications } from "../../contexts/notification.js";
 import { useTheme } from "../../contexts/theme.js";
@@ -7,6 +8,7 @@ import { useUndo } from "../../contexts/undo.js";
 import type { Entry } from "../../hooks/queries.js";
 import { useEntryMutations } from "../../hooks/useEntryMutations.js";
 import { useModalKeymaps } from "../../hooks/useModalKeymaps.js";
+import { bindingLabel } from "../../keymap.js";
 
 interface DeleteConfirmModalProps {
   entry: Entry;
@@ -19,6 +21,7 @@ interface DeleteConfirmModalProps {
 export function DeleteConfirmModal({ entry }: DeleteConfirmModalProps) {
   const theme = useTheme();
   const icons = useIcons();
+  const keymaps = useKeymaps();
   const { close } = useModals();
   const { notify } = useNotifications();
   // @call journals.contexts.undo Remember the deleted entry for undo
@@ -57,9 +60,13 @@ export function DeleteConfirmModal({ entry }: DeleteConfirmModalProps) {
       </text>
       <text fg={theme.muted}>{`"${entry.content.slice(0, 48)}..."`}</text>
       <box marginTop={1} flexDirection="row">
-        <text fg={theme.highlight}>{"[y: Confirm Delete]"}</text>
+        <text
+          fg={theme.highlight}
+        >{`[${bindingLabel(keymaps.modal.confirm)}: Confirm Delete]`}</text>
         <text> </text>
-        <text fg={theme.muted}>{"[n / Esc: Cancel]"}</text>
+        <text
+          fg={theme.muted}
+        >{`[${bindingLabel(keymaps.modal.decline)} / ${bindingLabel(keymaps.modal.cancel)}: Cancel]`}</text>
       </box>
     </Modal>
   );
