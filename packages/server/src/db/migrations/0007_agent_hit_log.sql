@@ -7,5 +7,5 @@ CREATE TABLE `hit_log` (
 );
 --> statement-breakpoint
 CREATE INDEX `hit_log_agent_entry_idx` ON `hit_log` (`agent_entry_id`,`created_at`);--> statement-breakpoint
-ALTER TABLE `agent_entries` ADD `superseded_by_agent_entry_id` text REFERENCES agent_entries(id) ON DELETE set null;--> statement-breakpoint
+ALTER TABLE `agent_entries` ADD `previous_agent_entry_id` text REFERENCES agent_entries(id) ON DELETE set null;--> statement-breakpoint
 ALTER TABLE `agent_entries` DROP COLUMN `hit_time`;

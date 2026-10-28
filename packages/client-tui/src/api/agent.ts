@@ -14,24 +14,33 @@ type DynamicClient = Record<
 >;
 const rpc = client as unknown as DynamicClient;
 
+async function requestError(res: Response, prefix: string): Promise<Error> {
+  const text = await res.text();
+  let message = text;
+  try {
+    const body = JSON.parse(text) as { error?: string };
+    if (body.error) message = body.error;
+  } catch {}
+  return new Error(`${prefix} (${res.status}): ${message}`);
+}
+
 // @unit journals.api.agent.create
 // @summary Create an agent entry over HTTP
 // @returns Created entry
-// @details Posts the whole note as one content string, plus the ids it
-// | supersedes; the server resolves the project and rewrites the links.
+// @details Posts the whole note as one content string, plus the id of the
+// | version it replaces; the server resolves the project and links the chain.
 export async function createAgentEntryApi(
   content: string,
   projectName?: string,
   projectId?: string,
-  supersedes: string[] = [],
+  previousEntryId?: string,
 ): Promise<AgentEntryDetail> {
   // @call journals.server.agent-create Log an agent entry
   const res = await rpc["agent-entries"].$post({
-    json: { content, projectName, projectId, supersedes },
+    json: { content, projectName, projectId, previousEntryId },
   });
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Failed to create agent entry (${res.status}): ${text}`);
+    throw await requestError(res, "Failed to create agent entry");
   }
   return res.json();
 }
@@ -53,8 +62,7 @@ export async function searchAgentEntriesApi(
     },
   });
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Failed to search agent entries (${res.status}): ${text}`);
+    throw await requestError(res, "Failed to search agent entries");
   }
   return res.json();
 }
@@ -70,8 +78,7 @@ export async function getAgentEntriesBatchApi(ids: string[]): Promise<{
     query: { ids: ids.join(",") },
   });
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Failed to fetch agent entries (${res.status}): ${text}`);
+    throw await requestError(res, "Failed to fetch agent entries");
   }
   return res.json();
 }
@@ -88,8 +95,7 @@ export async function incrementAgentHitsApi(
     json: { ids, content },
   });
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Failed to log hit (${res.status}): ${text}`);
+    throw await requestError(res, "Failed to log hit");
   }
   return res.json();
 }
@@ -113,8 +119,7 @@ export async function listAgentEntriesApi(
     query: queryParam,
   });
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Failed to list agent entries (${res.status}): ${text}`);
+    throw await requestError(res, "Failed to list agent entries");
   }
   return res.json();
 }

@@ -33,6 +33,7 @@ describe("Agent Entries Slice", () => {
     const entry1 = createAgentEntry(db, "Run `bun run test` after changes", undefined, "Testing");
     expect(entry1.id).toBeDefined();
     expect(entry1.hitCount).toBe(0);
+    expect(entry1.previousEntryId).toBeNull();
     expect(entry1.supersededByEntryId).toBeNull();
     expect(entry1.projectName).toBe("Testing");
 
@@ -91,52 +92,63 @@ describe("Agent Entries Slice", () => {
     expect(results[0].preview).toBeDefined();
   });
 
-  it("consolidates an entry and hides it from default reads", () => {
-    const old = createAgentEntry(db, "Stale linker note", undefined, "Troubleshooting");
-    const replacement = createAgentEntry(
+  it("keeps a linear version chain and hides everything but the newest", () => {
+    const v1 = createAgentEntry(db, "Stale linker note", undefined, "Troubleshooting");
+    const v2 = createAgentEntry(
       db,
       "Consolidated linker note",
       undefined,
       "Troubleshooting",
-      [old.id],
+      v1.id,
     );
 
-    expect(replacement.supersededByEntryId).toBeNull();
-    expect(replacement.supersedes).toEqual([old.id]);
-    expect(getAgentEntries(db, [old.id])[0].supersededByEntryId).toBe(replacement.id);
+    expect(v2.previousEntryId).toBe(v1.id);
+    expect(v2.supersededByEntryId).toBeNull();
+    expect(getAgentEntries(db, [v1.id])[0].supersededByEntryId).toBe(v2.id);
 
-    expect(listAgentEntries(db).map((entry) => entry.id)).toEqual([replacement.id]);
+    expect(listAgentEntries(db).map((entry) => entry.id)).toEqual([v2.id]);
     expect(listAgentEntries(db, undefined, 20, true)).toHaveLength(2);
 
-    expect(searchAgentEntries(db, "linker").map((entry) => entry.id)).toEqual([replacement.id]);
+    expect(searchAgentEntries(db, "linker").map((entry) => entry.id)).toEqual([v2.id]);
     expect(searchAgentEntries(db, "linker", 20, true)).toHaveLength(2);
   });
 
-  it("inherits the superseded entry's project and refuses cross-project links", () => {
-    const old = createAgentEntry(db, "Old note", undefined, "Alpha");
+  it("follows the newest version and refuses to branch from a stale one", () => {
+    const v1 = createAgentEntry(db, "Linker note v1", undefined, "Troubleshooting");
+    const v2 = createAgentEntry(db, "Linker note v2", undefined, "Troubleshooting", v1.id);
+    const v3 = createAgentEntry(db, "Linker note v3", undefined, "Troubleshooting", v2.id);
 
-    const inherited = createAgentEntry(db, "New note", undefined, undefined, [old.id]);
-    expect(inherited.projectName).toBe("Alpha");
+    expect(v3.previousEntryId).toBe(v2.id);
+    expect(getAgentEntries(db, [v2.id])[0].supersededByEntryId).toBe(v3.id);
+    expect(listAgentEntries(db).map((entry) => entry.id)).toEqual([v3.id]);
 
-    createAgentEntry(db, "Other note", undefined, "Beta");
-    expect(() => createAgentEntry(db, "Bad", undefined, "Beta", [old.id])).toThrow(
-      "another project",
-    );
-    expect(() => createAgentEntry(db, "Bad", undefined, "Beta", ["missing"])).toThrow(
-      "Unknown agent entry id",
-    );
+    expect(() =>
+      createAgentEntry(db, "Linker note fork", undefined, "Troubleshooting", v1.id),
+    ).toThrow("already superseded");
   });
 
-  it("cascades hit logs and clears the pointer when the replacement is deleted", () => {
-    const old = createAgentEntry(db, "Old note", undefined, "Testing");
-    const replacement = createAgentEntry(db, "New note", undefined, "Testing", [old.id]);
-    incrementAgentEntryHits(db, [replacement.id], "The replacement helped");
+  it("inherits the previous entry's project and refuses cross-project links", () => {
+    const old = createAgentEntry(db, "Old note", undefined, "Alpha");
+    createAgentEntry(db, "Other note", undefined, "Beta");
 
-    db.delete(agentEntries).where(eq(agentEntries.id, replacement.id)).run();
+    expect(() => createAgentEntry(db, "Bad", undefined, "Beta", old.id)).toThrow("another project");
+    expect(() => createAgentEntry(db, "Bad", undefined, "Beta", "missing")).toThrow(
+      "Unknown agent entry id",
+    );
 
-    expect(
-      db.select().from(hitLog).where(eq(hitLog.agentEntryId, replacement.id)).all(),
-    ).toHaveLength(0);
-    expect(getAgentEntries(db, [old.id])[0].supersededByEntryId).toBeNull();
+    const inherited = createAgentEntry(db, "New note", undefined, undefined, old.id);
+    expect(inherited.projectName).toBe("Alpha");
+    expect(inherited.previousEntryId).toBe(old.id);
+  });
+
+  it("cascades hit logs and restores the previous version when the newest is deleted", () => {
+    const v1 = createAgentEntry(db, "Old note", undefined, "Testing");
+    const v2 = createAgentEntry(db, "New note", undefined, "Testing", v1.id);
+    incrementAgentEntryHits(db, [v2.id], "The replacement helped");
+
+    db.delete(agentEntries).where(eq(agentEntries.id, v2.id)).run();
+
+    expect(db.select().from(hitLog).where(eq(hitLog.agentEntryId, v2.id)).all()).toHaveLength(0);
+    expect(getAgentEntries(db, [v1.id])[0].supersededByEntryId).toBeNull();
   });
 });

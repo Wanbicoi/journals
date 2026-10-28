@@ -15,7 +15,7 @@ export const logCommand = defineCommand({
     supersedes: {
       type: "string",
       alias: "s",
-      description: "Comma-separated entry ids this note replaces",
+      description: "Entry id this note replaces (one id; history is linear)",
     },
     content: {
       type: "positional",
@@ -30,7 +30,7 @@ export const logCommand = defineCommand({
 // @summary Record a fix or runbook entry
 // @returns Confirmation with the new entry id
 // @details Rejoins any unquoted trailing tokens into one content string and
-// | retires the entries named by --supersedes in the same call.
+// | links the note to the one version named by --supersedes.
 async function runLogCommand({
   args,
   rawArgs,
@@ -42,6 +42,13 @@ async function runLogCommand({
     .split(",")
     .map((id) => id.trim())
     .filter(Boolean);
+
+  if (supersedes.length > 1) {
+    console.error(
+      "Error: History is linear. Pass exactly one id to --supersedes, and supersede the newest version.",
+    );
+    process.exit(1);
+  }
 
   // Collect any multiple trailing tokens into a single text if unquoted
   const positionalTokens = rawArgs.filter((arg, idx) => {
@@ -55,14 +62,13 @@ async function runLogCommand({
   const content = positionalTokens.join(" ").trim() || args.content;
   if (!content) {
     console.error(
-      "Error: Missing entry content. Usage: journals agent log [--project <name>] [--supersedes <ids>] <content>",
+      "Error: Missing entry content. Usage: journals agent log [--project <name>] [--supersedes <id>] <content>",
     );
     process.exit(1);
   }
 
   // @call journals.api.agent.create Create an agent entry
-  const result = await createAgentEntryApi(content, args.project, undefined, supersedes);
-  const retired =
-    result.supersedes.length > 0 ? `, retired ${result.supersedes.length} entry/entries` : "";
+  const result = await createAgentEntryApi(content, args.project, undefined, supersedes[0]);
+  const retired = result.previousEntryId ? `, supersedes ${result.previousEntryId}` : "";
   console.log(`Created agent entry [${result.id}] under project "${result.projectName}"${retired}`);
 }

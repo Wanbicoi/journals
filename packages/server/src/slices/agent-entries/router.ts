@@ -7,6 +7,7 @@ import {
 import { Hono } from "hono";
 import type { DatabaseInstance } from "../../db/client.js";
 import {
+  AgentEntryError,
   createAgentEntry,
   getAgentEntries,
   incrementAgentEntryHits,
@@ -38,13 +39,23 @@ export function createAgentEntriesRouter(db: DatabaseInstance) {
       return c.json({ entries });
     })
     .post("/", zValidator("json", CreateAgentEntryInputSchema), (c) => {
-      const { content, projectId, projectName, supersedes } = c.req.valid("json");
-      const entry = createAgentEntry(db, content, projectId, projectName, supersedes);
-      return c.json(entry, 201);
+      const { content, projectId, projectName, previousEntryId } = c.req.valid("json");
+      try {
+        const entry = createAgentEntry(db, content, projectId, projectName, previousEntryId);
+        return c.json(entry, 201);
+      } catch (err) {
+        if (err instanceof AgentEntryError) return c.json({ error: err.message }, 400);
+        throw err;
+      }
     })
     .post("/hit", zValidator("json", IncrementAgentEntryHitSchema), (c) => {
       const { ids, content } = c.req.valid("json");
-      const res = incrementAgentEntryHits(db, ids, content);
-      return c.json(res);
+      try {
+        const res = incrementAgentEntryHits(db, ids, content);
+        return c.json(res);
+      } catch (err) {
+        if (err instanceof AgentEntryError) return c.json({ error: err.message }, 400);
+        throw err;
+      }
     });
 }

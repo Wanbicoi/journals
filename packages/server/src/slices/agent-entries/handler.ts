@@ -1,5 +1,5 @@
 import type { AgentEntryDetail } from "@journals/core";
-import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "../../db/client.js";
 import { agentEntries, hitLog, projects } from "../../db/schema.js";
 import { sanitizeFtsQuery } from "../../lib/search-utils.js";
@@ -8,7 +8,7 @@ import { extractContextWindow } from "./utils.js";
 
 export { extractContextWindow };
 
-type DbOrTx = DatabaseInstance | Parameters<Parameters<DatabaseInstance["transaction"]>[0]>[0];
+export class AgentEntryError extends Error {}
 
 const entryColumns = {
   id: agentEntries.id,
@@ -16,7 +16,10 @@ const entryColumns = {
   projectName: projects.name,
   content: agentEntries.content,
   hitCount: sql<number>`(SELECT COUNT(*) FROM hit_log WHERE hit_log.agent_entry_id = ${agentEntries.id})`,
-  supersededByEntryId: agentEntries.supersededByAgentEntryId,
+  previousEntryId: agentEntries.previousAgentEntryId,
+  supersededByEntryId: sql<
+    string | null
+  >`(SELECT successor.id FROM agent_entries successor WHERE successor.previous_agent_entry_id = ${agentEntries.id} LIMIT 1)`,
   createdAt: agentEntries.createdAt,
   updatedAt: agentEntries.updatedAt,
 };
@@ -26,53 +29,62 @@ function missingIds(found: string[], requested: string[]): string[] {
   return requested.filter((id) => !known.has(id));
 }
 
-// @unit journals.server.agent-supersede
-// @summary Retire the superseded entries
-// @details Points every old row at the replacement without touching its
-// | content or updated_at, so history stays intact and last writer wins.
-function supersedeAgentEntries(db: DbOrTx, replacementId: string, ids: string[]) {
-  db.update(agentEntries)
-    .set({ supersededByAgentEntryId: replacementId })
-    .where(inArray(agentEntries.id, ids))
-    .run();
+// @unit journals.server.agent-previous
+// @summary Validate the previous version
+// @details History is linear: the predecessor must exist, and no other entry
+// | may already point at it. Superseding a stale version is rejected with a
+// | pointer to the current one.
+function resolvePreviousEntry(db: DatabaseInstance, previousEntryId: string) {
+  const previous = db
+    .select({ id: agentEntries.id, projectId: agentEntries.projectId })
+    .from(agentEntries)
+    .where(eq(agentEntries.id, previousEntryId))
+    .get();
+
+  if (!previous) {
+    throw new AgentEntryError(`Unknown agent entry id: ${previousEntryId}`);
+  }
+
+  const successor = db
+    .select({ id: agentEntries.id })
+    .from(agentEntries)
+    .where(eq(agentEntries.previousAgentEntryId, previousEntryId))
+    .get();
+
+  if (successor) {
+    throw new AgentEntryError(
+      `Agent entry ${previousEntryId} is already superseded by ${successor.id}; supersede the newest version.`,
+    );
+  }
+
+  return previous;
 }
 
 // @unit journals.server.agent-create
 // @summary Log an agent entry
 // @details Inserts the note verbatim under the resolved project. The
 // | title/Cause/Resolution layout is a convention for agents, not parsed here.
+// | A replacement cites exactly one previous version, so history stays linear.
 export function createAgentEntry(
   db: DatabaseInstance,
   content: string,
   projectId?: string,
   projectName?: string,
-  supersedes: string[] = [],
+  previousEntryId?: string,
 ): AgentEntryDetail {
-  const uniqueSupersedes = [...new Set(supersedes)];
   const id = crypto.randomUUID();
   const now = Date.now();
 
-  let supersededRows: Array<{ id: string; projectId: string }> = [];
-  if (uniqueSupersedes.length > 0) {
-    supersededRows = db
-      .select({ id: agentEntries.id, projectId: agentEntries.projectId })
-      .from(agentEntries)
-      .where(inArray(agentEntries.id, uniqueSupersedes))
-      .all();
-
-    const missing = missingIds(
-      supersededRows.map((row) => row.id),
-      uniqueSupersedes,
-    );
-    if (missing.length > 0) {
-      throw new Error(`Unknown agent entry id(s): ${missing.join(", ")}`);
-    }
+  let previous: { id: string; projectId: string } | undefined;
+  if (previousEntryId) {
+    // @call journals.server.agent-previous Validate the previous version
+    previous = resolvePreviousEntry(db, previousEntryId);
   }
 
   let targetProjectId = projectId;
   if (!targetProjectId) {
-    if (!projectName && supersededRows.length > 0) {
-      targetProjectId = supersededRows[0].projectId;
+    if (!projectName && previous) {
+      targetProjectId = previous.projectId;
     } else {
       // @call journals.server.find-or-create-project Find or create the target project
       const project = findOrCreateProject(db, projectName?.trim() || "Agent");
@@ -86,29 +98,23 @@ export function createAgentEntry(
     .where(eq(projects.id, targetProjectId))
     .get();
   if (!project) {
-    throw new Error(`Unknown project: ${targetProjectId}`);
+    throw new AgentEntryError(`Unknown project: ${targetProjectId}`);
   }
 
-  if (supersededRows.some((row) => row.projectId !== targetProjectId)) {
-    throw new Error("Cannot supersede entries from another project.");
+  if (previous && previous.projectId !== targetProjectId) {
+    throw new AgentEntryError("Cannot supersede an entry from another project.");
   }
 
-  // @call journals.server.agent-supersede Retire the superseded entries
-  db.transaction((tx) => {
-    tx.insert(agentEntries)
-      .values({
-        id,
-        projectId: targetProjectId,
-        content,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .run();
-
-    if (uniqueSupersedes.length > 0) {
-      supersedeAgentEntries(tx, id, uniqueSupersedes);
-    }
-  });
+  db.insert(agentEntries)
+    .values({
+      id,
+      projectId: targetProjectId,
+      content,
+      previousAgentEntryId: previous?.id ?? null,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .run();
 
   return {
     id,
@@ -116,19 +122,19 @@ export function createAgentEntry(
     projectName: project.name,
     content,
     hitCount: 0,
+    previousEntryId: previous?.id ?? null,
     supersededByEntryId: null,
     createdAt: now,
     updatedAt: now,
     hitLogs: [],
-    supersedes: uniqueSupersedes,
   };
 }
 
 // @unit journals.server.agent-get
 // @summary Load entries by id
-// @returns Full entries joined with their project name, hit logs, and links
-// @details Supersession is read in both directions: who replaced this entry
-// | and which entries this one replaced.
+// @returns Full entries joined with their project name and hit logs
+// @details Supersession is derived in both directions: `previousEntryId` walks
+// | back one version, `supersededByEntryId` points at the successor, if any.
 export function getAgentEntries(db: DatabaseInstance, ids: string[]): AgentEntryDetail[] {
   if (ids.length === 0) return [];
 
@@ -153,16 +159,9 @@ export function getAgentEntries(db: DatabaseInstance, ids: string[]): AgentEntry
     .orderBy(desc(hitLog.createdAt), desc(sql`rowid`))
     .all();
 
-  const replaced = db
-    .select({ id: agentEntries.id, supersededBy: agentEntries.supersededByAgentEntryId })
-    .from(agentEntries)
-    .where(inArray(agentEntries.supersededByAgentEntryId, ids))
-    .all();
-
   return entries.map((entry) => ({
     ...entry,
     hitLogs: logs.filter((log) => log.agentEntryId === entry.id),
-    supersedes: replaced.filter((row) => row.supersededBy === entry.id).map((row) => row.id),
   }));
 }
 
@@ -170,7 +169,8 @@ export function getAgentEntries(db: DatabaseInstance, ids: string[]): AgentEntry
 // @summary List recent entries
 // @returns Entries ordered by hit count, then creation time
 // @details A project filter is optional; without one the list spans every
-// | project. Superseded entries stay hidden unless includeSuperseded is set.
+// | project. Only the newest version of each chain is shown unless
+// | includeSuperseded is set.
 export function listAgentEntries(
   db: DatabaseInstance,
   projectId?: string,
@@ -179,7 +179,11 @@ export function listAgentEntries(
 ) {
   const filters = [];
   if (projectId) filters.push(eq(agentEntries.projectId, projectId));
-  if (!includeSuperseded) filters.push(isNull(agentEntries.supersededByAgentEntryId));
+  if (!includeSuperseded) {
+    filters.push(
+      sql`NOT EXISTS (SELECT 1 FROM agent_entries successor WHERE successor.previous_agent_entry_id = ${agentEntries.id})`,
+    );
+  }
 
   const query = db
     .select(entryColumns)
@@ -202,7 +206,7 @@ export function listAgentEntries(
 export function incrementAgentEntryHits(db: DatabaseInstance, ids: string[], content: string) {
   const note = content.trim();
   if (!note) {
-    throw new Error("A hit note is required.");
+    throw new AgentEntryError("A hit note is required.");
   }
 
   const uniqueIds = [...new Set(ids)];
@@ -219,7 +223,7 @@ export function incrementAgentEntryHits(db: DatabaseInstance, ids: string[], con
     uniqueIds,
   );
   if (missing.length > 0) {
-    throw new Error(`Unknown agent entry id(s): ${missing.join(", ")}`);
+    throw new AgentEntryError(`Unknown agent entry id(s): ${missing.join(", ")}`);
   }
 
   const now = Date.now();
@@ -247,8 +251,8 @@ export function incrementAgentEntryHits(db: DatabaseInstance, ids: string[], con
 // @unit journals.server.agent-search
 // @summary Search agent entries
 // @details Ranks with BM25 weighted by (1 + 0.5 × hit count), so a reinforced
-// | entry outranks a fresher but unproven one at the same relevance. Superseded
-// | entries are excluded unless includeSuperseded is set.
+// | entry outranks a fresher but unproven one at the same relevance. Only the
+// | newest version of each chain is searched unless includeSuperseded is set.
 export function searchAgentEntries(
   db: DatabaseInstance,
   query: string,
@@ -268,13 +272,16 @@ export function searchAgentEntries(
     content: string;
     snippet: string;
     hitCount: number;
+    previousEntryId: string | null;
     supersededByEntryId: string | null;
     createdAt: number;
     updatedAt: number;
     rank: number;
   };
 
-  const staleFilter = includeSuperseded ? sql`` : sql`AND ae.superseded_by_agent_entry_id IS NULL`;
+  const staleFilter = includeSuperseded
+    ? sql``
+    : sql`AND NOT EXISTS (SELECT 1 FROM agent_entries successor WHERE successor.previous_agent_entry_id = ae.id)`;
 
   const rows = db.all(sql`
     SELECT
@@ -284,7 +291,8 @@ export function searchAgentEntries(
       ae.content,
       snippet(agent_entries_fts, 0, '<mark>', '</mark>', '...', 20) AS snippet,
       (SELECT COUNT(*) FROM hit_log hl WHERE hl.agent_entry_id = ae.id) AS hitCount,
-      ae.superseded_by_agent_entry_id AS supersededByEntryId,
+      ae.previous_agent_entry_id AS previousEntryId,
+      (SELECT successor.id FROM agent_entries successor WHERE successor.previous_agent_entry_id = ae.id LIMIT 1) AS supersededByEntryId,
       ae.created_at AS createdAt,
       ae.updated_at AS updatedAt,
       (bm25(agent_entries_fts) * (1.0 + ((SELECT COUNT(*) FROM hit_log hits WHERE hits.agent_entry_id = ae.id) * 0.5))) AS rank

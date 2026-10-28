@@ -35,7 +35,7 @@ export const agentEntries = sqliteTable("agent_entries", {
     .notNull()
     .references(() => projects.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
-  supersededByAgentEntryId: text("superseded_by_agent_entry_id").references(
+  previousAgentEntryId: text("previous_agent_entry_id").references(
     (): AnySQLiteColumn => agentEntries.id,
     { onDelete: "set null" },
   ),

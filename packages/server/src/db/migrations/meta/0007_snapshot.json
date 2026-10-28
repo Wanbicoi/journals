@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "54a2dc3e-f5d8-426c-87b8-78293ea516e4",
+  "id": "644d5012-176b-439e-a026-09e94fad09e2",
   "prevId": "4ac23aef-7461-40ac-a5e2-285660a458a0",
   "tables": {
     "agent_entries": {
@@ -28,8 +28,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "superseded_by_agent_entry_id": {
-          "name": "superseded_by_agent_entry_id",
+        "previous_agent_entry_id": {
+          "name": "previous_agent_entry_id",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -61,11 +61,11 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "agent_entries_superseded_by_agent_entry_id_agent_entries_id_fk": {
-          "name": "agent_entries_superseded_by_agent_entry_id_agent_entries_id_fk",
+        "agent_entries_previous_agent_entry_id_agent_entries_id_fk": {
+          "name": "agent_entries_previous_agent_entry_id_agent_entries_id_fk",
           "tableFrom": "agent_entries",
           "tableTo": "agent_entries",
-          "columnsFrom": ["superseded_by_agent_entry_id"],
+          "columnsFrom": ["previous_agent_entry_id"],
           "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"

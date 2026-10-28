@@ -110,6 +110,7 @@ export const AgentEntrySchema = z.object({
   projectName: z.string().optional(),
   content: z.string(),
   hitCount: z.number().int().nonnegative().default(0),
+  previousEntryId: z.string().nullable(),
   supersededByEntryId: z.string().nullable(),
   createdAt: z.number(),
   updatedAt: z.number(),
@@ -117,14 +118,13 @@ export const AgentEntrySchema = z.object({
 
 export const AgentEntryDetailSchema = AgentEntrySchema.extend({
   hitLogs: z.array(HitLogSchema).default([]),
-  supersedes: z.array(z.string()).default([]),
 });
 
 export const CreateAgentEntryInputSchema = z.object({
   projectId: z.string().optional(),
   projectName: z.string().optional(),
   content: z.string().min(1),
-  supersedes: z.array(z.string().min(1)).optional().default([]),
+  previousEntryId: z.string().min(1).optional(),
 });
 
 const IncludeSupersededSchema = z
@@ -146,6 +146,7 @@ export const AgentEntrySearchResultSchema = z.object({
   snippet: z.string(),
   preview: z.string().optional(),
   hitCount: z.number(),
+  previousEntryId: z.string().nullable(),
   supersededByEntryId: z.string().nullable(),
   createdAt: z.number(),
   updatedAt: z.number(),

@@ -39,10 +39,12 @@ describe("Agent Entries HTTP Endpoints", () => {
     const created = (await createRes.json()) as {
       id: string;
       hitCount: number;
+      previousEntryId: string | null;
       supersededByEntryId: string | null;
     };
     expect(created.id).toBeDefined();
     expect(created.hitCount).toBe(0);
+    expect(created.previousEntryId).toBeNull();
     expect(created.supersededByEntryId).toBeNull();
 
     // 2. Search entry
@@ -69,13 +71,13 @@ describe("Agent Entries HTTP Endpoints", () => {
     const batchData = (await batchRes.json()) as {
       entries: Array<{
         hitCount: number;
+        previousEntryId: string | null;
         hitLogs: Array<{ content: string }>;
-        supersedes: string[];
       }>;
     };
     expect(batchData.entries[0].hitCount).toBe(1);
+    expect(batchData.entries[0].previousEntryId).toBeNull();
     expect(batchData.entries[0].hitLogs[0]?.content).toBe("Cleared the lockfile issue");
-    expect(batchData.entries[0].supersedes).toEqual([]);
 
     // 5. List entries
     const listRes = await app.request("/agent-entries");
@@ -100,19 +102,38 @@ describe("Agent Entries HTTP Endpoints", () => {
     expect(hitRes.status).toBe(400);
   });
 
-  it("hides superseded entries unless asked for them", async () => {
-    const create = async (content: string, supersedes: string[] = []) => {
+  it("rejects a fork from a superseded version", async () => {
+    const create = async (content: string, previousEntryId?: string) => {
       const res = await app.request("/agent-entries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content, projectName: "AgentOps", supersedes }),
+        body: JSON.stringify({ content, projectName: "AgentOps", previousEntryId }),
       });
-      return (await res.json()) as { id: string; supersedes: string[] };
+      return res;
+    };
+
+    const v1 = (await (await create("Version one")).json()) as { id: string };
+    await create("Version two", v1.id);
+
+    const fork = await create("Version fork", v1.id);
+    expect(fork.status).toBe(400);
+    const body = (await fork.json()) as { error: string };
+    expect(body.error).toContain("already superseded");
+  });
+
+  it("shows only the newest version unless superseded entries are requested", async () => {
+    const create = async (content: string, previousEntryId?: string) => {
+      const res = await app.request("/agent-entries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content, projectName: "AgentOps", previousEntryId }),
+      });
+      return (await res.json()) as { id: string; previousEntryId: string | null };
     };
 
     const old = await create("Stale linker note");
-    const replacement = await create("Consolidated linker note", [old.id]);
-    expect(replacement.supersedes).toEqual([old.id]);
+    const replacement = await create("Consolidated linker note", old.id);
+    expect(replacement.previousEntryId).toBe(old.id);
 
     const defaultList = (await (await app.request("/agent-entries")).json()) as {
       entries: Array<{ id: string }>;
