@@ -1,3 +1,6 @@
+// @unit journals.cli.format-entry
+// @summary Format the entry detail
+// @returns A fixed-width block with metadata and the full note
 export function formatEntryDetail(entry: {
   id: string;
   projectName?: string;

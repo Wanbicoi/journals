@@ -14,11 +14,16 @@ type DynamicClient = Record<
 >;
 const rpc = client as unknown as DynamicClient;
 
+// @unit journals.api.agent.create
+// @summary Create an agent entry over HTTP
+// @returns Created entry
+// @details Posts the whole note as one content string; the server splits nothing.
 export async function createAgentEntryApi(
   content: string,
   projectName?: string,
   projectId?: string,
 ): Promise<AgentEntry> {
+  // @call journals.server.agent-create Log an agent entry
   const res = await rpc["agent-entries"].$post({
     json: { content, projectName, projectId },
   });
@@ -29,10 +34,14 @@ export async function createAgentEntryApi(
   return res.json();
 }
 
+// @unit journals.api.agent.search
+// @summary Search agent entries over HTTP
+// @returns Ranked matches with snippets and previews
 export async function searchAgentEntriesApi(
   query: string,
   limit = 20,
 ): Promise<{ entries: AgentEntrySearchResult[] }> {
+  // @call journals.server.agent-search Search the FTS5 index
   const res = await rpc["agent-entries"].search.$get({
     query: { q: query, limit: String(limit) },
   });
@@ -43,7 +52,11 @@ export async function searchAgentEntriesApi(
   return res.json();
 }
 
+// @unit journals.api.agent.show
+// @summary Fetch agent entries by id over HTTP
+// @returns Full entries in the requested order
 export async function getAgentEntriesBatchApi(ids: string[]): Promise<{ entries: AgentEntry[] }> {
+  // @call journals.server.agent-get Load the entries by id
   const res = await rpc["agent-entries"].batch.$get({
     query: { ids: ids.join(",") },
   });
@@ -54,7 +67,11 @@ export async function getAgentEntriesBatchApi(ids: string[]): Promise<{ entries:
   return res.json();
 }
 
+// @unit journals.api.agent.hit
+// @summary Increment hit counters over HTTP
+// @returns Number of ids the server updated
 export async function incrementAgentHitsApi(ids: string[]): Promise<{ updated: number }> {
+  // @call journals.server.agent-hit Bump hit_time for the ids
   const res = await rpc["agent-entries"].hit.$post({
     json: { ids },
   });
@@ -65,6 +82,9 @@ export async function incrementAgentHitsApi(ids: string[]): Promise<{ updated: n
   return res.json();
 }
 
+// @unit journals.api.agent.list
+// @summary List agent entries over HTTP
+// @returns Entries ordered by hits, then recency
 export async function listAgentEntriesApi(
   projectId?: string,
   limit = 20,
@@ -72,6 +92,7 @@ export async function listAgentEntriesApi(
   const queryParam: Record<string, string> = { limit: String(limit) };
   if (projectId) queryParam.projectId = projectId;
 
+  // @call journals.server.agent-list Read the recent entries
   const res = await rpc["agent-entries"].$get({
     query: queryParam,
   });

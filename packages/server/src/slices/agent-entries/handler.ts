@@ -9,6 +9,8 @@ export { extractContextWindow };
 
 // @unit journals.server.agent-create
 // @summary Log an agent entry
+// @details Inserts the note verbatim under the resolved project. The
+// | title/Cause/Resolution layout is a convention for agents, not parsed here.
 export function createAgentEntry(
   db: DatabaseInstance,
   content: string,
@@ -17,6 +19,7 @@ export function createAgentEntry(
 ) {
   let targetProjectId = projectId;
   if (!targetProjectId) {
+    // @call journals.server.find-or-create-project Find or create the target project
     const p = findOrCreateProject(db, projectName?.trim() || "Agent");
     targetProjectId = p.id;
   }
@@ -52,6 +55,9 @@ export function createAgentEntry(
   };
 }
 
+// @unit journals.server.agent-get
+// @summary Load entries by id
+// @returns Full entries joined with their project name
 export function getAgentEntries(db: DatabaseInstance, ids: string[]) {
   if (ids.length === 0) return [];
 
@@ -71,6 +77,11 @@ export function getAgentEntries(db: DatabaseInstance, ids: string[]) {
     .all();
 }
 
+// @unit journals.server.agent-list
+// @summary List recent entries
+// @returns Entries ordered by hit count, then creation time
+// @details A project filter is optional; without one the list spans every
+// | project, so an agent sees the most reinforced notes first.
 export function listAgentEntries(db: DatabaseInstance, projectId?: string, limit = 20) {
   const query = db
     .select({
@@ -96,6 +107,11 @@ export function listAgentEntries(db: DatabaseInstance, projectId?: string, limit
   return query.orderBy(desc(agentEntries.hitTime), desc(agentEntries.createdAt)).limit(limit).all();
 }
 
+// @unit journals.server.agent-hit
+// @summary Increment the hit counters
+// @returns Number of ids that were updated
+// @details One UPDATE covers the whole id list and stamps updated_at, so a
+// | batch costs a single statement.
 export function incrementAgentEntryHits(db: DatabaseInstance, ids: string[]) {
   if (ids.length === 0) return { updated: 0 };
 
@@ -116,7 +132,10 @@ export function incrementAgentEntryHits(db: DatabaseInstance, ids: string[]) {
 
 // @unit journals.server.agent-search
 // @summary Search agent entries
+// @details Ranks with BM25 weighted by (1 + 0.5 × hit_time), so a reinforced
+// | entry outranks a fresher but unproven one at the same relevance.
 export function searchAgentEntries(db: DatabaseInstance, query: string, limit = 20) {
+  // @call journals.server.fts-query Sanitize the FTS5 query
   const ftsQuery = sanitizeFtsQuery(query);
   if (!ftsQuery) {
     return [];
@@ -156,6 +175,7 @@ export function searchAgentEntries(db: DatabaseInstance, query: string, limit = 
     LIMIT ${limit};
   `) as AgentFtsRow[];
 
+  // @call journals.server.agent-preview Build the context preview
   return rows.map((row) => ({
     ...row,
     preview: extractContextWindow(row.content, query),

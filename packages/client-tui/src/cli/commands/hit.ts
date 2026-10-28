@@ -13,15 +13,21 @@ export const hitCommand = defineCommand({
       required: true,
     },
   },
-  async run({ rawArgs }) {
-    // When multiple positional args are provided, gather all trailing positional arguments
-    const idList = rawArgs.filter((arg) => !arg.startsWith("-"));
-    if (idList.length === 0) {
-      console.error("Error: At least one ID required. Usage: journals agent hit <id...>");
-      process.exit(1);
-    }
-
-    const data = await incrementAgentHitsApi(idList);
-    console.log(`Updated hit count for ${data.updated} entry/entries.`);
-  },
+  run: runHitCommand,
 });
+
+// @unit journals.cli.agent.hit
+// @summary Reinforce entries that solved a task
+// @returns Count of updated entries
+async function runHitCommand({ rawArgs }: { rawArgs: string[] }) {
+  // When multiple positional args are provided, gather all trailing positional arguments
+  const idList = rawArgs.filter((arg) => !arg.startsWith("-"));
+  if (idList.length === 0) {
+    console.error("Error: At least one ID required. Usage: journals agent hit <id...>");
+    process.exit(1);
+  }
+
+  // @call journals.api.agent.hit Increment the hit counters
+  const data = await incrementAgentHitsApi(idList);
+  console.log(`Updated hit count for ${data.updated} entry/entries.`);
+}

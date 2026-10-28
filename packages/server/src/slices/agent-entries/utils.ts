@@ -1,7 +1,10 @@
-/**
- * Extracts line-based context preview around matched words/patterns.
- * Supports multiple distinct matching clusters with context lines around each.
- */
+// @unit journals.server.agent-preview
+// @summary Build the context preview
+// @returns Numbered context lines around each match cluster
+// @details Extracts line-based context around matched words or patterns and
+// | supports multiple distinct matching clusters with context lines around
+// | each. Groups matching lines into up to three clusters with two context
+// | lines on each side, so a long note condenses to the passages that matched.
 export function extractContextWindow(
   content: string,
   query: string,

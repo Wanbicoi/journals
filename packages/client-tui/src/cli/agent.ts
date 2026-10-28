@@ -25,10 +25,26 @@ export const agentMainCommand = defineCommand({
 // | subcommands, which talk to the server over the same HTTP API as the TUI.
 export async function runAgentCli(args: string[]): Promise<void> {
   try {
-    await runMain(agentMainCommand, { rawArgs: args });
+    await dispatchAgentCommand(args);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`Error: ${message}`);
     process.exit(1);
   }
+}
+
+// @unit journals.cli.agent.dispatch
+// @summary Dispatch an agent memory subcommand
+// @details citty resolves the first positional token to exactly one of the
+// | five subcommands, so the tree lists every branch the dispatcher can take.
+async function dispatchAgentCommand(args: string[]): Promise<void> {
+  await runMain(
+    /* @call journals.cli.agent.log Record a fix or runbook entry */
+    /* @call journals.cli.agent.search Search agent memory */
+    /* @call journals.cli.agent.show Inspect entries by id */
+    /* @call journals.cli.agent.hit Reinforce entries that solved a task */
+    /* @call journals.cli.agent.list List recent entries */
+    agentMainCommand,
+    { rawArgs: args },
+  );
 }

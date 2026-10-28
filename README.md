@@ -24,6 +24,7 @@ for the daemon and storage paths.
 | [docs/tui-v2-decisions.md](docs/tui-v2-decisions.md) | Deliberate TUI choices (quit key, icons, chrome, contexts, error boundaries) |
 | [docs/react-best-practices.md](docs/react-best-practices.md) | UI coding standards for the React/OpenTUI client |
 | [docs/features-tree-tui.md](docs/features-tree-tui.md) | Generated feature map for the TUI |
+| [docs/features-tree-agent-memory.md](docs/features-tree-agent-memory.md) | Generated feature map for the `journals agent` memory commands |
 | [docs/reviews/2026-10-tui-refactor.md](docs/reviews/2026-10-tui-refactor.md) | Historical refactor review and the fixes it drove |
 | [GLOSSARY.md](GLOSSARY.md) | Domain terms (routines, missed policies, spikes, breaks, debts, reflections, slices) |
 | [configs/journal.config.example.yaml](configs/journal.config.example.yaml) | Config reference; also the fallback when no user config exists |

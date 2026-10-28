@@ -29,6 +29,9 @@ export function listProjects(db: DbOrTx) {
   return projs;
 }
 
+// @unit journals.server.find-or-create-project
+// @summary Find or create the target project
+// @returns The existing project with that name, or a freshly created one
 export function findOrCreateProject(db: DbOrTx, name: string) {
   const cleanName = name.trim();
   let [project] = db.select().from(projects).where(eq(projects.name, cleanName)).all();
