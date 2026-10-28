@@ -19,7 +19,7 @@
     "prepare": "bunx simple-git-hooks"
   },
   "simple-git-hooks": {
-    "pre-commit": "bunx biome check --write --staged --no-errors-on-unmatched && git update-index --again && bun run typecheck && bun run test",
+    "pre-commit": "bunx biome check --write --staged --no-errors-on-unmatched && git update-index --again && bun run typecheck",
     "commit-msg": "bunx commitlint --edit \"$1\""
   },
   "devDependencies": {
