@@ -340,10 +340,16 @@ describe("Collocated View Keymaps", () => {
     });
 
     it("shows the selected project's routine and policy", async () => {
-      stubServer({ projects: sampleProjects });
+      const manyEntries: Entry[] = Array.from({ length: 30 }, (_, idx) => ({
+        ...sampleEntries[0],
+        id: `alpha-${idx}`,
+        content: `Alpha note ${idx}`,
+        projectName: "Alpha",
+      }));
+      stubServer({ projects: sampleProjects, entries: manyEntries });
       const { testSetup } = await renderView(<ProjectsView />, {
         projects: sampleProjects,
-        entries: [],
+        entries: manyEntries,
       });
 
       await act(async () => {

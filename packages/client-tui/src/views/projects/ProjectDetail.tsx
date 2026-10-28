@@ -38,14 +38,14 @@ export function ProjectDetail({
   return (
     <box flexGrow={1} flexDirection="column">
       {/* Right Header: Project details banner */}
-      <box flexDirection="column" marginBottom={1}>
-        <box flexDirection="row">
+      <box flexDirection="column" marginBottom={1} flexShrink={0}>
+        <box flexDirection="row" flexShrink={0}>
           <text fg={theme.secondary}>{`${icons.project} @${projectName}`}</text>
           <text
             fg={theme.muted}
           >{` ${icons.bullet} ${notes.length} associated note${notes.length === 1 ? "" : "s"}`}</text>
         </box>
-        <box flexDirection="row">
+        <box flexDirection="row" flexShrink={0}>
           <text fg={theme.muted}>{`${icons.calendar} Routine: ${routineLabel}`}</text>
           <text fg={theme.muted}>{` ${icons.bullet} Policy: ${policyLabel(missedPolicy)}`}</text>
         </box>
