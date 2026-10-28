@@ -5,7 +5,7 @@ import type { Entry, Project } from "../hooks/queries.js";
  * One modal at a time, and every modal carries its own target. The union is the contract: a
  * modal cannot be opened without the record it acts on.
  */
-export type ModalState =
+type ModalState =
   | { name: "capture" }
   | { name: "filter" }
   | { name: "help" }

@@ -12,7 +12,7 @@ import { ProjectsView } from "./projects/ProjectsView.js";
 import { ReflectionsView } from "./reflections/ReflectionsView.js";
 import { TimelineView } from "./timeline/TimelineView.js";
 
-export interface AppProps {
+interface AppProps {
   onQuit: () => void;
 }
 

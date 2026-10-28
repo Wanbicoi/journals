@@ -3,13 +3,13 @@ import { useNotifications } from "./notification.js";
 
 export type Tab = "DASHBOARD" | "TIMELINE" | "REFLECTIONS" | "PROJECTS";
 
-const TABS: Tab[] = ["DASHBOARD", "TIMELINE", "REFLECTIONS", "PROJECTS"];
+export const TABS: Tab[] = ["DASHBOARD", "TIMELINE", "REFLECTIONS", "PROJECTS"];
 
-const TAB_LABELS: Record<Tab, string> = {
-  DASHBOARD: "Dashboard View",
-  TIMELINE: "Timeline View",
-  REFLECTIONS: "Reflections View",
-  PROJECTS: "Projects View",
+export const TAB_LABELS: Record<Tab, string> = {
+  DASHBOARD: "Dashboard",
+  TIMELINE: "Timeline",
+  REFLECTIONS: "Reflections",
+  PROJECTS: "Projects",
 };
 
 type Filters = Record<Tab, string>;
@@ -18,7 +18,6 @@ export interface NavigationValue {
   tab: Tab;
   /** The active view's search query. */
   filter: string;
-  tabs: Tab[];
   /** Switch views, optionally with the filter the destination should open on. */
   navigate: (tab: Tab, filter?: string) => void;
   /** Replace the active view's filter. */
@@ -60,7 +59,7 @@ export function NavigationProvider({
       if (nextFilter !== undefined) {
         setFilters((prev) => ({ ...prev, [nextTab]: nextFilter }));
       }
-      notify(TAB_LABELS[nextTab]);
+      notify(`${TAB_LABELS[nextTab]} View`);
     },
     [notify],
   );
@@ -79,7 +78,7 @@ export function NavigationProvider({
   }, [filters, tab]);
 
   const value = useMemo<NavigationValue>(
-    () => ({ tab, filter: filters[tab], tabs: TABS, navigate, setFilter, clearFilter }),
+    () => ({ tab, filter: filters[tab], navigate, setFilter, clearFilter }),
     [tab, filters, navigate, setFilter, clearFilter],
   );
 

@@ -15,7 +15,6 @@ export interface IconSet {
   calendar: string;
   quick: string;
   warning: string;
-  trash: string;
   checked: string;
   unchecked: string;
   bullet: string;
@@ -26,21 +25,19 @@ export interface IconSet {
   todo: string;
   pointer: string;
   cursor: string;
-  target: string;
   overdue: string;
   chartUp: string;
   chartDown: string;
   chartCursor: string;
 }
 
-export const NERD_ICONS: IconSet = {
+const NERD_ICONS: IconSet = {
   journal: "\u{f442}",
   project: "\u{f401}",
   tag: "\u{f02c}",
   calendar: "\u{f455}",
   quick: "\u{f0e7}",
   warning: "\u{f071}",
-  trash: "\u{f4bf}",
   checked: "\u{f4a7}",
   unchecked: "\u{f4a0}",
   bullet: "\u{f444}",
@@ -51,7 +48,6 @@ export const NERD_ICONS: IconSet = {
   todo: "\u{f10c}",
   pointer: "\u{f054}",
   cursor: "\u{f0da}",
-  target: "\u{f140}",
   overdue: "\u{f017}",
   chartUp: "\u{f062}",
   chartDown: "\u{f063}",
@@ -65,7 +61,6 @@ export const PLAIN_ICONS: IconSet = {
   calendar: "📅",
   quick: "⚡",
   warning: "!",
-  trash: "x",
   checked: "[x]",
   unchecked: "[ ]",
   bullet: "•",
@@ -76,7 +71,6 @@ export const PLAIN_ICONS: IconSet = {
   todo: "○",
   pointer: "❯",
   cursor: "▎",
-  target: "🎯",
   overdue: "⚠",
   chartUp: "▲",
   chartDown: "▼",
@@ -95,7 +89,6 @@ function iconSetSchema(defaults: IconSet) {
     calendar: z.string().default(defaults.calendar),
     quick: z.string().default(defaults.quick),
     warning: z.string().default(defaults.warning),
-    trash: z.string().default(defaults.trash),
     checked: z.string().default(defaults.checked),
     unchecked: z.string().default(defaults.unchecked),
     bullet: z.string().default(defaults.bullet),
@@ -106,7 +99,6 @@ function iconSetSchema(defaults: IconSet) {
     todo: z.string().default(defaults.todo),
     pointer: z.string().default(defaults.pointer),
     cursor: z.string().default(defaults.cursor),
-    target: z.string().default(defaults.target),
     overdue: z.string().default(defaults.overdue),
     chartUp: z.string().default(defaults.chartUp),
     chartDown: z.string().default(defaults.chartDown),
@@ -115,7 +107,7 @@ function iconSetSchema(defaults: IconSet) {
 }
 
 /** One action may be bound to several keys: a letter and the arrow it mirrors. */
-export const BindingSchema = z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]);
+const BindingSchema = z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]);
 
 export type Binding = z.infer<typeof BindingSchema>;
 

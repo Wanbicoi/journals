@@ -117,13 +117,6 @@ export const invalidationKeys = {
     queryKeys.reflections.all,
   ],
   reflectionSaved: [queryKeys.reflections.all],
-  everything: [
-    queryKeys.entries,
-    queryKeys.projects,
-    queryKeys.tags,
-    queryKeys.dashboardAll,
-    queryKeys.reflections.all,
-  ],
 } satisfies Record<string, readonly QueryKey[]>;
 
 export async function invalidateAfterMutation(
@@ -209,23 +202,4 @@ export function useReflectionDetail(
     },
     enabled: (options?.enabled ?? true) && Boolean(periodType && periodKey),
   });
-}
-
-export function useReflections(
-  periodType: ReflectionPeriodType,
-  periodKey?: string | null,
-  options?: { enabled?: boolean },
-) {
-  const periodsQuery = useReflectionPeriods(periodType, options);
-  const detailQuery = useReflectionDetail(periodType, periodKey, options);
-
-  return {
-    periods: periodsQuery.data ?? [],
-    currentDetail: detailQuery.data ?? null,
-    loadingPeriods: periodsQuery.isLoading,
-    loadingDetail: detailQuery.isLoading,
-    loading: periodsQuery.isLoading || detailQuery.isLoading,
-    refetchPeriods: periodsQuery.refetch,
-    refetchDetail: detailQuery.refetch,
-  };
 }

@@ -1,13 +1,11 @@
 import { useKeyboard } from "@opentui/react";
-import type { Tab } from "../contexts/navigation.js";
+import { TABS, type Tab } from "../contexts/navigation.js";
 import { matchesBinding } from "../keymap.js";
 import { useScopedKeymaps } from "./useScopedKeymaps.js";
 
 export type { Tab };
 
-const TABS: Tab[] = ["DASHBOARD", "TIMELINE", "REFLECTIONS", "PROJECTS"];
-
-export interface UseAppKeymapsOptions {
+interface UseAppKeymapsOptions {
   currentTab: Tab;
   onSelectTab: (tab: Tab) => void;
   onOpenFilter: () => void;

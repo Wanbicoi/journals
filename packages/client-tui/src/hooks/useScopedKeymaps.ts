@@ -3,9 +3,9 @@ import { type Keymaps, useKeymaps } from "../contexts/keymaps.js";
 import { useModals } from "../contexts/modals.js";
 import { type KeyEventLike, actionForKey } from "../keymap.js";
 
-export type ScopeName = keyof Keymaps;
+type ScopeName = keyof Keymaps;
 
-export type ActionOf<S extends ScopeName> = keyof Keymaps[S];
+type ActionOf<S extends ScopeName> = keyof Keymaps[S];
 
 type Handlers<S extends ScopeName> = Partial<
   Record<ActionOf<S>, (key: KeyEventLike) => void | Promise<void>>

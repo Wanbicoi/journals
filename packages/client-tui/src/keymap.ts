@@ -31,16 +31,6 @@ export function matchesBinding(key: KeyEventLike, binding: Binding): boolean {
   return bindingsOf(binding).includes(normalizeKey(key));
 }
 
-/** Matches the binding, or its uppercase form when the key was pressed with Shift. */
-export function matchesShiftedBinding(key: KeyEventLike, binding: Binding): boolean {
-  const normalized = normalizeKey(key);
-  return bindingsOf(binding).some(
-    (value) =>
-      normalized === value ||
-      (key.shift === true && normalized.toLowerCase() === value.toLowerCase()),
-  );
-}
-
 export function matchesAnyBinding(key: KeyEventLike, ...bindings: Binding[]): boolean {
   const normalized = normalizeKey(key);
   return bindings.some((binding) => bindingsOf(binding).includes(normalized));
