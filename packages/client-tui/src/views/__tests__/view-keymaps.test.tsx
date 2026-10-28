@@ -2,10 +2,10 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { testRender } from "@opentui/react/test-utils";
 import { type ReactNode, act } from "react";
 import { type ModalsValue, useModals } from "../../contexts/modals.js";
-import { type NavigationValue, useNavigation } from "../../contexts/navigation.js";
+import { type NavigationValue, type Tab, useNavigation } from "../../contexts/navigation.js";
 import { useNotifications } from "../../contexts/notification.js";
 import type { DashboardData, Entry, Project } from "../../hooks/queries.js";
-import { queryKeys } from "../../hooks/queries.js";
+import { DASHBOARD_POLL_INTERVAL_MS, queryKeys } from "../../hooks/queries.js";
 import { createQueryClient } from "../../queryClient.js";
 import { AppProviders } from "../../test-support/AppProviders.js";
 import { DashboardView } from "../dashboard/DashboardView.js";
@@ -154,6 +154,7 @@ afterAll(() => {
 async function renderView(
   ui: ReactNode,
   seed: { entries?: Entry[]; projects?: Project[]; dashboard?: DashboardData } = {},
+  initialTab?: Tab,
 ) {
   const client = createQueryClient();
   if (seed.entries) client.setQueryData(queryKeys.entries, seed.entries);
@@ -169,7 +170,7 @@ async function renderView(
   let testSetup!: TestSetup;
   await act(async () => {
     testSetup = await testRender(
-      <AppProviders client={client}>
+      <AppProviders client={client} initialTab={initialTab}>
         <box flexDirection="column">
           {ui}
           <Probes sink={sink} />
@@ -191,7 +192,7 @@ async function renderView(
     });
   };
 
-  return { testSetup, sink, press, closeModal };
+  return { testSetup, sink, press, closeModal, client };
 }
 
 describe("Collocated View Keymaps", () => {
@@ -383,6 +384,26 @@ describe("Collocated View Keymaps", () => {
       expect(sink.message).not.toBe("Completed today's routine for @Alpha!");
 
       testSetup.renderer.destroy();
+      globalThis.fetch = originalFetch;
+    });
+
+    it("polls only while the Dashboard tab is active", async () => {
+      stubServer({ dashboard: sampleDashboard, projects: sampleProjects });
+
+      const active = await renderView(<DashboardView />, {}, "DASHBOARD");
+      const activeQuery = active.client.getQueryCache().find({ queryKey: queryKeys.dashboard(60) });
+      expect(activeQuery?.observers[0]?.options.refetchInterval).toBe(DASHBOARD_POLL_INTERVAL_MS);
+      expect(activeQuery?.observers[0]?.options.enabled).toBe(true);
+      active.testSetup.renderer.destroy();
+
+      const inactive = await renderView(<DashboardView />, {}, "TIMELINE");
+      const inactiveQuery = inactive.client
+        .getQueryCache()
+        .find({ queryKey: queryKeys.dashboard(60) });
+      expect(inactiveQuery?.observers[0]?.options.refetchInterval).toBe(false);
+      expect(inactiveQuery?.observers[0]?.options.enabled).toBe(false);
+      inactive.testSetup.renderer.destroy();
+
       globalThis.fetch = originalFetch;
     });
   });

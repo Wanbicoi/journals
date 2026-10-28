@@ -540,6 +540,10 @@ only for genuinely live data with no push channel. If the server already invalid
 adding 5s polling is redundant load that also masks a missing invalidation. When you need
 background freshness, prefer explicit invalidation and a single, justified interval.
 
+One justified exception in this repo: the dashboard's 60-day telemetry polls every 5s while the
+Dashboard tab is mounted (`useDashboardAnalytics`). Every other query relies on invalidation, and
+the interval stops when the view unmounts.
+
 ---
 
 ## 6. Refs and imperative escapes

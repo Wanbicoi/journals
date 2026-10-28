@@ -156,13 +156,22 @@ export function useTags() {
   });
 }
 
+/** The dashboard is the only view that polls: 60-day telemetry while the tab is on screen. */
+export const DASHBOARD_POLL_INTERVAL_MS = 5_000;
+
 // @unit journals.hooks.dashboard
 // @summary Query dashboard analytics
-export function useDashboardAnalytics(days = 60) {
+export function useDashboardAnalytics(
+  days = 60,
+  options?: { enabled?: boolean; refetchInterval?: number | false },
+) {
+  const isEnabled = options?.enabled ?? true;
   // @call journals.api.dashboard Fetch the dashboard summary from the server
   return useQuery<DashboardData>({
     queryKey: queryKeys.dashboard(days),
     queryFn: async () => await fetchDashboardAnalytics(days),
+    enabled: isEnabled,
+    refetchInterval: isEnabled ? (options?.refetchInterval ?? false) : false,
   });
 }
 

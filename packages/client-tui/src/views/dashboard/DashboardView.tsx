@@ -4,7 +4,11 @@ import { useIcons } from "../../contexts/icons.js";
 import { useModals } from "../../contexts/modals.js";
 import { useNavigation } from "../../contexts/navigation.js";
 import { useTheme } from "../../contexts/theme.js";
-import { useDashboardAnalytics, useProjects } from "../../hooks/queries.js";
+import {
+  DASHBOARD_POLL_INTERVAL_MS,
+  useDashboardAnalytics,
+  useProjects,
+} from "../../hooks/queries.js";
 import { useEntryMutations } from "../../hooks/useEntryMutations.js";
 import { DashboardActivityChart } from "./DashboardActivityChart.js";
 import { DashboardAttention } from "./DashboardAttention.js";
@@ -16,13 +20,23 @@ import { useDashboardKeymaps } from "./useDashboardKeymaps.js";
 export function DashboardView() {
   const icons = useIcons();
   const theme = useTheme();
-  const { navigate } = useNavigation();
+  const { navigate, tab } = useNavigation();
   const { open } = useModals();
   const { quickCapture } = useEntryMutations();
   const [focusedDayIdx, setFocusedDayIdx] = useState(59);
+  const isActive = tab === "DASHBOARD";
 
   // @call journals.hooks.dashboard Load the 60-day dashboard analytics
-  const { data: dashboard = null, isLoading, isError, error, refetch } = useDashboardAnalytics(60);
+  const {
+    data: dashboard = null,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useDashboardAnalytics(60, {
+    enabled: isActive,
+    refetchInterval: DASHBOARD_POLL_INTERVAL_MS,
+  });
   // @call journals.hooks.projects Load projects to count configured routines
   const { data: projects = [] } = useProjects();
 
