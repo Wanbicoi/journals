@@ -1,3 +1,4 @@
 - Use `bun` as package manager
 - Glossary: Consult [GLOSSARY.md](GLOSSARY.md) for domain concepts (routines, missed policies, spikes, breaks, debts, reflections, slices).
 - TUI decisions: Consult [docs/tui-v2-decisions.md](docs/tui-v2-decisions.md) before changing quit keys, icon config, chrome layout, contexts, or error boundaries.
+- UI standards: Read [docs/react-best-practices.md](docs/react-best-practices.md) before writing or reviewing TUI code.
