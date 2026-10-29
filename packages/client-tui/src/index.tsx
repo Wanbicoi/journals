@@ -36,7 +36,9 @@ async function main() {
   let serverInstance: { server: { stop: () => void } } | null = null;
   // @call journals.server.start Start the in-process API server when it is not running
   try {
-    const testRes = await fetch(`${serverUrl}/health`);
+    const testRes = await fetch(`${serverUrl}/health`, {
+      signal: AbortSignal.timeout(500),
+    });
     if (!testRes.ok) throw new Error("not running");
   } catch {
     // Start local server directly in the same runtime process silently
