@@ -3,13 +3,16 @@
 ; Journals Quick Capture - Instant Native AutoHotkey GUI
 ; Sub-10ms instant startup, runs in background tray, zero cold-start delay.
 ;
-; Hotkey: Alt + Shift + E
+; Hotkey: Alt + E
 ; Keys:
 ;   Enter            -> Submit note to Journals server (WSL)
 ;   Escape           -> Cancel / Hide
 ;   Ctrl + Backspace -> Delete preceding word
 ;   Ctrl + W         -> Delete preceding word
 ;   Ctrl + U         -> Clear line
+;
+; If the clipboard holds a URL when the GUI opens, it is prefilled into the
+; input (handy for capturing links without an extra paste).
 ; ==============================================================================
 
 #SingleInstance Force
@@ -61,11 +64,25 @@ Escape:: {
 
 #HotIf
 
-; Global Shortcut: Alt + Shift + E (!+e)
-!+e:: {
-    CaptureInput.Value := ""
+; Global Shortcut: Alt + E (!e)
+!e:: {
+    CaptureInput.Value := ClipboardUrl()
     CaptureGui.Show("w532 h88 Center")
+    WinActivate("ahk_id " . CaptureGui.Hwnd)
     ControlFocus(CaptureInput)
+    Send("{End}")
+}
+
+; Return the clipboard contents when they are a single URL, otherwise ""
+ClipboardUrl() {
+    try {
+        text := Trim(A_Clipboard, " `t`r`n")
+    } catch {
+        return ""
+    }
+    if (text == "")
+        return ""
+    return RegExMatch(text, "i)^(https?://|www\.)\S+$") ? text : ""
 }
 
 SubmitNote(rawText) {
