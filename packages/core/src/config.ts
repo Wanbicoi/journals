@@ -176,8 +176,8 @@ const DEFAULT_KEYMAPS = {
   modal: {
     submit: ["return", "kpenter"],
     cancel: "escape",
-    suggestion_next: "down",
-    suggestion_prev: "up",
+    suggestion_next: ["down", "ctrl+n"],
+    suggestion_prev: ["up", "ctrl+p"],
     suggestion_accept: "tab",
     draft_in_editor: "e",
   },

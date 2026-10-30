@@ -1,5 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import { actionForKey, matchesAnyBinding, matchesBinding, normalizeKey } from "./keymap.js";
+import {
+  actionForKey,
+  bindingLabel,
+  matchesAnyBinding,
+  matchesBinding,
+  normalizeKey,
+} from "./keymap.js";
 
 describe("key normalization", () => {
   it("matches plain letters by name and sequence", () => {
@@ -30,6 +36,26 @@ describe("key normalization", () => {
 
   it("matches configured multi-character key names", () => {
     expect(matchesBinding({ name: "tab", sequence: "\t" }, "tab")).toBe(true);
+  });
+
+  it("matches a Ctrl chord against its ctrl-prefixed binding", () => {
+    const ctrlN = { name: "n", sequence: "\x0e", ctrl: true };
+    expect(matchesBinding(ctrlN, "ctrl+n")).toBe(true);
+    expect(matchesBinding(ctrlN, "n")).toBe(true);
+    expect(matchesBinding({ name: "n", sequence: "n" }, "ctrl+n")).toBe(false);
+  });
+
+  it("prefers a Ctrl chord over the unmodified binding", () => {
+    const bindings = { next_suggestion: "ctrl+n", quick_capture: "n" } as const;
+    expect(actionForKey({ name: "n", sequence: "\x0e", ctrl: true }, bindings)).toBe(
+      "next_suggestion",
+    );
+    expect(actionForKey({ name: "n", sequence: "n" }, bindings)).toBe("quick_capture");
+  });
+
+  it("labels chords with their modifier", () => {
+    expect(bindingLabel("ctrl+n")).toBe("Ctrl+N");
+    expect(bindingLabel(["down", "ctrl+p"])).toBe("↓");
   });
 
   it("falls back to the uppercase binding when the terminal omits the shifted sequence", () => {

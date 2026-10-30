@@ -23,7 +23,6 @@ export function EditProjectModal({ entry }: EditProjectModalProps) {
   const { updateEntryProject } = useEntryMutations();
 
   const { buffer, setBuffer, suggestions, activeSuggestionIdx, handleSubmit } = useTextModalInput({
-    initialValue: entry.projectName || "",
     allowedSuggestions: ["project"],
     suggestionMode: "plain",
     // @call journals.hooks.update-entry-project Reassign the entry
@@ -46,7 +45,7 @@ export function EditProjectModal({ entry }: EditProjectModalProps) {
         value={buffer}
         onChange={setBuffer}
         onSubmit={handleSubmit}
-        placeholder="Project name"
+        placeholder={entry.projectName ?? "Project name"}
       />
 
       {hasSuggestions ? (

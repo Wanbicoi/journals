@@ -346,18 +346,50 @@ describe("ActiveModal dispatcher", () => {
     testSetup.renderer.destroy();
   });
 
-  it("suggests plain project names when reassigning an entry", async () => {
+  it("starts the reassign input empty and shows the current project as placeholder", async () => {
     stubServer();
     const { testSetup, harness, frame } = await renderModal();
 
     await act(async () => {
-      harness.api.open({ name: "edit-project", entry });
+      harness.api.open({ name: "edit-project", entry: { ...entry, projectName: "Ghost" } });
     });
 
+    // The placeholder only renders while the buffer is empty, so seeing the entry's project
+    // proves the input did not start with it.
     const reassign = await frame();
+    expect(reassign).toContain("Ghost");
     expect(reassign).toContain("Suggestions");
     expect(reassign).toContain("Alpha");
-    expect(reassign).not.toContain("@Alpha");
+    expect(reassign).not.toContain("/project:Alpha");
+
+    testSetup.renderer.destroy();
+  });
+
+  it("moves the highlighted suggestion with Ctrl+N and Ctrl+P", async () => {
+    const calls = stubServer();
+    const { testSetup, harness } = await renderModal();
+    const ctrl = async (key: string) => {
+      await act(async () => {
+        testSetup.mockInput.pressKey(key, { ctrl: true });
+      });
+    };
+
+    await act(async () => {
+      harness.api.open({ name: "edit-project", entry });
+    });
+    // Alpha is highlighted first; down twice lands on Reading list, up once returns to Beta.
+    await ctrl("n");
+    await ctrl("n");
+    await ctrl("p");
+    await act(async () => {
+      testSetup.mockInput.pressTab();
+    });
+    await act(async () => {
+      testSetup.mockInput.pressEnter();
+    });
+
+    const patch = calls.find((call) => call.method === "PATCH" && call.url.includes("/entries/e1"));
+    expect((patch?.body as { projectName: string }).projectName).toBe("Beta");
 
     testSetup.renderer.destroy();
   });

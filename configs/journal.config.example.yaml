@@ -115,8 +115,8 @@ keymaps:
   modal:
     submit: ["return", "kpenter"]  # Save the modal input
     cancel: "escape"               # Close the modal without saving
-    suggestion_next: "down"        # Highlight the next suggestion
-    suggestion_prev: "up"          # Highlight the previous suggestion
+    suggestion_next: ["down", "ctrl+n"] # Highlight the next suggestion
+    suggestion_prev: ["up", "ctrl+p"]   # Highlight the previous suggestion
     suggestion_accept: "tab"       # Complete with the highlighted suggestion
     draft_in_editor: "e"           # Ctrl+E: write the buffer in $EDITOR
 
