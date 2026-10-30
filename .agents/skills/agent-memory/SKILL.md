@@ -96,5 +96,4 @@ journals agent list [--project <project-id>] [--limit <n>] [--include-superseded
 1. **Recall**: Search memory for prior solutions to unfamiliar errors, build steps, or commands (`journals agent search "<error or task>"`).
 2. **Reinforce**: When a returned entry solves the issue, run `journals agent hit <id> --note "<why it helped, what related>"`.
 3. **Record**: Log new fixes and repeatable recipes so future agents inherit them.
-4. **Supersede**: When a note is stale, `show` the current newest version, write one replacement, and pass that version's id as `--supersedes <id>`. Only the newest version stays searchable; older versions remain reachable by id.
-  - You must know how the note is scale. If not then ask for this before update new note
+4. **Supersede**: When a note is stale or need to be updated, `show` the current newest version, write one replacement, and pass that version's id as `--supersedes <id>`. Only the newest version stays searchable; older versions remain reachable by id.

@@ -4,7 +4,7 @@ import { createAgentEntryApi } from "../../api/agent.js";
 export const logCommand = defineCommand({
   meta: {
     name: "log",
-    description: "Record a fix or runbook entry into agent memory",
+    description: "Record a fix or runbook entry into agent memory (update with --supersedes <id>)",
   },
   args: {
     project: {
