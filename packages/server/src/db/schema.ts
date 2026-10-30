@@ -13,6 +13,7 @@ export const projects = sqliteTable("projects", {
   content: text("content").notNull().default(""),
   recurrence: text("recurrence"),
   missedPolicy: text("missed_policy").notNull().default("spike"),
+  deletedAt: integer("deleted_at"),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
@@ -39,6 +40,7 @@ export const agentEntries = sqliteTable("agent_entries", {
     (): AnySQLiteColumn => agentEntries.id,
     { onDelete: "set null" },
   ),
+  deletedAt: integer("deleted_at"),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });

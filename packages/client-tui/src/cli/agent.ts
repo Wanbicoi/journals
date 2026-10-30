@@ -2,6 +2,8 @@ import { defineCommand, runMain } from "citty";
 import { hitCommand } from "./commands/hit.js";
 import { listCommand } from "./commands/list.js";
 import { logCommand } from "./commands/log.js";
+import { restoreCommand } from "./commands/restore.js";
+import { rmCommand } from "./commands/rm.js";
 import { searchCommand } from "./commands/search.js";
 import { showCommand } from "./commands/show.js";
 
@@ -16,13 +18,15 @@ export const agentMainCommand = defineCommand({
     show: showCommand,
     hit: hitCommand,
     list: listCommand,
+    rm: rmCommand,
+    restore: restoreCommand,
   },
 });
 
 // @unit journals.cli.agent
 // @summary Run the headless agent command line
-// @details citty dispatches to the `log`, `search`, `show`, `hit`, and `list`
-// | subcommands, which talk to the server over the same HTTP API as the TUI.
+// @details citty dispatches to the `log`, `search`, `show`, `hit`, `list`, `rm`,
+// | and `restore` subcommands, which talk to the server over the same HTTP API as the TUI.
 export async function runAgentCli(args: string[]): Promise<void> {
   try {
     await dispatchAgentCommand(args);
@@ -44,6 +48,8 @@ async function dispatchAgentCommand(args: string[]): Promise<void> {
     /* @call journals.cli.agent.show Inspect entries by id */
     /* @call journals.cli.agent.hit Reinforce entries that solved a task */
     /* @call journals.cli.agent.list List recent entries */
+    /* @call journals.cli.agent.rm Remove agent entries */
+    /* @call journals.cli.agent.restore Restore agent entries */
     agentMainCommand,
     { rawArgs: args },
   );

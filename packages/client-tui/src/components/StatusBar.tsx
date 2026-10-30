@@ -15,7 +15,7 @@ const TAB_HINTS: Record<string, (k: Keymaps) => string> = {
   REFLECTIONS: (k) =>
     `[${bindingLabel(k.reflections.cadence_week)}/${bindingLabel(k.reflections.cadence_month)}/${bindingLabel(k.reflections.cadence_quarter)}/${bindingLabel(k.reflections.cadence_year)}] Cadence  [${bindingLabel(k.reflections.down)}/${bindingLabel(k.reflections.up)}] Move  [${bindingLabel(k.reflections.open_reflection)}] Write  [${bindingLabel(k.global.quit)}] Quit`,
   PROJECTS: (k) =>
-    `[${bindingLabel(k.projects.down)}/${bindingLabel(k.projects.up)}] Move  [${bindingLabel(k.projects.new_project)}] New  [${bindingLabel(k.projects.edit_project_settings)}] Routine  [${bindingLabel(k.projects.edit_project_content)}] Edit  [${bindingLabel(k.global.quit)}] Quit`,
+    `[${bindingLabel(k.projects.down)}/${bindingLabel(k.projects.up)}] Move  [${bindingLabel(k.projects.new_project)}] New  [${bindingLabel(k.projects.edit_project_settings)}] Routine  [${bindingLabel(k.projects.edit_project_content)}] Edit  [${bindingLabel(k.projects.delete_project)}] Del  [${bindingLabel(k.global.quit)}] Quit`,
 };
 
 // @unit journals.views.status-bar

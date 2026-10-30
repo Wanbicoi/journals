@@ -9,9 +9,11 @@ import type { DatabaseInstance } from "../../db/client.js";
 import {
   AgentEntryError,
   createAgentEntry,
+  deleteAgentEntry,
   getAgentEntries,
   incrementAgentEntryHits,
   listAgentEntries,
+  restoreAgentEntry,
   searchAgentEntries,
 } from "./handler.js";
 
@@ -57,5 +59,13 @@ export function createAgentEntriesRouter(db: DatabaseInstance) {
         if (err instanceof AgentEntryError) return c.json({ error: err.message }, 400);
         throw err;
       }
+    })
+    .delete("/:id", (c) => {
+      const id = c.req.param("id");
+      return c.json(deleteAgentEntry(db, id));
+    })
+    .post("/:id/restore", (c) => {
+      const id = c.req.param("id");
+      return c.json(restoreAgentEntry(db, id));
     });
 }

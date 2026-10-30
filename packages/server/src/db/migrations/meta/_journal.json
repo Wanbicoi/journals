@@ -57,6 +57,13 @@
       "when": 1793200789912,
       "tag": "0007_agent_hit_log",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1793332921345,
+      "tag": "0008_new_jasper_sitwell",
+      "breakpoints": true
     }
   ]
 }

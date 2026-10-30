@@ -95,6 +95,7 @@ keymaps:
     new_project: ["n", "N"]        # Create a project
     edit_project_settings: "P"     # Edit the project's routine & policy
     edit_project_content: ["e", "o"] # Edit the project markdown in $EDITOR
+    delete_project: "d"            # Soft-delete the project (hidden until recreated)
 
   dashboard:
     day_prev: ["h", "left"]        # Focus the previous chart day

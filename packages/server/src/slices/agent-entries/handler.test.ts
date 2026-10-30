@@ -5,9 +5,11 @@ import { type DatabaseInstance, initDb } from "../../db/client.js";
 import { agentEntries, hitLog } from "../../db/schema.js";
 import {
   createAgentEntry,
+  deleteAgentEntry,
   getAgentEntries,
   incrementAgentEntryHits,
   listAgentEntries,
+  restoreAgentEntry,
   searchAgentEntries,
 } from "./handler.js";
 
@@ -139,6 +141,32 @@ describe("Agent Entries Slice", () => {
     const inherited = createAgentEntry(db, "New note", undefined, undefined, old.id);
     expect(inherited.projectName).toBe("Alpha");
     expect(inherited.previousEntryId).toBe(old.id);
+  });
+
+  it("soft-deletes an entry, keeps its history, and restores it", () => {
+    const v1 = createAgentEntry(db, "Linker note v1", undefined, "Troubleshooting");
+    const v2 = createAgentEntry(db, "Linker note v2", undefined, "Troubleshooting", v1.id);
+    incrementAgentEntryHits(db, [v2.id], "The replacement helped");
+
+    deleteAgentEntry(db, v2.id);
+
+    expect(listAgentEntries(db)).toEqual([]);
+    expect(searchAgentEntries(db, "linker")).toEqual([]);
+
+    // The row survives: show still reaches it with its hits and supersession links.
+    const hidden = getAgentEntries(db, [v2.id])[0];
+    expect(hidden.deletedAt).toBeNumber();
+    expect(hidden.hitCount).toBe(1);
+    expect(hidden.previousEntryId).toBe(v1.id);
+
+    expect(() => incrementAgentEntryHits(db, [v2.id], "Still helping")).toThrow("deleted");
+    expect(() => createAgentEntry(db, "Fork", undefined, "Troubleshooting", v2.id)).toThrow(
+      "deleted",
+    );
+
+    restoreAgentEntry(db, v2.id);
+    expect(getAgentEntries(db, [v2.id])[0].deletedAt).toBeNull();
+    expect(listAgentEntries(db).map((entry) => entry.id)).toEqual([v2.id]);
   });
 
   it("cascades hit logs and restores the previous version when the newest is deleted", () => {

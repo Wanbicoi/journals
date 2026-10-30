@@ -156,6 +156,7 @@ const DEFAULT_KEYMAPS = {
     new_project: ["n", "N"],
     edit_project_settings: "P",
     edit_project_content: ["e", "o"],
+    delete_project: "d",
   },
   dashboard: {
     day_prev: ["h", "left"],

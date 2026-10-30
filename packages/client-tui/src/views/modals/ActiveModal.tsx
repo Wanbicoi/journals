@@ -1,5 +1,6 @@
 import { useModals } from "../../contexts/modals.js";
 import { DeleteConfirmModal } from "./DeleteConfirmModal.js";
+import { DeleteProjectConfirmModal } from "./DeleteProjectConfirmModal.js";
 import { EditContentModal } from "./EditContentModal.js";
 import { EditProjectModal } from "./EditProjectModal.js";
 import { EditProjectSettingsModal } from "./EditProjectSettingsModal.js";
@@ -54,6 +55,10 @@ export function ActiveModal() {
     case "edit-project-settings":
       // @call journals.modals.edit-project-settings Edit a project's name, recurrence, and policy
       return <EditProjectSettingsModal project={modal.project} />;
+
+    case "delete-project":
+      // @call journals.modals.delete-project Confirm and soft-delete a project
+      return <DeleteProjectConfirmModal project={modal.project} />;
 
     default:
       return null;

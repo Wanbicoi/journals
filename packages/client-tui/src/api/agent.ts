@@ -1,5 +1,5 @@
 import type { AgentEntry, AgentEntryDetail, AgentEntrySearchResult } from "@journals/core";
-import { client } from "./client.js";
+import { client, serverUrl } from "./client.js";
 
 // Helper accessor for dynamically routed agent-entries slice on Hono client
 type DynamicClient = Record<
@@ -96,6 +96,30 @@ export async function incrementAgentHitsApi(
   });
   if (!res.ok) {
     throw await requestError(res, "Failed to log hit");
+  }
+  return res.json();
+}
+
+// @unit journals.api.agent.delete
+// @summary Soft-delete an agent entry over HTTP
+// @returns Confirmation with the hidden entry id
+export async function deleteAgentEntryApi(id: string): Promise<{ success: boolean; id: string }> {
+  // @call journals.server.agent-delete Soft-delete the entry
+  const res = await fetch(`${serverUrl}/agent-entries/${id}`, { method: "DELETE" });
+  if (!res.ok) {
+    throw await requestError(res, "Failed to delete agent entry");
+  }
+  return res.json();
+}
+
+// @unit journals.api.agent.restore
+// @summary Restore a soft-deleted agent entry over HTTP
+// @returns Confirmation with the restored entry id
+export async function restoreAgentEntryApi(id: string): Promise<{ success: boolean; id: string }> {
+  // @call journals.server.agent-restore Restore the entry
+  const res = await fetch(`${serverUrl}/agent-entries/${id}/restore`, { method: "POST" });
+  if (!res.ok) {
+    throw await requestError(res, "Failed to restore agent entry");
   }
   return res.json();
 }

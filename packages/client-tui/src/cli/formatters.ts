@@ -16,6 +16,7 @@ export function formatEntryDetail(entry: AgentEntryDetail): string {
     `Hit count:      ${entry.hitCount}`,
     `Previous:       ${entry.previousEntryId ?? "(none)"}`,
     `Superseded by:  ${entry.supersededByEntryId ?? "(none)"}`,
+    `Deleted:        ${entry.deletedAt ? new Date(entry.deletedAt).toISOString() : "(no)"}`,
     `Created:        ${new Date(entry.createdAt).toISOString()}`,
     `Updated:        ${new Date(entry.updatedAt).toISOString()}`,
     "----------------------------------------------------------------------",

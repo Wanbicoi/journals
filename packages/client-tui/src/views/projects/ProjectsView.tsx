@@ -51,6 +51,8 @@ export function ProjectsView() {
     onEditProjectSettings: (project) => open({ name: "edit-project-settings", project }),
     // @call journals.actions.edit-in-editor Edit the selected project in $EDITOR
     onEditProjectContent: (project) => void editProjectContent(project),
+    // @call journals.contexts.modals Open the delete project confirmation
+    onDeleteProject: (project) => open({ name: "delete-project", project }),
   });
 
   if (isError) {

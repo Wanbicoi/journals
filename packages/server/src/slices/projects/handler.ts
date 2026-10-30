@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { count, desc, eq, sql } from "drizzle-orm";
+import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "../../db/client.js";
 import { entries, projects } from "../../db/schema.js";
 import { sanitizeFtsQuery } from "../../lib/search-utils.js";
@@ -7,7 +7,9 @@ import { sanitizeFtsQuery } from "../../lib/search-utils.js";
 type DbOrTx = DatabaseInstance | Parameters<Parameters<DatabaseInstance["transaction"]>[0]>[0];
 
 // @unit journals.server.list-projects
-// @summary List projects
+// @summary List live projects
+// @details Soft-deleted projects are hidden, and their entries stop counting toward the
+// | entry total because those entries are hidden with the project.
 export function listProjects(db: DbOrTx) {
   const projs = db
     .select({
@@ -21,7 +23,8 @@ export function listProjects(db: DbOrTx) {
       entryCount: count(entries.id),
     })
     .from(projects)
-    .leftJoin(entries, eq(projects.id, entries.projectId))
+    .leftJoin(entries, and(eq(projects.id, entries.projectId), isNull(entries.deletedAt)))
+    .where(isNull(projects.deletedAt))
     .groupBy(projects.id)
     .orderBy(desc(projects.updatedAt))
     .all();
@@ -35,6 +38,16 @@ export function listProjects(db: DbOrTx) {
 export function findOrCreateProject(db: DbOrTx, name: string) {
   const cleanName = name.trim();
   let [project] = db.select().from(projects).where(eq(projects.name, cleanName)).all();
+  if (project?.deletedAt) {
+    // The unique name still belongs to the soft-deleted row, so reuse it instead of
+    // failing the insert. Reviving keeps the project's entries and document intact.
+    const now = Date.now();
+    db.update(projects)
+      .set({ deletedAt: null, updatedAt: now })
+      .where(eq(projects.id, project.id))
+      .run();
+    project = { ...project, deletedAt: null, updatedAt: now };
+  }
   if (!project) {
     const id = crypto.randomUUID();
     const now = Date.now();
@@ -55,6 +68,7 @@ export function findOrCreateProject(db: DbOrTx, name: string) {
       content: `# ${cleanName}\n`,
       recurrence: null,
       missedPolicy: "spike",
+      deletedAt: null,
       createdAt: now,
       updatedAt: now,
     };
@@ -71,6 +85,18 @@ export function createProject(
   recurrence: string | null = null,
   missedPolicy = "spike",
 ) {
+  // A new project that reuses a deleted project's name revives that row instead of
+  // colliding with the unique index, preserving the old document and entries.
+  const [existing] = db.select().from(projects).where(eq(projects.name, name)).all();
+  if (existing?.deletedAt) {
+    const now = Date.now();
+    db.update(projects)
+      .set({ deletedAt: null, updatedAt: now })
+      .where(eq(projects.id, existing.id))
+      .run();
+    return { ...existing, deletedAt: null, updatedAt: now };
+  }
+
   const id = crypto.randomUUID();
   const now = Date.now();
   db.insert(projects)
@@ -109,6 +135,24 @@ export function updateProjectContent(db: DbOrTx, id: string, content: string) {
   return updateProject(db, id, { content });
 }
 
+// @unit journals.server.delete-project
+// @summary Soft-delete a project
+// @details Stamps deletedAt instead of removing the row. The project's entries are hidden
+// | with it by the read queries, so restoring the project brings them back unchanged.
+export function deleteProject(db: DbOrTx, id: string) {
+  const now = Date.now();
+  db.update(projects).set({ deletedAt: now, updatedAt: now }).where(eq(projects.id, id)).run();
+  return { success: true, id };
+}
+
+// @unit journals.server.restore-project
+// @summary Restore a soft-deleted project
+export function restoreProject(db: DbOrTx, id: string) {
+  const now = Date.now();
+  db.update(projects).set({ deletedAt: null, updatedAt: now }).where(eq(projects.id, id)).run();
+  return { success: true, id };
+}
+
 // @unit journals.server.search-projects
 // @summary Search projects
 export function searchProjects(db: DatabaseInstance, query: string, limit = 50) {
@@ -134,13 +178,13 @@ export function searchProjects(db: DatabaseInstance, query: string, limit = 50) 
       p.name,
       p.content,
       snippet(projects_fts, -1, '<mark>', '</mark>', '...', 15) AS snippet,
-      (SELECT COUNT(e.id) FROM entries e WHERE e.project_id = p.id) AS entryCount,
+      (SELECT COUNT(e.id) FROM entries e WHERE e.project_id = p.id AND e.deleted_at IS NULL) AS entryCount,
       p.created_at AS createdAt,
       p.updated_at AS updatedAt,
       bm25(projects_fts) AS rank
     FROM projects_fts
     JOIN projects p ON projects_fts.rowid = p.rowid
-    WHERE projects_fts MATCH ${ftsQuery}
+    WHERE projects_fts MATCH ${ftsQuery} AND p.deleted_at IS NULL
     ORDER BY bm25(projects_fts)
     LIMIT ${limit};
   `) as ProjectFtsRow[];

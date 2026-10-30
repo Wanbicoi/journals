@@ -310,7 +310,7 @@ describe("Collocated View Keymaps", () => {
   });
 
   describe("ProjectsView", () => {
-    it("moves the selection and opens the project modals (n, P)", async () => {
+    it("moves the selection and opens the project modals (n, P, d)", async () => {
       stubServer({ projects: sampleProjects });
       const { testSetup, sink, press, closeModal } = await renderView(<ProjectsView />, {
         projects: sampleProjects,
@@ -330,6 +330,13 @@ describe("Collocated View Keymaps", () => {
       expect(
         sink.modals.modal?.name === "edit-project-settings" && sink.modals.modal.project.name,
       ).toBe("Alpha");
+      await closeModal();
+
+      await press("d");
+      expect(sink.modals.modal?.name).toBe("delete-project");
+      expect(sink.modals.modal?.name === "delete-project" && sink.modals.modal.project.name).toBe(
+        "Alpha",
+      );
       await closeModal();
 
       await press("n");

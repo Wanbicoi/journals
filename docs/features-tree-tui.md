@@ -57,14 +57,15 @@ Journals terminal client
         │   │   ├── 4.1.2.3.5. Open the new project modal *(4.1.2.1.4.)*
         │   │   ├── 4.1.2.3.6. Open the project settings modal *(4.1.2.1.4.)*
         │   │   ├── 4.1.2.3.7. Edit the selected project in $EDITOR *(4.1.2.1.6.)*
-        │   │   └── 4.1.2.3.8. Show a load error and offer a retry *(4.1.2.1.11.)*
+        │   │   ├── 4.1.2.3.8. Open the delete project confirmation *(4.1.2.1.4.)*
+        │   │   └── 4.1.2.3.9. Show a load error and offer a retry *(4.1.2.1.11.)*
         │   └── 4.1.2.4. Dashboard view: streaks and the activity chart
         │       ├── 4.1.2.4.1. Load the 60-day dashboard analytics
         │       │   └── 4.1.2.4.1.1. Fetch the dashboard summary from the server
         │       ├── 4.1.2.4.2. Load projects to count configured routines *(4.1.2.3.1.)*
         │       ├── 4.1.2.4.3. Capture a routine completion
         │       │   └── 4.1.2.4.3.1. Parse and store the captured line
-        │       │       └── 4.1.2.4.3.1.1. Parse /project:, /tag:, /date:, and /break:
+        │       │       └── 4.1.2.4.3.1.1. Parse /project:, /tag:, /date:, and /break: commands
         │       ├── 4.1.2.4.4. Focus a day in the chart
         │       ├── 4.1.2.4.5. Navigate to the selected day *(4.1.1.2.1.1.)*
         │       ├── 4.1.2.4.6. Open the quick capture modal *(4.1.2.1.4.)*
@@ -94,9 +95,12 @@ Journals terminal client
             │   │   └── 4.1.3.3.7.1. Replace the entry's tags
             │   │       └── 4.1.3.3.7.1.1. Replace the entry's tags
             │   ├── 4.1.3.3.8. Confirm and soft-delete an entry *(4.1.2.1.9.)*
-            │   └── 4.1.3.3.9. Edit a project's name, recurrence, and policy
-            │       ├── 4.1.3.3.9.1. Save the project settings
-            │       │   └── 4.1.3.3.9.1.1. Save the project's name, recurrence, and policy
-            │       └── 4.1.3.3.9.2. Preview the parsed name, cadence, and policy *(4.1.3.3.4.2.)*
+            │   ├── 4.1.3.3.9. Edit a project's name, recurrence, and policy
+            │   │   ├── 4.1.3.3.9.1. Save the project settings
+            │   │   │   └── 4.1.3.3.9.1.1. Save the project's name, recurrence, and policy
+            │   │   └── 4.1.3.3.9.2. Preview the parsed name, cadence, and policy *(4.1.3.3.4.2.)*
+            │   └── 4.1.3.3.10. Confirm and soft-delete a project
+            │       └── 4.1.3.3.10.1. Soft-delete the opened project
+            │           └── 4.1.3.3.10.1.1. Soft-delete the project and hide its entries
             └── 4.1.3.4. Show the status notification and per-view key hints
 ```

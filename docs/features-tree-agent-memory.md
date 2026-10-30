@@ -19,9 +19,15 @@ Dispatch an agent memory subcommand
 ├── 4. Reinforce entries that solved a task
 │   └── 4.1. Log the hit
 │       └── 4.1.1. Write the hit log
-└── 5. List recent entries
-    └── 5.1. List agent entries
-        └── 5.1.1. Read the recent entries
+├── 5. List recent entries
+│   └── 5.1. List agent entries
+│       └── 5.1.1. Read the recent entries
+├── 6. Remove agent entries
+│   └── 6.1. Soft-delete each entry
+│       └── 6.1.1. Soft-delete the entry
+└── 7. Restore agent entries
+    └── 7.1. Restore each entry
+        └── 7.1.1. Restore the entry
 ```
 
 **Notes**
@@ -37,6 +43,8 @@ Dispatch an agent memory subcommand
 - **Log an agent entry** — Inserts the note verbatim under the resolved project. The
   title/Cause/Resolution layout is a convention for agents, not parsed here.
   A replacement cites exactly one previous version, so history stays linear.
+- **Soft-delete an agent entry** — Stamps deletedAt instead of removing the row, so hits, supersession links, and
+  history survive. Deleted entries disappear from list and search but stay reachable by id.
 - **Load entries by id** — Supersession is derived in both directions: `previousEntryId` walks
   back one version, `supersededByEntryId` points at the successor, if any.
 - **Log a hit** — Writes one row per distinct id with the same timestamp. The note is

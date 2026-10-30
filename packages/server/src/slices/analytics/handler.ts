@@ -53,8 +53,15 @@ export interface DashboardSummary {
 // @unit journals.server.analytics
 // @summary Load the dashboard summary
 export function getDashboardAnalytics(db: DatabaseInstance, numDays = 60): DashboardSummary {
-  const allProjects = db.select().from(projects).all();
-  const allEntries = db.select().from(entries).where(isNull(entries.deletedAt)).all();
+  const allProjects = db.select().from(projects).where(isNull(projects.deletedAt)).all();
+  const liveProjectIds = new Set(allProjects.map((project) => project.id));
+  // Entries under a soft-deleted project are hidden with it, without touching their rows.
+  const allEntries = db
+    .select()
+    .from(entries)
+    .where(isNull(entries.deletedAt))
+    .all()
+    .filter((entry) => !entry.projectId || liveProjectIds.has(entry.projectId));
 
   // Create list of dates from (today - numDays + 1) to today in UTC/local date YYYY-MM-DD
   const now = new Date();

@@ -121,6 +121,36 @@ describe("Agent Entries HTTP Endpoints", () => {
     expect(body.error).toContain("already superseded");
   });
 
+  it("soft-deletes an entry over HTTP and restores it", async () => {
+    const createRes = await app.request("/agent-entries", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: "Linker error fix", projectName: "AgentOps" }),
+    });
+    const created = (await createRes.json()) as { id: string };
+
+    const deleteRes = await app.request(`/agent-entries/${created.id}`, { method: "DELETE" });
+    expect(deleteRes.status).toBe(200);
+
+    const listRes = await app.request("/agent-entries");
+    expect(((await listRes.json()) as { entries: unknown[] }).entries).toHaveLength(0);
+
+    const searchRes = await app.request("/agent-entries/search?q=linker");
+    expect(((await searchRes.json()) as { entries: unknown[] }).entries).toHaveLength(0);
+
+    const batchRes = await app.request(`/agent-entries/batch?ids=${created.id}`);
+    const batch = (await batchRes.json()) as { entries: Array<{ deletedAt: number | null }> };
+    expect(batch.entries[0].deletedAt).toBeNumber();
+
+    const restoreRes = await app.request(`/agent-entries/${created.id}/restore`, {
+      method: "POST",
+    });
+    expect(restoreRes.status).toBe(200);
+
+    const restoredList = await app.request("/agent-entries");
+    expect(((await restoredList.json()) as { entries: unknown[] }).entries).toHaveLength(1);
+  });
+
   it("shows only the newest version unless superseded entries are requested", async () => {
     const create = async (content: string, previousEntryId?: string) => {
       const res = await app.request("/agent-entries", {

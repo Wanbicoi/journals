@@ -25,7 +25,9 @@ import {
 } from "./slices/entries/handler.js";
 import {
   createProject,
+  deleteProject,
   listProjects,
+  restoreProject,
   searchProjects,
   updateProject,
 } from "./slices/projects/handler.js";
@@ -114,6 +116,16 @@ export function createApp(db: DatabaseInstance) {
       const id = c.req.param("id");
       const body = c.req.valid("json");
       const res = updateProject(db, id, body);
+      return c.json(res);
+    })
+    .delete("/projects/:id", (c) => {
+      const id = c.req.param("id");
+      const res = deleteProject(db, id);
+      return c.json(res);
+    })
+    .post("/projects/:id/restore", (c) => {
+      const id = c.req.param("id");
+      const res = restoreProject(db, id);
       return c.json(res);
     })
 

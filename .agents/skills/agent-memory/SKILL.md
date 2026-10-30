@@ -35,7 +35,9 @@ notes are displayed by `show` but are not full-text indexed.
 Executable via `journals agent <command>`:
 
 ### Search Memory (`search`)
+
 Search solutions before starting debugging or complex tasks:
+
 ```bash
 journals agent search <query...> [--limit <n>] [--include-superseded]
 ```
@@ -45,8 +47,10 @@ journals agent search <query...> [--limit <n>] [--include-superseded]
   when you need older versions; `show` can always reach them by id.
 
 ### Reinforce Solutions (`hit`)
+
 When an existing entry or recipe successfully solves your task, log a hit with
 the reason it helped. Hits boost its ranking in future searches:
+
 ```bash
 journals agent hit <id...> --note "<why it helped, what related>"
 ```
@@ -59,7 +63,9 @@ journals agent hit <id...> --note "<why it helped, what related>"
   actually helped; old hits stay on the old version.
 
 ### Record New Memory (`log`)
+
 Save a validated fix or recipe:
+
 ```bash
 journals agent log [--project <name>] [--supersedes <id>] "<title>: <symptom>
 Cause: <root cause> — <why it happened>
@@ -77,7 +83,22 @@ Resolution: <fix>"
 - A missing or unknown id, or a predecessor that already has a successor,
   aborts the call; nothing is created.
 
+### Remove & Restore (`rm`, `restore`)
+
+Soft-delete entries that are wrong or obsolete. Deleted entries disappear from
+`list` and `search`, but their hits and version links survive:
+
+```bash
+journals agent rm <id...>
+journals agent restore <id...>
+```
+
+- `rm` accepts several ids and soft-deletes each one; `delete` and `remove` are aliases.
+- `show` still reaches a deleted entry by id and prints its `Deleted:` timestamp.
+- Deleted entries reject new hits and cannot be superseded until restored.
+
 ### Inspect & List (`show`, `list`)
+
 ```bash
 journals agent show <id...> [--json]
 journals agent list [--project <project-id>] [--limit <n>] [--include-superseded] [--json]

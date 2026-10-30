@@ -57,5 +57,13 @@ export function useProjectMutations() {
     await invalidateAfterMutation(queryClient, invalidationKeys.projectContent);
   }
 
-  return { createProject, updateProject, updateProjectContent };
+  // @unit journals.hooks.delete-project
+  // @summary Soft-delete a project
+  async function deleteProject(id: string) {
+    // @call journals.server.delete-project Soft-delete the project and hide its entries
+    await client.projects[":id"].$delete({ param: { id } });
+    await invalidateAfterMutation(queryClient, invalidationKeys.projectDeleted);
+  }
+
+  return { createProject, updateProject, updateProjectContent, deleteProject };
 }

@@ -39,7 +39,7 @@ export function HelpModal() {
     },
     {
       label: "PROJECTS     ",
-      text: `[${key(keymaps.timeline.edit_project)}] Reassign  [${key(keymaps.timeline.edit_tags)}] Tags  [${key(keymaps.projects.edit_project_settings)}] Routine settings  [${key(keymaps.projects.new_project)}] New project`,
+      text: `[${key(keymaps.timeline.edit_project)}] Reassign  [${key(keymaps.timeline.edit_tags)}] Tags  [${key(keymaps.projects.edit_project_settings)}] Routine settings  [${key(keymaps.projects.new_project)}] New project  [${key(keymaps.projects.delete_project)}] Delete project`,
     },
     {
       label: "GLOBAL       ",

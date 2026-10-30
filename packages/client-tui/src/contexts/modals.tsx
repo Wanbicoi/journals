@@ -14,6 +14,7 @@ type ModalState =
   | { name: "edit-project"; entry: Entry }
   | { name: "edit-tags"; entry: Entry }
   | { name: "delete-entry"; entry: Entry }
+  | { name: "delete-project"; project: Project }
   | { name: "edit-project-settings"; project: Project };
 
 export interface ModalsValue {

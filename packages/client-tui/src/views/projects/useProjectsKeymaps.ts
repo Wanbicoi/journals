@@ -9,6 +9,7 @@ interface UseProjectsKeymapsOptions {
   onNewProject?: () => void;
   onEditProjectSettings?: (project: Project) => void;
   onEditProjectContent?: (project: Project) => void;
+  onDeleteProject?: (project: Project) => void;
 }
 
 export function useProjectsKeymaps({
@@ -18,6 +19,7 @@ export function useProjectsKeymaps({
   onNewProject,
   onEditProjectSettings,
   onEditProjectContent,
+  onDeleteProject,
 }: UseProjectsKeymapsOptions) {
   const selected = projects[selectedProjectIdx];
 
@@ -27,5 +29,6 @@ export function useProjectsKeymaps({
     new_project: () => onNewProject?.(),
     edit_project_settings: () => selected && onEditProjectSettings?.(selected),
     edit_project_content: () => selected && onEditProjectContent?.(selected),
+    delete_project: () => selected && onDeleteProject?.(selected),
   });
 }

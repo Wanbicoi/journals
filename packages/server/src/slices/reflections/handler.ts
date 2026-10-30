@@ -6,7 +6,7 @@ import type {
   SubReflectionSummary,
 } from "@journals/core";
 import { loadConfig } from "@journals/core";
-import { and, asc, desc, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, lte, or } from "drizzle-orm";
 import type { DatabaseInstance } from "../../db/client.js";
 import { entries, entryTags, periodicReflections, projects } from "../../db/schema.js";
 import { generatePeriods, parsePeriodKey } from "./time-utils.js";
@@ -45,6 +45,7 @@ export function listPeriodStatuses(
     const earliestEntry = db
       .select({ createdAt: entries.createdAt })
       .from(entries)
+      .where(isNull(entries.deletedAt))
       .orderBy(asc(entries.createdAt))
       .limit(1)
       .all();
@@ -84,7 +85,15 @@ export function listPeriodStatuses(
     const matchingEntries = db
       .select({ id: entries.id })
       .from(entries)
-      .where(and(gte(entries.createdAt, period.startDate), lte(entries.createdAt, period.endDate)))
+      .leftJoin(projects, eq(entries.projectId, projects.id))
+      .where(
+        and(
+          gte(entries.createdAt, period.startDate),
+          lte(entries.createdAt, period.endDate),
+          isNull(entries.deletedAt),
+          or(isNull(entries.projectId), isNull(projects.deletedAt)),
+        ),
+      )
       .all();
 
     const reflection = reflectionMap.get(period.periodKey);
@@ -154,7 +163,14 @@ export function getPeriodDetail(
     })
     .from(entries)
     .innerJoin(projects, eq(entries.projectId, projects.id))
-    .where(and(gte(entries.createdAt, range.startDate), lte(entries.createdAt, range.endDate)))
+    .where(
+      and(
+        gte(entries.createdAt, range.startDate),
+        lte(entries.createdAt, range.endDate),
+        isNull(entries.deletedAt),
+        isNull(projects.deletedAt),
+      ),
+    )
     .orderBy(desc(entries.createdAt))
     .all();
 

@@ -1,4 +1,4 @@
-import { desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "../../db/client.js";
 import { entries, entryTags, projects, tags } from "../../db/schema.js";
 import { sanitizeFtsQuery } from "../../lib/search-utils.js";
@@ -19,7 +19,9 @@ export function listEntries(db: DatabaseInstance) {
     })
     .from(entries)
     .leftJoin(projects, eq(entries.projectId, projects.id))
-    .where(isNull(entries.deletedAt))
+    .where(
+      and(isNull(entries.deletedAt), or(isNull(entries.projectId), isNull(projects.deletedAt))),
+    )
     .orderBy(desc(entries.createdAt))
     .all();
 
@@ -155,7 +157,7 @@ export function searchEntries(db: DatabaseInstance, query: string, limit = 50) {
     FROM entries_fts
     JOIN entries e ON entries_fts.rowid = e.rowid
     JOIN projects p ON e.project_id = p.id
-    WHERE entries_fts MATCH ${ftsQuery} AND e.deleted_at IS NULL
+    WHERE entries_fts MATCH ${ftsQuery} AND e.deleted_at IS NULL AND p.deleted_at IS NULL
     ORDER BY bm25(entries_fts)
     LIMIT ${limit};
   `) as EntryFtsRow[];

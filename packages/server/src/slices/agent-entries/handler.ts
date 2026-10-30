@@ -1,5 +1,5 @@
 import type { AgentEntryDetail } from "@journals/core";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "../../db/client.js";
 import { agentEntries, hitLog, projects } from "../../db/schema.js";
 import { sanitizeFtsQuery } from "../../lib/search-utils.js";
@@ -20,6 +20,7 @@ const entryColumns = {
   supersededByEntryId: sql<
     string | null
   >`(SELECT successor.id FROM agent_entries successor WHERE successor.previous_agent_entry_id = ${agentEntries.id} LIMIT 1)`,
+  deletedAt: agentEntries.deletedAt,
   createdAt: agentEntries.createdAt,
   updatedAt: agentEntries.updatedAt,
 };
@@ -36,13 +37,23 @@ function missingIds(found: string[], requested: string[]): string[] {
 // | pointer to the current one.
 function resolvePreviousEntry(db: DatabaseInstance, previousEntryId: string) {
   const previous = db
-    .select({ id: agentEntries.id, projectId: agentEntries.projectId })
+    .select({
+      id: agentEntries.id,
+      projectId: agentEntries.projectId,
+      deletedAt: agentEntries.deletedAt,
+    })
     .from(agentEntries)
     .where(eq(agentEntries.id, previousEntryId))
     .get();
 
   if (!previous) {
     throw new AgentEntryError(`Unknown agent entry id: ${previousEntryId}`);
+  }
+
+  if (previous.deletedAt) {
+    throw new AgentEntryError(
+      `Agent entry ${previousEntryId} is deleted; restore it before superseding.`,
+    );
   }
 
   const successor = db
@@ -93,12 +104,21 @@ export function createAgentEntry(
   }
 
   const project = db
-    .select({ name: projects.name })
+    .select({ name: projects.name, deletedAt: projects.deletedAt })
     .from(projects)
     .where(eq(projects.id, targetProjectId))
     .get();
   if (!project) {
     throw new AgentEntryError(`Unknown project: ${targetProjectId}`);
+  }
+
+  if (project.deletedAt) {
+    // An explicit project id can point at a soft-deleted project. Writing to it revives it,
+    // matching findOrCreateProject's behavior for a reused name.
+    db.update(projects)
+      .set({ deletedAt: null, updatedAt: now })
+      .where(eq(projects.id, targetProjectId))
+      .run();
   }
 
   if (previous && previous.projectId !== targetProjectId) {
@@ -124,6 +144,7 @@ export function createAgentEntry(
     hitCount: 0,
     previousEntryId: previous?.id ?? null,
     supersededByEntryId: null,
+    deletedAt: null,
     createdAt: now,
     updatedAt: now,
     hitLogs: [],
@@ -165,6 +186,30 @@ export function getAgentEntries(db: DatabaseInstance, ids: string[]): AgentEntry
   }));
 }
 
+// @unit journals.server.agent-delete
+// @summary Soft-delete an agent entry
+// @details Stamps deletedAt instead of removing the row, so hits, supersession links, and
+// | history survive. Deleted entries disappear from list and search but stay reachable by id.
+export function deleteAgentEntry(db: DatabaseInstance, id: string) {
+  const now = Date.now();
+  db.update(agentEntries)
+    .set({ deletedAt: now, updatedAt: now })
+    .where(eq(agentEntries.id, id))
+    .run();
+  return { success: true, id };
+}
+
+// @unit journals.server.agent-restore
+// @summary Restore a soft-deleted agent entry
+export function restoreAgentEntry(db: DatabaseInstance, id: string) {
+  const now = Date.now();
+  db.update(agentEntries)
+    .set({ deletedAt: null, updatedAt: now })
+    .where(eq(agentEntries.id, id))
+    .run();
+  return { success: true, id };
+}
+
 // @unit journals.server.agent-list
 // @summary List recent entries
 // @returns Entries ordered by hit count, then creation time
@@ -177,7 +222,7 @@ export function listAgentEntries(
   limit = 20,
   includeSuperseded = false,
 ) {
-  const filters = [];
+  const filters = [isNull(agentEntries.deletedAt), isNull(projects.deletedAt)];
   if (projectId) filters.push(eq(agentEntries.projectId, projectId));
   if (!includeSuperseded) {
     filters.push(
@@ -185,14 +230,11 @@ export function listAgentEntries(
     );
   }
 
-  const query = db
+  return db
     .select(entryColumns)
     .from(agentEntries)
-    .innerJoin(projects, eq(agentEntries.projectId, projects.id));
-
-  if (filters.length > 0) query.where(and(...filters));
-
-  return query
+    .innerJoin(projects, eq(agentEntries.projectId, projects.id))
+    .where(and(...filters))
     .orderBy(desc(entryColumns.hitCount), desc(agentEntries.createdAt))
     .limit(limit)
     .all();
@@ -213,7 +255,7 @@ export function incrementAgentEntryHits(db: DatabaseInstance, ids: string[], con
   if (uniqueIds.length === 0) return { updated: 0 };
 
   const existing = db
-    .select({ id: agentEntries.id })
+    .select({ id: agentEntries.id, deletedAt: agentEntries.deletedAt })
     .from(agentEntries)
     .where(inArray(agentEntries.id, uniqueIds))
     .all();
@@ -224,6 +266,11 @@ export function incrementAgentEntryHits(db: DatabaseInstance, ids: string[], con
   );
   if (missing.length > 0) {
     throw new AgentEntryError(`Unknown agent entry id(s): ${missing.join(", ")}`);
+  }
+
+  const deleted = existing.filter((row) => row.deletedAt).map((row) => row.id);
+  if (deleted.length > 0) {
+    throw new AgentEntryError(`Agent entry id(s) are deleted: ${deleted.join(", ")}`);
   }
 
   const now = Date.now();
@@ -300,6 +347,8 @@ export function searchAgentEntries(
     JOIN agent_entries ae ON agent_entries_fts.rowid = ae.rowid
     JOIN projects p ON ae.project_id = p.id
     WHERE agent_entries_fts MATCH ${ftsQuery}
+      AND ae.deleted_at IS NULL
+      AND p.deleted_at IS NULL
       ${staleFilter}
     ORDER BY rank ASC
     LIMIT ${limit};

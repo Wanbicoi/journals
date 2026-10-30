@@ -2,8 +2,10 @@ import { describe, expect, test } from "bun:test";
 import { initDb } from "../../db/client.js";
 import {
   createProject,
+  deleteProject,
   findOrCreateProject,
   listProjects,
+  restoreProject,
   updateProjectContent,
 } from "./handler.js";
 
@@ -38,5 +40,28 @@ describe("Projects Slice", () => {
 
     expect(first.id).toBe(second.id);
     expect(first.name).toBe("Ideas");
+  });
+
+  test("soft-deletes a project, hides it, and revives it by name", () => {
+    const db = initDb(":memory:", false);
+    const project = createProject(db, "Work", "# Work Plan");
+
+    deleteProject(db, project.id);
+    expect(listProjects(db)).toEqual([]);
+
+    // Reusing the name through the create path revives the same row and document.
+    const revived = createProject(db, "Work", "# Replacement");
+    expect(revived.id).toBe(project.id);
+    expect(revived.content).toBe("# Work Plan");
+    expect(listProjects(db).map((row) => row.id)).toEqual([project.id]);
+
+    // The find-or-create path revives it too.
+    deleteProject(db, project.id);
+    expect(findOrCreateProject(db, "Work").id).toBe(project.id);
+
+    // Restore is explicit too.
+    deleteProject(db, project.id);
+    restoreProject(db, project.id);
+    expect(listProjects(db).map((row) => row.id)).toEqual([project.id]);
   });
 });

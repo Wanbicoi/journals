@@ -17,6 +17,7 @@ export const ProjectSchema = z.object({
   content: z.string().default(""),
   recurrence: z.string().nullable().optional(),
   missedPolicy: ProjectMissedPolicySchema.default("spike"),
+  deletedAt: z.number().nullable().optional(),
   createdAt: z.number(),
   updatedAt: z.number(),
 });
@@ -112,6 +113,7 @@ export const AgentEntrySchema = z.object({
   hitCount: z.number().int().nonnegative().default(0),
   previousEntryId: z.string().nullable(),
   supersededByEntryId: z.string().nullable(),
+  deletedAt: z.number().nullable().optional(),
   createdAt: z.number(),
   updatedAt: z.number(),
 });

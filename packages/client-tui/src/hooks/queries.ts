@@ -101,6 +101,12 @@ export const invalidationKeys = {
   projectCreated: [queryKeys.projects, queryKeys.dashboardAll],
   projectUpdated: [queryKeys.projects, queryKeys.dashboardAll],
   projectContent: [queryKeys.projects],
+  projectDeleted: [
+    queryKeys.projects,
+    queryKeys.entries,
+    queryKeys.dashboardAll,
+    queryKeys.reflections.all,
+  ],
   entryProject: [
     queryKeys.entries,
     queryKeys.projects,
