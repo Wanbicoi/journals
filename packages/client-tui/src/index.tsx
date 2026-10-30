@@ -29,20 +29,23 @@ async function main() {
     process.exit(0);
   }
 
-  // Ensure server is started in-process if not running, avoiding detached background daemon
-  const { startServer } = await import("@journals/server");
+  // The TUI talks to the daemon over HTTP. With auto_start disabled (a systemd
+  // deployment) never spawn an in-process fallback: the service owns the DB.
   const { config, serverUrl } = await import("./api/client.js");
 
   let serverInstance: { server: { stop: () => void } } | null = null;
-  // @call journals.server.start Start the in-process API server when it is not running
-  try {
-    const testRes = await fetch(`${serverUrl}/health`, {
-      signal: AbortSignal.timeout(500),
-    });
-    if (!testRes.ok) throw new Error("not running");
-  } catch {
-    // Start local server directly in the same runtime process silently
-    serverInstance = startServer(undefined, { silent: true });
+  if (config.server.auto_start) {
+    const { startServer } = await import("@journals/server");
+    // @call journals.server.start Start the in-process API server when it is not running
+    try {
+      const testRes = await fetch(`${serverUrl}/health`, {
+        signal: AbortSignal.timeout(500),
+      });
+      if (!testRes.ok) throw new Error("not running");
+    } catch {
+      // Start local server directly in the same runtime process silently
+      serverInstance = startServer(undefined, { silent: true });
+    }
   }
 
   const cleanupServer = () => {
